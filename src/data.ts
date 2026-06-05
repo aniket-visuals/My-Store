@@ -1,0 +1,194 @@
+import { Category, Product, FeatureItem, Testimonial, PortfolioItem, FaqItem, StatItem } from "./types";
+
+export const CATEGORIES_DATA: Category[] = [
+  {
+    id: "cat-sfx",
+    name: "Sound Effects",
+    slug: "sound-effects",
+    description: "Immersive foley, atmospheric hits, deep impacts, and organic UI transitions designed to hook audiences.",
+    iconName: "Volume2",
+    assetCount: 42,
+    gradient: "from-brand-accent to-brand-primary"
+  }
+];
+
+export const PRODUCTS_DATA: Product[] = [
+  {
+    id: "p1",
+    name: "Aether 8D Cinematic Sound Pack",
+    price: 29,
+    originalPrice: 49,
+    category: "sound-effects",
+    rating: 4.9,
+    reviewsCount: 148,
+    downloadCount: 1240,
+    description: "A meticulously recorded collection of sub-heavy impacts, analog synth sweeps, foley textures, and atmospheric whooshes. Perfect for cinematic videos and visual essays.",
+    features: ["85 High-Quality WAV Files (24-bit/48kHz)", "Frictional Sweeps & Dynamic Whooshes", "Sub-Bass Drops & Structural Impacts", "100% Royalty-Free and cleared for Commercial Use"],
+    compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, AE, etc.)",
+    fileSize: "1.4 GB",
+    fileType: "WAV",
+    image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80",
+    audioPreview: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    isPopular: true
+  }
+];
+
+export const FEATURE_ITEMS: FeatureItem[] = [
+  {
+    id: "f1",
+    title: "Industry-Level Quality",
+    description: "Every preset is crafted by professional commercial editors testing assets in real client environments before public launch.",
+    iconName: "Crown"
+  },
+  {
+    id: "f2",
+    title: "Instant Digital Download",
+    description: "Complete checkout securely and access your custom-branded dashboard and direct high-speed download links instantly.",
+    iconName: "Zap"
+  },
+  {
+    id: "f3",
+    title: "Creator-Focused Assets",
+    description: "No generic templates. Formulated for YouTube retention, stunning commercial moods, and sleek social shorts.",
+    iconName: "Tv"
+  },
+  {
+    id: "f4",
+    title: "Regular Updates",
+    description: "Our library is alive. Download new variations, codec optimization, and updated NLE wrappers completely free.",
+    iconName: "RefreshCw"
+  },
+  {
+    id: "f5",
+    title: "Commercial Usage Rights",
+    description: "No complex licensing. Your purchases clear you and your clients for TV broadcasts, YouTube monetization, and ads.",
+    iconName: "ShieldCheck"
+  },
+  {
+    id: "f6",
+    title: "Fast Support",
+    description: "Dedicated editor-to-editor discord and standard email response channels active within 24 hours to assist you.",
+    iconName: "MessageCircle"
+  }
+];
+
+export const TESTIMONIALS_DATA: Testimonial[] = [
+  {
+    id: "t1",
+    name: "Marcus Vance",
+    role: "Freelance Commercial Editor",
+    handle: "@marcus_vanced",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80",
+    comment: "Editors Raj assets completely changed my speed. The Cinematic Whooshes pack and Helios LUTs have becomes a constant staple of my high-end commercial projects.",
+    rating: 5,
+    verified: true
+  },
+  {
+    id: "t2",
+    name: "Evelyn Reed",
+    role: "Tech YouTuber (2.4M Subs)",
+    handle: "@evelyncreative",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80",
+    comment: "Retention went up by 14% after integrating the Neptune Typography engine and the sound design library. The details look exceptionally premium.",
+    rating: 5,
+    verified: true
+  },
+  {
+    id: "t3",
+    name: "Kaelen Mercer",
+    role: "Lead Motion Designer",
+    handle: "@kae_renders",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&h=150&q=80",
+    comment: "Being able to drop a ProRes Cyberpunk HUD file inside Premiere with transparency still preserved makes complex work feel like a simple walk in the park! Stellar products.",
+    rating: 5,
+    verified: true
+  }
+];
+
+export const PORTFOLIO_DATA: PortfolioItem[] = [
+  {
+    id: "port-1",
+    title: "Commercial Concept Reel 2026",
+    category: "Director's Cut",
+    creator: "Editors Raj",
+    thumbnail: "https://images.unsplash.com/photo-1492044715545-15ddedd84e5e?auto=format&fit=crop&w=800&q=80",
+    videoMockUrl: "https://assets.mixkit.co/videos/preview/mixkit-urban-traffic-at-night-time-lapse-42289-large.mp4",
+    likes: 852,
+    views: 12400
+  },
+  {
+    id: "port-2",
+    title: "Synthwave Motion Design Loop",
+    category: "3D Motion Graphics",
+    creator: "Marcus R.",
+    thumbnail: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=800&q=80",
+    videoMockUrl: "https://assets.mixkit.co/videos/preview/mixkit-spinning-retro-arcade-machine-glow-short-43224-large.mp4",
+    likes: 1205,
+    views: 18900
+  },
+  {
+    id: "port-3",
+    title: "Adventure Cinematics Mini-Doc",
+    category: "Color & Sound Design",
+    creator: "Julia Zhang",
+    thumbnail: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80",
+    videoMockUrl: "https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-thick-forest-with-river-33120-large.mp4",
+    likes: 934,
+    views: 14200
+  }
+];
+
+export const FAQ_DATA: FaqItem[] = [
+  {
+    id: "faq-1",
+    question: "What products do you sell?",
+    answer: "We offer professional sound effects, highly adjustable Premiere Pro and After Effects template rigs, cinematic color LUT tables (cube files), motion graphics overlays with transparency built-in, and high-retention graphic resources for graphic designers."
+  },
+  {
+    id: "faq-2",
+    question: "How do downloads work?",
+    answer: "Directly after your payment completes, you'll receive a high-speed secure download link via email and on your post-purchase layout. You can also re-download your assets at any time by signing in or requesting a magic recovery code."
+  },
+  {
+    id: "faq-3",
+    question: "Are updates included?",
+    answer: "Yes, completely! Any minor optimizations, bug fixes, or compatibility updates for newly released versions of Adobe Premiere or After Effects are sent to your inbox automatically and can be downloaded free for life."
+  },
+  {
+    id: "faq-4",
+    question: "Can I use assets commercially?",
+    answer: "Absolutely. Every Single asset pack includes a perpetual commercial usage license. You can use them for personal videos, commercial YouTube clips, client reels, paid advertisements, and large production broadcasts."
+  },
+  {
+    id: "faq-5",
+    question: "What software is supported?",
+    answer: "Our Sound effects (.wav) work on all audio and editing software. LUTs (.cube) work on Premiere, DaVinci Resolve, FCPX, Photoshop, and OBS. Our presets are specifically prepared for Premiere Pro and After Effects (version 2021+ is highly recommended)."
+  }
+];
+
+export const STATS_DATA: StatItem[] = [
+  {
+    id: "s1",
+    value: "5,000+",
+    label: "Active Community Members",
+    subLabel: "Global creators trust us"
+  },
+  {
+    id: "s2",
+    value: "100+",
+    label: "Creative Asset Files",
+    subLabel: "Handcrafted curated premium quality"
+  },
+  {
+    id: "s3",
+    value: "18,500+",
+    label: "Successful Downloads",
+    subLabel: "Helping creators worldwide daily"
+  },
+  {
+    id: "s4",
+    value: "Weekly",
+    label: "Regular Quality Updates",
+    subLabel: "Tested inside current project suites"
+  }
+];

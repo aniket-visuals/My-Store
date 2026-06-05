@@ -34,7 +34,6 @@ export default function FaqSection() {
                 key={item.id}
                 className="bg-white border border-black/5 hover:border-black/10 transition-colors rounded-2xl overflow-hidden shadow-sm"
               >
-                {/* Trigger Button bar */}
                 <button
                   onClick={() => toggleAccordion(item.id)}
                   className="w-full flex items-center justify-between p-6 sm:p-7 text-left font-display font-semibold text-base text-black cursor-pointer bg-white transition-all select-none hover:text-brand-primary"
@@ -44,7 +43,6 @@ export default function FaqSection() {
                     <span>{item.question}</span>
                   </div>
                   
-                  {/* Rotating Chevron Icon indicator */}
                   <motion.div
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
@@ -54,7 +52,6 @@ export default function FaqSection() {
                   </motion.div>
                 </button>
 
-                {/* Expanded content under animated height clip */}
                 <AnimatePresence initial={false}>
                   {isOpen && (
                     <motion.div

@@ -181,33 +181,12 @@ export default function FeaturedProducts({
                       </div>
 
                       {/* Immediate Buttons row */}
-                      <div className="grid grid-cols-2 gap-3 shrink-0">
+                      <div className="grid grid-cols-1 shrink-0">
                         <button
                           onClick={() => openProductPreview(product)}
-                          className="border border-black/10 text-black py-3 px-4 rounded-xl text-xs font-bold hover:bg-black/5 hover:border-black/20 transition-all cursor-pointer text-center"
+                          className="w-full bg-brand-primary hover:bg-brand-accent text-white py-3.5 px-4 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer text-center flex items-center justify-center space-x-2 tracking-wider uppercase font-mono shadow-[0_4px_20px_-4px_rgba(252,115,1,0.35)] hover:shadow-[0_8px_24px_rgba(252,115,1,0.5)] active:scale-[0.98]"
                         >
-                          Quick Preview
-                        </button>
-                        
-                        <button
-                          onClick={() => addToCart(product)}
-                          className={`py-3 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer text-center flex items-center justify-center space-x-2 ${
-                            inCart
-                              ? "bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/15"
-                              : "bg-brand-primary text-white hover:bg-brand-accent"
-                          }`}
-                        >
-                          {inCart ? (
-                            <>
-                              <Check className="w-4.5 h-4.5" />
-                              <span>In Cart</span>
-                            </>
-                          ) : (
-                            <>
-                              <ShoppingCart className="w-3.5 h-3.5" />
-                              <span>Buy Now</span>
-                            </>
-                          )}
+                          <span>Get Access</span>
                         </button>
                       </div>
 

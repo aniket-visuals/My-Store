@@ -7,19 +7,24 @@ import WhyChooseUs from "./components/WhyChooseUs";
 import FaqSection from "./components/FaqSection";
 import Footer from "./components/Footer";
 import ProductPreviewModal from "./components/ProductPreviewModal";
+import ProductDetailPage from "./components/ProductDetailPage";
 
 export default function App() {
   const [cart, setCart] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selectedPreviewProduct, setSelectedPreviewProduct] = useState<Product | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState<'home' | 'product-detail'>('home');
 
   // Smooth scroll handler targeting sections on-page
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    setCurrentPage('home');
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 80);
   };
 
   // Cart addition pipeline
@@ -43,7 +48,8 @@ export default function App() {
 
   const openProductPreview = (product: Product) => {
     setSelectedPreviewProduct(product);
-    setIsPreviewOpen(true);
+    setCurrentPage('product-detail');
+    window.scrollTo({ top: 0 });
   };
 
   const handleSelectCategoryFromWidget = (categorySlug: string) => {
@@ -65,27 +71,41 @@ export default function App() {
 
       {/* 2. Interactive Main Canvas */}
       <main className="flex-1">
-        
-        {/* Full visual viewport showcase */}
-        <Hero
-          onExploreClick={() => scrollToSection("shop")}
-        />
+        {currentPage === 'home' ? (
+          <>
+            {/* Full visual viewport showcase */}
+            <Hero
+              onExploreClick={() => scrollToSection("shop")}
+            />
 
-        {/* Bento features and Stats row combined */}
-        <WhyChooseUs />
+            {/* Bento features and Stats row combined */}
+            <WhyChooseUs />
 
-        {/* Active dynamic product list */}
-        <FeaturedProducts
-          cart={cart}
-          addToCart={addToCart}
-          openProductPreview={openProductPreview}
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
-        />
+            {/* Active dynamic product list */}
+            <FeaturedProducts
+              cart={cart}
+              addToCart={addToCart}
+              openProductPreview={openProductPreview}
+              activeCategory={activeCategory}
+              setActiveCategory={setActiveCategory}
+            />
 
-        {/* Search accordion FAQ cards */}
-        <FaqSection />
-
+            {/* Search accordion FAQ cards */}
+            <FaqSection />
+          </>
+        ) : (
+          selectedPreviewProduct && (
+            <ProductDetailPage
+              product={selectedPreviewProduct}
+              onBack={() => {
+                setCurrentPage('home');
+                window.scrollTo({ top: 0 });
+              }}
+              addToCart={addToCart}
+              inCart={cart.some((item) => item.id === selectedPreviewProduct.id)}
+            />
+          )
+        )}
       </main>
 
       {/* 3. Multi-column detailed footer */}
@@ -93,20 +113,6 @@ export default function App() {
         scrollToSection={scrollToSection}
         setActiveCategory={setActiveCategory}
       />
-
-      {/* 4. Shared Dynamic Media Preview Drawer (Hidden in background until triggered) */}
-      {selectedPreviewProduct && (
-        <ProductPreviewModal
-          product={selectedPreviewProduct}
-          isOpen={isPreviewOpen}
-          onClose={() => {
-            setIsPreviewOpen(false);
-            setSelectedPreviewProduct(null);
-          }}
-          addToCart={addToCart}
-          inCart={cart.some((item) => item.id === selectedPreviewProduct.id)}
-        />
-      )}
 
     </div>
   );

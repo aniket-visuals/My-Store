@@ -36,39 +36,39 @@ export const PRODUCTS_DATA: Product[] = [
 export const FEATURE_ITEMS: FeatureItem[] = [
   {
     id: "f1",
-    title: "Industry-Level Quality",
-    description: "Every preset is crafted by professional commercial editors testing assets in real client environments before public launch.",
-    iconName: "Crown"
+    title: "Professional-Grade Assets",
+    description: "Every asset is personally collected, tested, and curated by Aniket Visuals to meet top-tier industry standards. Perfect for high-end professional projects.",
+    iconName: "Award"
   },
   {
     id: "f2",
-    title: "Instant Digital Download",
-    description: "Complete checkout securely and access your custom-branded dashboard and direct high-speed download links instantly.",
-    iconName: "Zap"
+    title: "Handpicked Collection",
+    description: "An exclusive, handpicked selection of premium resources. No generic fillers—only high-conversion, rare assets that elevate your production value.",
+    iconName: "Sparkles"
   },
   {
     id: "f3",
-    title: "Creator-Focused Assets",
-    description: "No generic templates. Formulated for YouTube retention, stunning commercial moods, and sleek social shorts.",
-    iconName: "Tv"
+    title: "Fast Support",
+    description: "Backed by lightning-fast support directly from Aniket Visuals. Get editor-to-editor assistance, helping you bypass any workflow roadblock in minutes.",
+    iconName: "Zap"
   },
   {
     id: "f4",
     title: "Regular Updates",
-    description: "Our library is alive. Download new variations, codec optimization, and updated NLE wrappers completely free.",
+    description: "Our library is consistently expanded and regularly updated with new additions, bug fixes, and optimization patches for the latest editing software versions.",
     iconName: "RefreshCw"
   },
   {
     id: "f5",
-    title: "Commercial Usage Rights",
-    description: "No complex licensing. Your purchases clear you and your clients for TV broadcasts, YouTube monetization, and ads.",
-    iconName: "ShieldCheck"
+    title: "Built for Professional Work",
+    description: "Engineered specifically for demanding production environments and tight client deadlines. Streamlined for modern, high-speed professional editing workflows.",
+    iconName: "Briefcase"
   },
   {
     id: "f6",
-    title: "Fast Support",
-    description: "Dedicated editor-to-editor discord and standard email response channels active within 24 hours to assist you.",
-    iconName: "MessageCircle"
+    title: "Assets Used in My Livestreams",
+    description: "Real-world tested under pressure. These are the exact, verified assets demonstrated live and integrated into Aniket Visuals' actual editing videos.",
+    iconName: "Video"
   }
 ];
 
@@ -169,26 +169,26 @@ export const FAQ_DATA: FaqItem[] = [
 export const STATS_DATA: StatItem[] = [
   {
     id: "s1",
-    value: "5,000+",
+    value: "0",
     label: "Active Community Members",
     subLabel: "Global creators trust us"
   },
   {
     id: "s2",
-    value: "100+",
+    value: "1",
     label: "Creative Asset Files",
     subLabel: "Handcrafted curated premium quality"
   },
   {
     id: "s3",
-    value: "18,500+",
+    value: "0",
     label: "Successful Downloads",
     subLabel: "Helping creators worldwide daily"
   },
   {
     id: "s4",
-    value: "Weekly",
-    label: "Regular Quality Updates",
+    value: "Regular",
+    label: "Quality Updates",
     subLabel: "Tested inside current project suites"
   }
 ];

@@ -8,6 +8,8 @@ import {
   Trash2, X
 } from "lucide-react";
 import { Product } from "../types";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
+import { db, OperationType, handleFirestoreError } from "../firebase";
 
 interface ProductDetailPageProps {
   product: Product;
@@ -112,18 +114,18 @@ const DYNAMIC_FAQS: Record<string, { q: string; a: string }[]> = {
 
 const DYNAMIC_REVIEWS: Record<string, { author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]> = {
   p1: [
-    { author: "Marcus Vance", handle: "@marcus_vanced", rate: 5, date: "May 28, 2026", review: "The deep sub drops and industrial sweep whooshes are exactly what I needed. They add instant dramatic power to my commercials. Phenomenal foley quality.", avatar: "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?auto=format&fit=crop&w=120&h=120&q=80" },
-    { author: "Evelyn Reed", handle: "@evelyncreative", rate: 5, date: "June 2, 2026", review: "Crisp sounding, low latency, and cleared right out of the box with zero YouTube claims. Extremely satisfied with the acoustic depth.", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&h=120&q=80" }
+    { author: "Marcus Vance", handle: "@marcus_vanced", rate: 5, date: "May 28, 2026", review: "The deep sub drops and industrial sweep whooshes are exactly what I needed. They add instant dramatic power to my commercials. Phenomenal foley quality.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" },
+    { author: "Evelyn Reed", handle: "@evelyncreative", rate: 5, date: "June 2, 2026", review: "Crisp sounding, low latency, and cleared right out of the box with zero YouTube claims. Extremely satisfied with the acoustic depth.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
   ],
   p2: [
-    { author: "Tyler K.", handle: "@tylershots", rate: 5, date: "April 14, 2026", review: "The skin tonalities remain super natural while delivering that deep, cinematic Hollywood steel-blue backdrop. Absolute magic for commercial B-rolls.", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&h=120&q=80" },
-    { author: "Sara J.", handle: "@saralogs", rate: 5, date: "May 10, 2026", review: "Excellent conversion for DJI D-Cinelike. The atmospheric warmth curves are gorgeous. Recommending this strongly to other travel filmmakers.", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80" }
+    { author: "Tyler K.", handle: "@tylershots", rate: 5, date: "April 14, 2026", review: "The skin tonalities remain super natural while delivering that deep, cinematic Hollywood steel-blue backdrop. Absolute magic for commercial B-rolls.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" },
+    { author: "Sara J.", handle: "@saralogs", rate: 5, date: "May 10, 2026", review: "Excellent conversion for DJI D-Cinelike. The atmospheric warmth curves are gorgeous. Recommending this strongly to other travel filmmakers.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
   ],
   p3: [
-    { author: "Nate Patterson", handle: "@nate_renders", rate: 5, date: "May 20, 2026", review: "High-retention kinetic titles that actually engage! The keyframe responsive duration scaling works like standard CSS container queries. Saved me hours of timing.", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&h=120&q=80" }
+    { author: "Nate Patterson", handle: "@nate_renders", rate: 5, date: "May 20, 2026", review: "High-retention kinetic titles that actually engage! The keyframe responsive duration scaling works like standard CSS container queries. Saved me hours of timing.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
   ],
   p4: [
-    { author: "Clara Brooks", handle: "@claracut", rate: 5, date: "June 3, 2026", review: "The HUD holographic widgets look so incredibly sharp. Highly modular widgets that make any high-tech breakdown feel alive. Worth every penny.", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&h=120&q=80" }
+    { author: "Clara Brooks", handle: "@claracut", rate: 5, date: "June 3, 2026", review: "The HUD holographic widgets look so incredibly sharp. Highly modular widgets that make any high-tech breakdown feel alive. Worth every penny.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
   ]
 };
 
@@ -180,7 +182,7 @@ export default function ProductDetailPage({
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeImage, setActiveImage] = useState<string>(product.image);
 
-  const [reviews, setReviews] = useState<{ author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
+  const [reviews, setReviews] = useState<{ id?: string; author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [verificationKey, setVerificationKey] = useState("");
   const [isKeyUnlocked, setIsKeyUnlocked] = useState(false);
@@ -206,20 +208,74 @@ export default function ProductDetailPage({
     setAudioProgress(0);
     setActiveImage(currentProduct.image);
 
-    const saved = localStorage.getItem(`custom_reviews_${currentProduct.id}`);
-    if (saved) {
+    let active = true;
+    const fetchDBReviews = async () => {
       try {
-        setReviews(JSON.parse(saved));
+        const q = query(collection(db, "reviews"), where("productId", "==", currentProduct.id));
+        const querySnapshot = await getDocs(q);
+        const fetched: any[] = [];
+        querySnapshot.forEach((doc) => {
+          fetched.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        // Seed default reviews inside Firestore if none exist yet for this product
+        if (fetched.length === 0) {
+          const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
+          const seeded: any[] = [];
+          for (const item of defaults) {
+            try {
+              const docRef = await addDoc(collection(db, "reviews"), {
+                productId: currentProduct.id,
+                author: item.author,
+                handle: item.handle,
+                rate: item.rate,
+                date: item.date,
+                review: item.review,
+                avatar: item.avatar,
+                createdAt: serverTimestamp()
+              });
+              seeded.push({
+                id: docRef.id,
+                productId: currentProduct.id,
+                ...item,
+                createdAt: { seconds: Math.floor(Date.now() / 1000) }
+              });
+            } catch (err) {
+              console.error("Failed to seed default review", err);
+            }
+          }
+          if (active) {
+            setReviews(seeded);
+          }
+        } else {
+          // Sort client-side by createdAt descending
+          fetched.sort((a, b) => {
+            const timeA = a.createdAt?.seconds || a.createdAt?.toDate?.()?.getTime() || 0;
+            const timeB = b.createdAt?.seconds || b.createdAt?.toDate?.()?.getTime() || 0;
+            return timeB - timeA;
+          });
+          if (active) {
+            setReviews(fetched);
+          }
+        }
       } catch (err) {
-        console.error("Failed to parse reviews from localStorage", err);
+        console.error("Error loading reviews from Firestore, falling back to local fallback", err);
         const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
-        setReviews(defaults);
+        if (active) {
+          setReviews(defaults);
+        }
+        try {
+          handleFirestoreError(err, OperationType.LIST, "reviews");
+        } catch (e) {
+          // Suppress after throwing/logging so the app falls back gracefully
+        }
       }
-    } else {
-      const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
-      setReviews(defaults);
-      localStorage.setItem(`custom_reviews_${currentProduct.id}`, JSON.stringify(defaults));
-    }
+    };
+
+    fetchDBReviews();
 
     // Reset review form state
     setShowReviewForm(false);
@@ -230,6 +286,10 @@ export default function ProductDetailPage({
     setNewReview("");
     setReviewError("");
     setKeyError("");
+
+    return () => {
+      active = false;
+    };
   }, [currentProduct.id]);
 
   // Audio Playback simulation / loader
@@ -334,11 +394,11 @@ export default function ProductDetailPage({
       setIsKeyUnlocked(true);
       setKeyError("");
     } else {
-      setKeyError('Incorrect key. Please provide "addverifiedreviews".');
+      setKeyError('Incorrect key. Please check your private reviewer access token.');
     }
   };
 
-  const handleAddReview = (e: React.FormEvent) => {
+  const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAuthor.trim()) {
       setReviewError("Please enter your name.");
@@ -353,17 +413,40 @@ export default function ProductDetailPage({
     const formattedHandle = "@" + cleanAuthor.toLowerCase().replace(/[^a-z0-9_]/g, "");
 
     const newReviewItem = {
+      productId: currentProduct.id,
       author: cleanAuthor,
       handle: formattedHandle,
       rate: newRate,
       date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       review: newReview.trim(),
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80"
+      avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png",
+      createdAt: serverTimestamp()
     };
 
-    const nextReviews = [newReviewItem, ...reviews];
-    setReviews(nextReviews);
-    localStorage.setItem(`custom_reviews_${currentProduct.id}`, JSON.stringify(nextReviews));
+    try {
+      const docRef = await addDoc(collection(db, "reviews"), newReviewItem);
+      const localNewItem = {
+        id: docRef.id,
+        productId: currentProduct.id,
+        author: cleanAuthor,
+        handle: formattedHandle,
+        rate: newRate,
+        date: newReviewItem.date,
+        review: newReview.trim(),
+        avatar: newReviewItem.avatar,
+        createdAt: { seconds: Math.floor(Date.now() / 1000) }
+      };
+      setReviews(prev => [localNewItem, ...prev]);
+    } catch (err) {
+      console.error("Save review failed:", err);
+      try {
+        handleFirestoreError(err, OperationType.WRITE, "reviews");
+      } catch (e) {
+        // Suppress or format error for user
+      }
+      setReviewError("Failed to save review to the database. Please try again.");
+      return;
+    }
 
     // Clear fields and close
     setNewAuthor("");
@@ -375,10 +458,18 @@ export default function ProductDetailPage({
     setVerificationKey("");
   };
 
-  const handleDeleteReview = (index: number) => {
-    const nextReviews = reviews.filter((_, idx) => idx !== index);
-    setReviews(nextReviews);
-    localStorage.setItem(`custom_reviews_${currentProduct.id}`, JSON.stringify(nextReviews));
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await deleteDoc(doc(db, "reviews", reviewId));
+      setReviews(prev => prev.filter(r => r.id !== reviewId));
+    } catch (err) {
+      console.error("Delete review failed:", err);
+      try {
+        handleFirestoreError(err, OperationType.DELETE, `reviews/${reviewId}`);
+      } catch (e) {
+        // Suppress or format message
+      }
+    }
   };
 
   const otherProducts = MOCK_RELATED_PRODUCTS.filter(p => p.id !== currentProduct.id);
@@ -732,14 +823,14 @@ export default function ProductDetailPage({
                             Unlock Verified Reviews Deck
                           </h4>
                           <p className="text-xs font-medium text-brand-dark/40 leading-relaxed">
-                            To ensure high-integrity product reviews, please provide our clearance entry key:
+                            To publish a custom review, please enter your private reviewer access token:
                           </p>
                         </div>
 
                         <div className="space-y-1">
                           <input
-                            type="text"
-                            placeholder='Enter "addverifiedreviews"'
+                            type="password"
+                            placeholder="Enter private access key..."
                             value={verificationKey}
                             onChange={(e) => setVerificationKey(e.target.value)}
                             className="w-full bg-white border border-brand-dark/15 px-4 py-2.5 rounded-xl text-xs font-mono placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
@@ -777,7 +868,10 @@ export default function ProductDetailPage({
                               type="text"
                               placeholder="e.g. Liam Parker"
                               value={newAuthor}
-                              onChange={(e) => setNewAuthor(e.target.value)}
+                              onChange={(e) => {
+                                setNewAuthor(e.target.value);
+                                setReviewError("");
+                              }}
                               className="w-full bg-white border border-brand-dark/15 px-4 py-2.5 rounded-xl text-xs placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
                               required
                             />
@@ -793,7 +887,10 @@ export default function ProductDetailPage({
                                 <button
                                   key={val}
                                   type="button"
-                                  onClick={() => setNewRate(val)}
+                                  onClick={() => {
+                                    setNewRate(val);
+                                    setReviewError("");
+                                  }}
                                   className="p-1 hover:scale-110 transition-transform cursor-pointer"
                                   title={`${val} Stars`}
                                 >
@@ -820,7 +917,10 @@ export default function ProductDetailPage({
                             rows={3}
                             placeholder="Type your review (e.g. Incredible fidelity, perfectly optimized drag and drop overlays!)"
                             value={newReview}
-                            onChange={(e) => setNewReview(e.target.value)}
+                            onChange={(e) => {
+                              setNewReview(e.target.value);
+                              setReviewError("");
+                            }}
                             className="w-full bg-white border border-brand-dark/15 pre-wrap px-4 py-3 rounded-xl text-xs placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary resize-none"
                             required
                           />
@@ -877,7 +977,7 @@ export default function ProductDetailPage({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <img 
-                            src={rev.avatar} 
+                            src="https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" 
                             alt={rev.author} 
                             referrerPolicy="no-referrer"
                             className="w-10 h-10 rounded-full border border-brand-dark/10 object-cover"
@@ -911,7 +1011,7 @@ export default function ProductDetailPage({
                         {/* Owner Admin Mode Delete Action Button (Visible only when unlocked with 'Verified reviews' key) */}
                         {isKeyUnlocked && (
                           <button
-                            onClick={() => handleDeleteReview(idx)}
+                            onClick={() => handleDeleteReview(rev.id || idx.toString())}
                             className="flex items-center space-x-1 hover:text-red-600 text-brand-dark/40 font-mono text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer select-none border border-transparent hover:border-red-500/10"
                             title="Delete this item permanently"
                           >

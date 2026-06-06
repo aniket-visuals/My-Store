@@ -221,8 +221,16 @@ export default function ProductDetailPage({
           });
         });
 
-        // Seed default reviews inside Firestore if none exist yet for this product
+        const isCleared = localStorage.getItem("cleared_all_reviews_" + currentProduct.id) === "true";
+
+        // Seed default reviews inside Firestore if none exist yet for this product & not cleared
         if (fetched.length === 0) {
+          if (isCleared) {
+            if (active) {
+              setReviews([]);
+            }
+            return;
+          }
           const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
           const seeded: any[] = [];
           for (const item of defaults) {
@@ -251,6 +259,8 @@ export default function ProductDetailPage({
             setReviews(seeded);
           }
         } else {
+          // If there are reviews, ensure cleared flag is removed in case they added new reviews
+          localStorage.removeItem("cleared_all_reviews_" + currentProduct.id);
           // Sort client-side by createdAt descending
           fetched.sort((a, b) => {
             const timeA = a.createdAt?.seconds || a.createdAt?.toDate?.()?.getTime() || 0;
@@ -263,7 +273,8 @@ export default function ProductDetailPage({
         }
       } catch (err) {
         console.error("Error loading reviews from Firestore, falling back to local fallback", err);
-        const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
+        const isCleared = localStorage.getItem("cleared_all_reviews_" + currentProduct.id) === "true";
+        const defaults = isCleared ? [] : (DYNAMIC_REVIEWS[currentProduct.id] || []);
         if (active) {
           setReviews(defaults);
         }
@@ -461,7 +472,13 @@ export default function ProductDetailPage({
   const handleDeleteReview = async (reviewId: string) => {
     try {
       await deleteDoc(doc(db, "reviews", reviewId));
-      setReviews(prev => prev.filter(r => r.id !== reviewId));
+      setReviews(prev => {
+        const remaining = prev.filter(r => r.id !== reviewId);
+        if (remaining.length === 0) {
+          localStorage.setItem("cleared_all_reviews_" + currentProduct.id, "true");
+        }
+        return remaining;
+      });
     } catch (err) {
       console.error("Delete review failed:", err);
       try {
@@ -469,6 +486,22 @@ export default function ProductDetailPage({
       } catch (e) {
         // Suppress or format message
       }
+    }
+  };
+
+  const handleClearAllReviews = async () => {
+    try {
+      localStorage.setItem("cleared_all_reviews_" + currentProduct.id, "true");
+      const deletePromises = reviews.map(async (rev) => {
+        if (rev.id) {
+          await deleteDoc(doc(db, "reviews", rev.id));
+        }
+      });
+      await Promise.all(deletePromises);
+      setReviews([]);
+    } catch (err) {
+      console.error("Clear all reviews failed:", err);
+      setReviews([]);
     }
   };
 
@@ -775,31 +808,44 @@ export default function ProductDetailPage({
                   <p className="text-[10px] font-mono text-brand-dark/40 font-medium">Real-time designer feedback hub</p>
                 </div>
                 
-                <button
-                  onClick={() => {
-                    setShowReviewForm(!showReviewForm);
-                    // Reset fields
-                    if (showReviewForm) {
-                      setIsKeyUnlocked(false);
-                      setVerificationKey("");
-                    }
-                    setKeyError("");
-                    setReviewError("");
-                  }}
-                  className="flex items-center justify-center space-x-1.5 bg-brand-dark text-white hover:bg-brand-primary text-[10px] font-mono tracking-wider font-bold uppercase px-4 py-2.5 rounded-xl transition-all select-none cursor-pointer duration-200"
-                >
-                  {showReviewForm ? (
-                    <>
-                      <X className="w-3.5 h-3.5" />
-                      <span>Close Control</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5 text-brand-primary" />
-                      <span>Add your review</span>
-                    </>
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  {reviews.length > 0 && (
+                    <button
+                      onClick={handleClearAllReviews}
+                      className="flex items-center justify-center space-x-1.5 border border-red-500/20 text-red-600 hover:bg-red-500/[0.04] bg-red-500/[0.015] text-[10px] font-mono tracking-wider font-bold uppercase px-3.5 py-2.5 rounded-xl transition-all select-none cursor-pointer duration-200"
+                      title="Clear all reviews for this product"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                      <span>Clear All</span>
+                    </button>
                   )}
-                </button>
+
+                  <button
+                    onClick={() => {
+                      setShowReviewForm(!showReviewForm);
+                      // Reset fields
+                      if (showReviewForm) {
+                        setIsKeyUnlocked(false);
+                        setVerificationKey("");
+                      }
+                      setKeyError("");
+                      setReviewError("");
+                    }}
+                    className="flex items-center justify-center space-x-1.5 bg-brand-dark text-white hover:bg-brand-primary text-[10px] font-mono tracking-wider font-bold uppercase px-4 py-2.5 rounded-xl transition-all select-none cursor-pointer duration-200"
+                  >
+                    {showReviewForm ? (
+                      <>
+                        <X className="w-3.5 h-3.5" />
+                        <span>Close Control</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-brand-primary" />
+                        <span>Add your review</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Dynamic Review Author / Verification Form */}
@@ -1008,17 +1054,15 @@ export default function ProductDetailPage({
                           <span>Verified Purchaser</span>
                         </div>
 
-                        {/* Owner Admin Mode Delete Action Button (Visible only when unlocked with 'Verified reviews' key) */}
-                        {isKeyUnlocked && (
-                          <button
-                            onClick={() => handleDeleteReview(rev.id || idx.toString())}
-                            className="flex items-center space-x-1 hover:text-red-600 text-brand-dark/40 font-mono text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer select-none border border-transparent hover:border-red-500/10"
-                            title="Delete this item permanently"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                            <span>Remove</span>
-                          </button>
-                        )}
+                        {/* Owner Admin Mode Delete Action Button (Always public as requested) */}
+                        <button
+                          onClick={() => handleDeleteReview(rev.id || idx.toString())}
+                          className="flex items-center space-x-1 hover:text-red-600 text-brand-dark/40 font-mono text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer select-none border border-transparent hover:border-red-500/10"
+                          title="Delete this item permanently"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                          <span>Remove</span>
+                        </button>
                       </div>
                     </div>
                   ))

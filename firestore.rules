@@ -25,8 +25,8 @@ service cloud.firestore {
         && data.keys().size() == 8
         && data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 64
         && data.author is string && data.author.size() >= 1 && data.author.size() <= 100
-        && data.handle is string && data.handle.size() >= 1 && data.handle.size() <= 100 && data.handle.matches('^@[a-zA-Z0-9_-]+$')
-        && data.rate is int && data.rate >= 1 && data.rate <= 5
+        && data.handle is string && data.handle.size() >= 1 && data.handle.size() <= 100 && data.handle.startsWith('@')
+        && (data.rate is int || data.rate is float) && data.rate >= 1 && data.rate <= 5
         && data.review is string && data.review.size() >= 1 && data.review.size() <= 2000
         && data.date is string && data.date.size() >= 1 && data.date.size() <= 100
         && data.avatar is string && data.avatar.size() >= 1 && data.avatar.size() <= 1000

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Star, Download, Radio, Volume2, VolumeX, Pocket, Cpu, ShoppingCart, Check, Info, ShieldAlert, Play } from "lucide-react";
+import { X, Star, Download, Radio, Volume2, VolumeX, Pocket, Cpu, ShoppingCart, Check, Info, ShieldAlert, Play, ExternalLink } from "lucide-react";
 import { Product } from "../types";
 
 interface ProductPreviewModalProps {
@@ -272,26 +272,15 @@ export default function ProductPreviewModal({
                 </div>
 
                 <div className="grid grid-cols-1 gap-2">
-                  <button
-                    onClick={() => addToCart(product)}
-                    className={`w-full py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center flex items-center justify-center space-x-2.5 ${
-                      inCart
-                        ? "bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/15 animate-none"
-                        : "bg-brand-primary text-white hover:bg-brand-accent"
-                    }`}
+                  <a
+                    href="https://forms.gle/24c73JM3HF6hErDdA"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-brand-primary hover:bg-brand-accent text-white py-3.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center flex items-center justify-center space-x-2.5 select-none"
                   >
-                    {inCart ? (
-                      <>
-                        <Check className="w-5 h-5 stroke-[2.5]" />
-                        <span>Item in Cart — View Drawer Checkout</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-4 h-4" />
-                        <span>Buy & Download Instantly</span>
-                      </>
-                    )}
-                  </button>
+                    <ExternalLink className="w-4 h-4 shrink-0" />
+                    <span>Buy Now — ${product.price} USD</span>
+                  </a>
                 </div>
 
               </div>

@@ -16,8 +16,8 @@ export const PRODUCTS_DATA: Product[] = [
   {
     id: "p1",
     name: "Aether 8D Cinematic Sound Pack",
-    price: 29,
-    originalPrice: 49,
+    price: 10,
+    originalPrice: 19,
     category: "sound-effects",
     rating: 4.9,
     reviewsCount: 148,

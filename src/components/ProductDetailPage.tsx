@@ -5,7 +5,7 @@ import {
   Sparkles, Check, Cpu, Send, Mail, AlertCircle, FileCode, Clock,
   Lock, ArrowRight, Video, FileCheck, Headphones, HelpCircle,
   Award, Shield, Calendar, Terminal, Info, Users, Share2, HelpCircle as FaqIcon, MessageSquare,
-  Trash2, X
+  Trash2, X, ExternalLink
 } from "lucide-react";
 import { Product } from "../types";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
@@ -23,8 +23,8 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
   {
     id: "p1",
     name: "Aether 8D Cinematic Sound Pack",
-    price: 29,
-    originalPrice: 49,
+    price: 10,
+    originalPrice: 19,
     category: "sound-effects",
     rating: 4.9,
     reviewsCount: 148,
@@ -41,8 +41,8 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
   {
     id: "p2",
     name: "Helios Cinema LUTs & Color Grading Kit",
-    price: 19,
-    originalPrice: 35,
+    price: 10,
+    originalPrice: 19,
     category: "color-grading",
     rating: 4.8,
     reviewsCount: 92,
@@ -58,8 +58,8 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
   {
     id: "p3",
     name: "Neptune Kinetic Typography Engine",
-    price: 39,
-    originalPrice: 59,
+    price: 10,
+    originalPrice: 19,
     category: "templates",
     rating: 5.0,
     reviewsCount: 64,
@@ -75,8 +75,8 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
   {
     id: "p4",
     name: "Cyberpunk HUD Futuristic Overlay Kit",
-    price: 25,
-    originalPrice: 45,
+    price: 10,
+    originalPrice: 19,
     category: "overlays",
     rating: 4.7,
     reviewsCount: 112,
@@ -181,6 +181,9 @@ export default function ProductDetailPage({
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeImage, setActiveImage] = useState<string>(product.image);
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvc, setCardCvc] = useState("");
 
   const [reviews, setReviews] = useState<{ id?: string; author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -1076,121 +1079,20 @@ export default function ProductDetailPage({
                   </div>
                 </div>
 
-                {/* Simulated Payment Delivery Stream */}
+                {/* Checkout Gateway Trigger */}
                 <div className="pt-4 border-t border-brand-dark/5">
-                  <AnimatePresence mode="wait">
-                    {downloadStep === "form" && (
-                      <motion.div
-                        key="email-form"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="space-y-4"
-                      >
-                        <p className="text-[11px] text-brand-dark/50 font-sans tracking-tight leading-relaxed">
-                          Enter your professional email address inside our secure gateway below to generate custom download credentials instantly.
-                        </p>
-                        
-                        <form onSubmit={handleFreeCheckout} className="space-y-3">
-                          <div className="relative">
-                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-dark/30" />
-                            <input
-                              type="email"
-                              required
-                              placeholder="editor@studio.com"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              className="w-full text-xs font-mono font-medium pl-10 pr-4 py-3 bg-brand-dark/[0.015] border border-brand-dark/10 rounded-xl focus:ring-1 focus:ring-brand-primary outline-none placeholder:text-brand-dark/30 transition-all"
-                            />
-                          </div>
-
-                          <button
-                            type="submit"
-                            className="w-full bg-brand-primary hover:bg-brand-accent text-white py-3.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2.5 active:scale-[0.98]"
-                          >
-                            <Send className="w-4 h-4 animate-pulse" />
-                            <span>Get This Asset</span>
-                          </button>
-                        </form>
-                      </motion.div>
-                    )}
-
-                    {downloadStep === "compiling" && (
-                      <motion.div
-                        key="loading-tracker"
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="text-center py-6 space-y-4"
-                      >
-                        <div className="w-12 h-12 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full flex items-center justify-center mx-auto">
-                          <Cpu className="w-6 h-6 animate-spin" />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-mono font-bold tracking-wider text-brand-dark uppercase">Allocating Assets</h4>
-                          <p className="text-[11px] font-mono text-brand-dark/50">Building ZIP package for {email}...</p>
-                        </div>
-
-                        {/* Progress Meter bar */}
-                        <div className="w-full bg-brand-dark/[0.015] border border-brand-dark/5 rounded-full h-2 overflow-hidden mx-auto mt-2">
-                          <div 
-                            className="bg-brand-primary h-full transition-all duration-200"
-                            style={{ width: `${simulatedProgress}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] font-mono text-brand-primary font-bold">{simulatedProgress}% READY</span>
-                      </motion.div>
-                    )}
-
-                    {downloadStep === "ready" && (
-                      <motion.div
-                        key="ready-reveal"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="space-y-5 text-center py-2"
-                      >
-                        <div className="w-12 h-12 bg-emerald-50 border border-emerald-500/20 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
-                          <FileCheck className="w-6 h-6" />
-                        </div>
-
-                        <div className="space-y-1">
-                          <h4 className="text-sm font-mono font-bold text-emerald-600 uppercase tracking-wider">Verification Successful</h4>
-                          <p className="text-xs font-sans font-medium text-brand-dark/50 leading-relaxed">
-                            Lifetime package unlocked successfully. Download is queued. Backup credentials deployed to <strong>{email}</strong>.
-                          </p>
-                        </div>
-
-                        {/* File details cards */}
-                        <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-4 rounded-xl text-left space-y-2.5 font-mono text-xs text-brand-dark/80">
-                          <div className="flex items-center justify-between">
-                            <span className="text-brand-dark/40 uppercase text-[9px] tracking-wider">Download Key:</span>
-                            <span className="font-bold">AZ-GUM-RAW-{currentProduct.id.toUpperCase()}-K92</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-brand-dark/40 uppercase text-[9px] tracking-wider">File Size:</span>
-                            <span className="font-bold text-brand-primary shrink-0">{currentProduct.fileSize}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-brand-dark/40 uppercase text-[9px] tracking-wider">Format Standard:</span>
-                            <span className="font-bold">{currentProduct.fileType}</span>
-                          </div>
-                        </div>
-
-                        <a
-                          href="/files/editors_demo_pack.zip"
-                          download
-                          onClick={() => {
-                            alert("Demo download successfully triggered! In production, this starts high-speed secure download from Cloud Run CDN storage buckets.");
-                          }}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-emerald-600/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 select-none"
-                        >
-                          <Download className="w-4 h-4 animate-bounce" />
-                          <span>Direct High-Speed ZIP Download</span>
-                        </a>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <a
+                    href="https://forms.gle/24c73JM3HF6hErDdA"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
+                  >
+                    <ExternalLink className="w-4 h-4 shrink-0" />
+                    <span>Buy Now — ${getTierPrice()} USD</span>
+                  </a>
+                  <p className="text-[10px] text-brand-dark/45 font-mono text-center mt-2.5 leading-relaxed font-semibold">
+                    Clicking opens our secure Google Form order and delivery gateway
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-center space-x-2 text-[9px] font-mono font-semibold text-brand-dark/30 pt-4 border-t border-brand-dark/5">

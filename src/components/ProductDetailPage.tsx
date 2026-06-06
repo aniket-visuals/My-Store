@@ -4,7 +4,8 @@ import {
   ArrowLeft, Star, Download, Volume2, ShieldCheck, Play, Pause, 
   Sparkles, Check, Cpu, Send, Mail, AlertCircle, FileCode, Clock,
   Lock, ArrowRight, Video, FileCheck, Headphones, HelpCircle,
-  Award, Shield, Calendar, Terminal, Info, Users, Share2, HelpCircle as FaqIcon, MessageSquare
+  Award, Shield, Calendar, Terminal, Info, Users, Share2, HelpCircle as FaqIcon, MessageSquare,
+  Trash2, X
 } from "lucide-react";
 import { Product } from "../types";
 
@@ -179,6 +180,16 @@ export default function ProductDetailPage({
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeImage, setActiveImage] = useState<string>(product.image);
 
+  const [reviews, setReviews] = useState<{ author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [verificationKey, setVerificationKey] = useState("");
+  const [isKeyUnlocked, setIsKeyUnlocked] = useState(false);
+  const [newAuthor, setNewAuthor] = useState("");
+  const [newRate, setNewRate] = useState(5);
+  const [newReview, setNewReview] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [keyError, setKeyError] = useState("");
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Sync state if initial prop changes
@@ -187,13 +198,38 @@ export default function ProductDetailPage({
     setActiveImage(product.image);
   }, [product]);
 
-  // Scroll to top on product switch
+  // Scroll to top on product switch & sync reviews
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setDownloadStep("form");
     setIsPlayingAudio(false);
     setAudioProgress(0);
     setActiveImage(currentProduct.image);
+
+    const saved = localStorage.getItem(`custom_reviews_${currentProduct.id}`);
+    if (saved) {
+      try {
+        setReviews(JSON.parse(saved));
+      } catch (err) {
+        console.error("Failed to parse reviews from localStorage", err);
+        const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
+        setReviews(defaults);
+      }
+    } else {
+      const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
+      setReviews(defaults);
+      localStorage.setItem(`custom_reviews_${currentProduct.id}`, JSON.stringify(defaults));
+    }
+
+    // Reset review form state
+    setShowReviewForm(false);
+    setVerificationKey("");
+    setIsKeyUnlocked(false);
+    setNewAuthor("");
+    setNewRate(5);
+    setNewReview("");
+    setReviewError("");
+    setKeyError("");
   }, [currentProduct.id]);
 
   // Audio Playback simulation / loader
@@ -278,8 +314,71 @@ export default function ProductDetailPage({
   };
 
   const getActiveReviews = () => {
-    const key = DYNAMIC_REVIEWS[currentProduct.id] ? currentProduct.id : "p1";
-    return DYNAMIC_REVIEWS[key] || [];
+    return reviews;
+  };
+
+  const getDynamicRating = () => {
+    if (reviews.length === 0) return 0.0;
+    const sum = reviews.reduce((acc, r) => acc + r.rate, 0);
+    return Number((sum / reviews.length).toFixed(1));
+  };
+
+  const getDynamicReviewsCount = () => {
+    return reviews.length;
+  };
+
+  const handleVerifyKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanKey = verificationKey.trim();
+    if (cleanKey.toLowerCase() === "addverifiedreviews") {
+      setIsKeyUnlocked(true);
+      setKeyError("");
+    } else {
+      setKeyError('Incorrect key. Please provide "addverifiedreviews".');
+    }
+  };
+
+  const handleAddReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAuthor.trim()) {
+      setReviewError("Please enter your name.");
+      return;
+    }
+    if (!newReview.trim()) {
+      setReviewError("Please write a small review.");
+      return;
+    }
+
+    const cleanAuthor = newAuthor.trim();
+    const formattedHandle = "@" + cleanAuthor.toLowerCase().replace(/[^a-z0-9_]/g, "");
+
+    const newReviewItem = {
+      author: cleanAuthor,
+      handle: formattedHandle,
+      rate: newRate,
+      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      review: newReview.trim(),
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80"
+    };
+
+    const nextReviews = [newReviewItem, ...reviews];
+    setReviews(nextReviews);
+    localStorage.setItem(`custom_reviews_${currentProduct.id}`, JSON.stringify(nextReviews));
+
+    // Clear fields and close
+    setNewAuthor("");
+    setNewRate(5);
+    setNewReview("");
+    setReviewError("");
+    setShowReviewForm(false);
+    setIsKeyUnlocked(false);
+    setVerificationKey("");
+  };
+
+  const handleDeleteReview = (index: number) => {
+    const nextReviews = reviews.filter((_, idx) => idx !== index);
+    setReviews(nextReviews);
+    localStorage.setItem(`custom_reviews_${currentProduct.id}`, JSON.stringify(nextReviews));
   };
 
   const otherProducts = MOCK_RELATED_PRODUCTS.filter(p => p.id !== currentProduct.id);
@@ -410,13 +509,25 @@ export default function ProductDetailPage({
 
               <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-brand-dark/5 text-xs font-mono">
                 <div className="flex items-center text-brand-primary space-x-0.5">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="w-4 h-4 fill-current stroke-transparent" />
-                  ))}
-                  <span className="font-bold text-brand-dark ml-1.5">{currentProduct.rating}</span>
+                  {[1, 2, 3, 4, 5].map((s) => {
+                    const avg = getDynamicRating();
+                    return (
+                      <Star 
+                        key={s} 
+                        className={`w-4 h-4 fill-current stroke-transparent ${
+                          s <= Math.round(avg) ? "text-brand-primary" : "text-brand-dark/10"
+                        }`} 
+                      />
+                    );
+                  })}
+                  <span className="font-bold text-brand-dark ml-1.5">
+                    {getDynamicRating() > 0 ? getDynamicRating().toFixed(1) : "0.0"}
+                  </span>
                 </div>
                 <span className="text-brand-dark/20">•</span>
-                <span className="text-brand-dark/50 underline font-medium">({currentProduct.reviewsCount} verified ratings)</span>
+                <span className="text-brand-dark/50 underline font-medium">
+                  ({getDynamicReviewsCount()} verified {getDynamicReviewsCount() === 1 ? "rating" : "ratings"})
+                </span>
                 <span className="text-brand-dark/20">•</span>
                 <span className="text-brand-dark/50">By <strong className="text-brand-dark font-medium">Aniket Visuals</strong></span>
               </div>
@@ -563,48 +674,255 @@ export default function ProductDetailPage({
 
             {/* Verified Customer Reviews Grid */}
             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6">
-              <h3 className="font-display font-semibold text-base text-brand-dark border-b border-brand-dark/10 pb-3 flex items-center space-x-2">
-                <MessageSquare className="w-5 h-5 text-brand-primary" />
-                <span>Verified Editor Reviews</span>
-              </h3>
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-dark/10 pb-3">
+                <div className="space-y-0.5">
+                  <h3 className="font-display font-semibold text-base text-brand-dark flex items-center space-x-2">
+                    <MessageSquare className="w-5 h-5 text-brand-primary" />
+                    <span>Verified Editor Reviews</span>
+                  </h3>
+                  <p className="text-[10px] font-mono text-brand-dark/40 font-medium">Real-time designer feedback hub</p>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    setShowReviewForm(!showReviewForm);
+                    // Reset fields
+                    if (showReviewForm) {
+                      setIsKeyUnlocked(false);
+                      setVerificationKey("");
+                    }
+                    setKeyError("");
+                    setReviewError("");
+                  }}
+                  className="flex items-center justify-center space-x-1.5 bg-brand-dark text-white hover:bg-brand-primary text-[10px] font-mono tracking-wider font-bold uppercase px-4 py-2.5 rounded-xl transition-all select-none cursor-pointer duration-200"
+                >
+                  {showReviewForm ? (
+                    <>
+                      <X className="w-3.5 h-3.5" />
+                      <span>Close Control</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 text-brand-primary" />
+                      <span>Add your review</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Dynamic Review Author / Verification Form */}
+              <AnimatePresence>
+                {showReviewForm && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden bg-brand-dark/[0.015] border border-brand-dark/5 rounded-2xl p-5 sm:p-6 mb-4 space-y-4"
+                  >
+                    {!isKeyUnlocked ? (
+                      /* Verification Key Challenge */
+                      <form onSubmit={handleVerifyKey} className="space-y-3 text-left">
+                        <div className="space-y-1.5">
+                          <span className="block text-[10px] font-mono font-bold uppercase tracking-widest text-brand-primary">
+                            Security Protocol
+                          </span>
+                          <h4 className="font-display font-bold text-sm text-brand-dark leading-snug">
+                            Unlock Verified Reviews Deck
+                          </h4>
+                          <p className="text-xs font-medium text-brand-dark/40 leading-relaxed">
+                            To ensure high-integrity product reviews, please provide our clearance entry key:
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <input
+                            type="text"
+                            placeholder='Enter "addverifiedreviews"'
+                            value={verificationKey}
+                            onChange={(e) => setVerificationKey(e.target.value)}
+                            className="w-full bg-white border border-brand-dark/15 px-4 py-2.5 rounded-xl text-xs font-mono placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+                          />
+                          {keyError && (
+                            <p className="text-[10px] font-mono font-extrabold text-red-600 mt-1 flex items-center space-x-1.5">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                              <span>{keyError}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full bg-brand-dark text-white hover:bg-brand-primary px-4 py-2.5 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider transition-colors cursor-pointer"
+                        >
+                          Unlock Entry Form
+                        </button>
+                      </form>
+                    ) : (
+                      /* Authenticated Creative Feedback Builder */
+                      <form onSubmit={handleAddReview} className="space-y-4 text-left">
+                        <div className="flex items-center space-x-2.5 bg-emerald-500/[0.04] border border-emerald-500/15 p-3 rounded-xl text-[10px] font-mono uppercase tracking-wider font-bold text-emerald-800">
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Clearance Verified — Add Feedback Item</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {/* Author Title Name */}
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-mono text-brand-dark/50 uppercase tracking-widest font-bold">
+                              Your Name
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Liam Parker"
+                              value={newAuthor}
+                              onChange={(e) => setNewAuthor(e.target.value)}
+                              className="w-full bg-white border border-brand-dark/15 px-4 py-2.5 rounded-xl text-xs placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+                              required
+                            />
+                          </div>
+
+                          {/* Interactive stars selectors */}
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-mono text-brand-dark/50 uppercase tracking-widest font-bold">
+                              Rating Levels
+                            </label>
+                            <div className="flex items-center space-x-1.5 h-[38px]">
+                              {[1, 2, 3, 4, 5].map((val) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setNewRate(val)}
+                                  className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                                  title={`${val} Stars`}
+                                >
+                                  <Star
+                                    className={`w-[18px] h-[18px] fill-current ${
+                                      val <= newRate ? "text-brand-primary" : "text-brand-dark/10"
+                                    }`}
+                                  />
+                                </button>
+                              ))}
+                              <span className="text-[10px] font-mono font-bold text-brand-dark/40 ml-2">
+                                ({newRate} / 5)
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Review script comments body */}
+                        <div className="space-y-1.5">
+                          <label className="block text-[10px] font-mono text-brand-dark/50 uppercase tracking-widest font-bold">
+                            Creative Feedback
+                          </label>
+                          <textarea
+                            rows={3}
+                            placeholder="Type your review (e.g. Incredible fidelity, perfectly optimized drag and drop overlays!)"
+                            value={newReview}
+                            onChange={(e) => setNewReview(e.target.value)}
+                            className="w-full bg-white border border-brand-dark/15 pre-wrap px-4 py-3 rounded-xl text-xs placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary resize-none"
+                            required
+                          />
+                        </div>
+
+                        {reviewError && (
+                          <p className="text-[10px] font-mono font-bold text-red-600 flex items-center space-x-1.5">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-600" />
+                            <span>{reviewError}</span>
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2.5 pt-1">
+                          <button
+                            type="submit"
+                            className="flex-1 bg-brand-primary hover:bg-brand-dark text-white px-4 py-2.5 h-[38px] rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer"
+                          >
+                            Publish Verified Review
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsKeyUnlocked(false);
+                              setShowReviewForm(false);
+                              setVerificationKey("");
+                            }}
+                            className="px-4 py-2.5 h-[38px] border border-brand-dark/10 hover:border-brand-dark hover:bg-brand-dark/5 rounded-xl text-brand-dark/70 text-[10px] font-mono uppercase tracking-wider font-bold transition-all shrink-0 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="space-y-4">
-                {getActiveReviews().map((rev, idx) => (
-                  <div key={idx} className="p-5 bg-brand-dark/[0.015] border border-brand-dark/5 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <img 
-                          src={rev.avatar} 
-                          alt={rev.author} 
-                          referrerPolicy="no-referrer"
-                          className="w-10 h-10 rounded-full border border-brand-dark/10 object-cover"
-                        />
-                        <div className="text-left leading-tight">
-                          <p className="text-xs font-bold text-brand-dark">{rev.author}</p>
-                          <p className="text-[10px] font-mono text-brand-dark/40 mt-0.5">{rev.handle}</p>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="flex items-center text-brand-primary text-xs tracking-tighter">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Star key={s} className={`w-3.5 h-3.5 fill-current ${s <= rev.rate ? "text-brand-primary" : "text-black/10"}`} />
-                          ))}
-                        </div>
-                        <span className="text-[9px] font-mono text-brand-dark/40 mt-1 block">{rev.date}</span>
-                      </div>
+                {getActiveReviews().length === 0 ? (
+                  <div className="p-8 text-center border border-dashed border-brand-dark/15 rounded-2xl bg-brand-dark/[0.005] py-12 space-y-3">
+                    <div className="w-10 h-10 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto">
+                      <MessageSquare className="w-5 h-5 text-brand-primary" />
                     </div>
-
-                    <p className="text-xs font-sans font-medium text-brand-dark/75 leading-relaxed italic">
-                      "{rev.review}"
-                    </p>
-                    
-                    <div className="flex items-center space-x-1.5 text-[9px] font-mono font-bold text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-full w-max uppercase tracking-wider">
-                      <Shield className="w-3 h-3 text-brand-primary" />
-                      <span>Verified Purchaser</span>
+                    <div className="space-y-1">
+                      <h4 className="font-display font-bold text-sm text-brand-dark">No reviews published yet</h4>
+                      <p className="text-xs font-medium text-brand-dark/40 max-w-sm mx-auto leading-relaxed">
+                        Be the first verified customer to share your creative feedback and review this premium digital asset.
+                      </p>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  getActiveReviews().map((rev, idx) => (
+                    <div key={idx} className="p-5 bg-brand-dark/[0.015] border border-brand-dark/5 rounded-xl space-y-3 relative group">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <img 
+                            src={rev.avatar} 
+                            alt={rev.author} 
+                            referrerPolicy="no-referrer"
+                            className="w-10 h-10 rounded-full border border-brand-dark/10 object-cover"
+                          />
+                          <div className="text-left leading-tight">
+                            <p className="text-xs font-bold text-brand-dark">{rev.author}</p>
+                            <p className="text-[10px] font-mono text-brand-dark/40 mt-0.5">{rev.handle}</p>
+                          </div>
+                        </div>
+
+                        <div className="text-right flex flex-col items-end">
+                          <div className="flex items-center text-brand-primary text-xs tracking-tighter">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star key={s} className={`w-3.5 h-3.5 fill-current ${s <= rev.rate ? "text-brand-primary" : "text-black/10"}`} />
+                            ))}
+                          </div>
+                          <span className="text-[9px] font-mono text-brand-dark/40 mt-1 block">{rev.date}</span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs font-sans font-medium text-brand-dark/75 leading-relaxed italic">
+                        "{rev.review}"
+                      </p>
+                      
+                      <div className="flex items-center justify-between gap-4 pt-1">
+                        <div className="flex items-center space-x-1.5 text-[9px] font-mono font-bold text-emerald-700 bg-emerald-500/[0.08] border border-emerald-500/10 px-2.5 py-1 rounded-full w-max uppercase tracking-wider select-none">
+                          <Shield className="w-3 h-3 text-emerald-600" />
+                          <span>Verified Purchaser</span>
+                        </div>
+
+                        {/* Owner Admin Mode Delete Action Button (Visible only when unlocked with 'Verified reviews' key) */}
+                        {isKeyUnlocked && (
+                          <button
+                            onClick={() => handleDeleteReview(idx)}
+                            className="flex items-center space-x-1 hover:text-red-600 text-brand-dark/40 font-mono text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer select-none border border-transparent hover:border-red-500/10"
+                            title="Delete this item permanently"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>Remove</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -820,59 +1138,7 @@ export default function ProductDetailPage({
 
         </div>
 
-        {/* =====================================
-            3. DYNAMIC OTHER PRODUCTS IN STORE CARD
-           ===================================== */}
-        <div className="mt-20 xl:mt-28 pt-12 border-t border-brand-dark/10">
-          <div className="text-left max-w-xl mb-12 space-y-2">
-            <span className="font-mono text-xs font-bold uppercase tracking-wider text-brand-primary">
-              Editors Raj Studio
-            </span>
-            <h2 className="font-display font-black text-2xl uppercase tracking-tight text-brand-dark">
-              Other Digital Assets by Aniket Visuals
-            </h2>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {otherProducts.slice(0, 3).map((item) => (
-              <div 
-                key={item.id}
-                onClick={() => setCurrentProduct(item)}
-                className="bg-white border border-brand-dark/5 rounded-3xl overflow-hidden shadow-md hover:shadow-xl group cursor-pointer transition-all hover:-translate-y-1 flex flex-col justify-between"
-              >
-                <div className="relative aspect-[16/10] overflow-hidden bg-black/5 shrink-0 border-b border-brand-dark/5">
-                  <img 
-                    src={item.image} 
-                    alt={item.name} 
-                    referrerPolicy="no-referrer"
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 left-3 bg-brand-dark text-white font-mono text-[8px] font-bold px-2.5 py-1 tracking-wider uppercase rounded-full">
-                    {item.category.replace("-", " ")}
-                  </div>
-                </div>
-
-                <div className="p-5 flex-1 flex flex-col justify-between text-left space-y-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-1 text-[10px] font-mono text-brand-primary font-bold">
-                      <Star className="w-3.5 h-3.5 fill-current stroke-transparent" />
-                      <span>{item.rating}</span>
-                      <span className="text-brand-dark/40">({item.reviewsCount} reviews)</span>
-                    </div>
-                    <h3 className="font-display font-semibold text-base text-brand-dark tracking-tight group-hover:text-brand-primary transition-colors leading-snug">
-                      {item.name}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-brand-dark/5 font-mono text-xs">
-                    <span className="text-brand-dark/40 uppercase tracking-widest text-[9px]">Secure Premium</span>
-                    <span className="font-bold text-brand-dark text-sm">${item.price} USD</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
       </div>
     </div>

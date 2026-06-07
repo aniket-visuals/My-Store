@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Send, Check, Twitter, Instagram, Youtube, Github, Inbox } from "lucide-react";
+import { Send, Check, Twitter, Instagram, Youtube, Github, Inbox, Linkedin } from "lucide-react";
 import { CATEGORIES_DATA } from "../data";
 
 interface FooterProps {
@@ -29,10 +29,10 @@ export default function Footer({ scrollToSection, setActiveCategory }: FooterPro
     <footer className="bg-white border-t border-black/5 text-[#111111] overflow-hidden">
       
       {/* 2. Structured Sitemap navigation directories */}
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-left text-sm">
+      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left text-sm">
         
         {/* Brand details column */}
-        <div className="col-span-2 space-y-6">
+        <div className="md:col-span-2 space-y-6">
           <button
             onClick={() => scrollToSection("hero")}
             className="flex items-center space-x-2.5 group cursor-pointer"
@@ -55,8 +55,10 @@ export default function Footer({ scrollToSection, setActiveCategory }: FooterPro
           </p>
 
           <div className="flex items-center space-x-3.5 text-black/55 select-none">
-            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="Twitter Handle">
-              <Twitter className="w-4.5 h-4.5 stroke-[1.8]" />
+            <a href="https://x.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="X Profile">
+              <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
             </a>
             <a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="Instagram Handle">
               <Instagram className="w-4.5 h-4.5 stroke-[1.8]" />
@@ -64,56 +66,14 @@ export default function Footer({ scrollToSection, setActiveCategory }: FooterPro
             <a href="https://youtube.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="YouTube Channel">
               <Youtube className="w-4.5 h-4.5 stroke-[1.8]" />
             </a>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="GitHub Repository">
-              <Github className="w-4.5 h-4.5 stroke-[1.8]" />
+            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="LinkedIn Profile">
+              <Linkedin className="w-4.5 h-4.5 stroke-[1.8]" />
             </a>
           </div>
         </div>
 
-        {/* Studio Quick links directory */}
-        <div className="space-y-4">
-          <h4 className="font-display font-bold text-xs uppercase tracking-widest text-black/40">Quick Links</h4>
-          <ul className="space-y-2.5 font-sans font-medium text-black/65">
-            <li>
-              <button onClick={() => scrollToSection("hero")} className="hover:text-black cursor-pointer">
-                Home Canvas
-              </button>
-            </li>
-            <li>
-              <button onClick={() => scrollToSection("shop")} className="hover:text-black cursor-pointer">
-                Shop Catalog
-              </button>
-            </li>
-            <li>
-              <button onClick={() => scrollToSection("why-us")} className="hover:text-black cursor-pointer">
-                Core Specs
-              </button>
-            </li>
-          </ul>
-        </div>
-
-        {/* Categories filters link directly */}
-        <div className="space-y-4">
-          <h4 className="font-display font-bold text-xs uppercase tracking-widest text-black/40">Catalog Items</h4>
-          <ul className="space-y-2.5 font-sans font-medium text-black/65">
-            {CATEGORIES_DATA.slice(0, 4).map((cat) => (
-              <li key={cat.id}>
-                <button
-                  onClick={() => {
-                    setActiveCategory(cat.slug);
-                    scrollToSection("shop");
-                  }}
-                  className="hover:text-black text-left cursor-pointer"
-                >
-                  {cat.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
         {/* Resources direct list */}
-        <div className="space-y-4 col-span-2 md:col-span-1">
+        <div className="space-y-4">
           <h4 className="font-display font-bold text-xs uppercase tracking-widest text-brand-primary">Help Desk</h4>
           <ul className="space-y-2.5 font-sans font-medium text-black/65">
             <li>

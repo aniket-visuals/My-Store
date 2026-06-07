@@ -15,19 +15,19 @@ export const CATEGORIES_DATA: Category[] = [
 export const PRODUCTS_DATA: Product[] = [
   {
     id: "p1",
-    name: "Aether 8D Cinematic Sound Pack",
+    name: "MotionFX",
     price: 10,
     originalPrice: 19,
     category: "sound-effects",
     rating: 4.9,
     reviewsCount: 148,
-    downloadCount: 1240,
-    description: "A meticulously recorded collection of sub-heavy impacts, analog synth sweeps, foley textures, and atmospheric whooshes. Perfect for cinematic videos and visual essays.",
-    features: ["85 High-Quality WAV Files (24-bit/48kHz)", "Frictional Sweeps & Dynamic Whooshes", "Sub-Bass Drops & Structural Impacts", "100% Royalty-Free and cleared for Commercial Use"],
-    compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, AE, etc.)",
+    downloadCount: 0,
+    description: "A premium collection of high-quality sound effects made for video editors and motion designers. Add more impact to your edits with professional sounds and enjoy **lifetime updates** at no extra cost.",
+    features: ["Professional-quality sound effects", "Made for Video Editors & Motion Designers", "Organized & Easy to Use", "Lifetime Updates"],
+    compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, CapCut, etc.)",
     fileSize: "1.4 GB",
     fileType: "WAV",
-    image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80",
+    image: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
     audioPreview: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     isPopular: true
   }

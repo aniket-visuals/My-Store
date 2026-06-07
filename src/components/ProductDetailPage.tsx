@@ -10,6 +10,7 @@ import {
 import { Product } from "../types";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import { db, OperationType, handleFirestoreError } from "../firebase";
+import { formatDescription } from "../utils";
 
 interface ProductDetailPageProps {
   product: Product;
@@ -22,7 +23,7 @@ interface ProductDetailPageProps {
 const MOCK_RELATED_PRODUCTS: Product[] = [
   {
     id: "p1",
-    name: "Aether 8D Cinematic Sound Pack",
+    name: "MotionFX",
     price: 10,
     originalPrice: 19,
     category: "sound-effects",
@@ -30,11 +31,11 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
     reviewsCount: 148,
     downloadCount: 1240,
     description: "A meticulously recorded collection of sub-heavy impacts, analog synth sweeps, foley textures, and atmospheric whooshes. Perfect for cinematic videos and visual essays.",
-    features: ["85 High-Quality WAV Files (24-bit/48kHz)", "Frictional Sweeps & Dynamic Whooshes", "Sub-Bass Drops & Structural Impacts", "100% Royalty-Free and cleared for Commercial Use"],
-    compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, AE, etc.)",
+    features: ["Professional-quality sound effects", "Made for Video Editors & Motion Designers", "Organized & Easy to Use", "Lifetime Updates"],
+    compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, CapCut, etc.)",
     fileSize: "1.4 GB",
     fileType: "WAV",
-    image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80",
+    image: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
     audioPreview: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     isPopular: true
   },
@@ -138,9 +139,9 @@ const COMMON_FAQS = [
 const getGalleryImages = (prod: Product): string[] => {
   const fallbackGalleries: Record<string, string[]> = {
     p1: [
-      "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=800&q=80"
+      "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
+      "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825428/Untitled_design_7_snbmyb.png",
+      "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825500/Untitled_design_8_mvtkil.png"
     ],
     p2: [
       "https://images.unsplash.com/photo-1492044715545-15ddedd84e5e?auto=format&fit=crop&w=800&q=80",
@@ -372,8 +373,24 @@ export default function ProductDetailPage({
   };
 
   const getActiveFaqs = () => {
-    const key = DYNAMIC_FAQS[currentProduct.id] ? currentProduct.id : "p1";
-    return [...(DYNAMIC_FAQS[key] || []), ...COMMON_FAQS];
+    return [
+      {
+        q: "Do these sound effects work on mobile video editing apps?",
+        a: "Yes! They work with CapCut, VN, Alight Motion, and any app that supports audio imports."
+      },
+      {
+        q: "Will I receive lifetime updates?",
+        a: "Absolutely! Purchase once and get all future updates for free."
+      },
+      {
+        q: "Can I use these sound effects for commercial projects?",
+        a: "Yes, you can use them in both personal and commercial video projects."
+      },
+      {
+        q: "Where will I get future SFX pack updates?",
+        a: "All future updates will be available through our Discord server. Simply join the community to access the latest files and download every new release."
+      }
+    ];
   };
 
   const getActiveReviews = () => {
@@ -526,16 +543,9 @@ export default function ProductDetailPage({
             {/* Absolute Overlay info stripes */}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-6 flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
               <div className="text-left space-y-1.5">
-                <span className="bg-brand-primary text-white font-mono text-[9px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  Verified Studio Cleared
-                </span>
                 <h3 className="text-white font-display font-bold text-lg md:text-3xl tracking-tight drop-shadow-sm">
                   {currentProduct.name}
                 </h3>
-              </div>
-              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/25">
-                <Video className="w-3.5 h-3.5 text-brand-primary" />
-                <span className="text-white font-mono text-[10px] tracking-wider font-semibold">Live Preview Active</span>
               </div>
             </div>
             
@@ -593,12 +603,12 @@ export default function ProductDetailPage({
                 
                 <div className="flex items-center space-x-1.5 font-mono text-xs text-brand-primary bg-brand-primary/5 px-3.5 py-1.5 rounded-full border border-brand-primary/10">
                   <Download className="w-3.5 h-3.5 text-brand-primary" />
-                  <span className="font-semibold text-brand-primary">{currentProduct.downloadCount || 120}+ Clean Downloads</span>
+                  <span className="font-semibold text-brand-primary">{currentProduct.downloadCount ?? 0}+ Clean Downloads</span>
                 </div>
               </div>
 
               <p className="text-sm font-sans tracking-tight text-brand-dark/75 leading-relaxed font-medium">
-                {currentProduct.description}
+                {formatDescription(currentProduct.description)}
               </p>
 
               <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-brand-dark/5 text-xs font-mono">
@@ -636,10 +646,13 @@ export default function ProductDetailPage({
 
               <div className="space-y-4 font-sans text-sm text-brand-dark/80 leading-relaxed font-normal">
                 <p>
-                  High-fidelity digital design templates, presets, and waveforms engineered to instantly capture your audience's attention. Every component undergoes strict workflow pressure-testing to guarantee fluid integrations on even the most complex video essay or commercial timelines.
+                  Upgrade your edits with a premium collection of high-quality sound effects made for video editors and motion designers. From smooth transitions and whooshes to cinematic impacts and UI sounds, everything is organized and ready to use.
+                </p>
+                <p>
+                  Designed to speed up your workflow and enhance every project, this pack also includes <b> lifetime updates </b> , giving you access to new sounds and improvements at no extra cost.
                 </p>
                 <p className="font-semibold text-brand-dark">
-                  Here is what you are getting on your local drive instantly:
+                  What You'll Get:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
                   {currentProduct.features.map((feat, idx) => (
@@ -651,28 +664,7 @@ export default function ProductDetailPage({
                 </div>
               </div>
 
-              {/* Version History Changelog card */}
-              <div className="mt-8 pt-6 border-t border-brand-dark/10 space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Terminal className="w-5 h-5 text-brand-primary" />
-                  <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-brand-dark">Version Changelog</h4>
-                </div>
-                
-                <div className="space-y-3 font-mono text-[11px] text-brand-dark/60">
-                  <div className="flex items-start gap-3">
-                    <span className="text-brand-primary font-bold whitespace-nowrap">v1.2 (Latest)</span>
-                    <span>• Fully rebuilt for Premiere 2026/DaVinci 19 updates, optimized wave audio clearance curves.</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-brand-dark/40 whitespace-nowrap">v1.1 patch</span>
-                    <span>• Added 15 bonus high-intensity foley transients and custom 10-bit color presets.</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <span className="text-brand-dark/40 whitespace-nowrap">v1.0 release</span>
-                    <span>• Core package delivery containing standard license models.</span>
-                  </div>
-                </div>
-              </div>
+
             </div>
 
             {/* Software Compatibility Detail Block */}
@@ -689,8 +681,8 @@ export default function ProductDetailPage({
                     <span className="text-[10px] text-brand-dark/40 block mt-0.5">Premiere CC</span>
                   </div>
                   <div className="bg-white border border-brand-dark/5 p-3 rounded-xl shadow-sm">
-                    <span className="font-bold block text-blue-500">AE</span>
-                    <span className="text-[10px] text-brand-dark/40 block mt-0.5">After Effects</span>
+                    <span className="font-bold block text-teal-500">CP</span>
+                    <span className="text-[10px] text-brand-dark/40 block mt-0.5">CapCut</span>
                   </div>
                   <div className="bg-white border border-brand-dark/5 p-3 rounded-xl shadow-sm">
                     <span className="font-bold block text-indigo-500">DV</span>

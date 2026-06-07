@@ -6,14 +6,12 @@ import FeaturedProducts from "./components/FeaturedProducts";
 import WhyChooseUs from "./components/WhyChooseUs";
 import FaqSection from "./components/FaqSection";
 import Footer from "./components/Footer";
-import ProductPreviewModal from "./components/ProductPreviewModal";
 import ProductDetailPage from "./components/ProductDetailPage";
 
 export default function App() {
   const [cart, setCart] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selectedPreviewProduct, setSelectedPreviewProduct] = useState<Product | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<'home' | 'product-detail'>('home');
 
   // Smooth scroll handler targeting sections on-page
@@ -50,11 +48,6 @@ export default function App() {
     setSelectedPreviewProduct(product);
     setCurrentPage('product-detail');
     window.scrollTo({ top: 0 });
-  };
-
-  const handleSelectCategoryFromWidget = (categorySlug: string) => {
-    setActiveCategory(categorySlug);
-    scrollToSection("shop");
   };
 
   return (

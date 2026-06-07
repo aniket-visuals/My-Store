@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Eye, Sparkles, AlertCircle } from "lucide-react";
 import { Product } from "../types";
 import { PRODUCTS_DATA, CATEGORIES_DATA } from "../data";
+import { formatDescription } from "../utils";
 
 interface FeaturedProductsProps {
   cart: Product[];
@@ -111,11 +112,6 @@ export default function FeaturedProducts({
                       </div>
                     )}
 
-                    {/* Format file type sticker badge */}
-                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold text-black border border-black/5 shadow-sm">
-                      {product.fileType.split("/")[0]}
-                    </div>
-
                     {/* Floating quick viewport preview icon button */}
                     <button
                       onClick={() => openProductPreview(product)}
@@ -146,7 +142,7 @@ export default function FeaturedProducts({
                       </h3>
 
                       <p className="text-xs text-black/50 font-sans mt-3 line-clamp-2 leading-relaxed">
-                        {product.description}
+                        {formatDescription(product.description)}
                       </p>
                     </div>
 

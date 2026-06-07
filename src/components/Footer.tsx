@@ -1,7 +1,5 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Send, Check, Twitter, Instagram, Youtube, Github, Inbox, Linkedin } from "lucide-react";
-import { CATEGORIES_DATA } from "../data";
+import React from "react";
+import { Instagram, Linkedin, Youtube } from "lucide-react";
 
 interface FooterProps {
   scrollToSection: (id: string) => void;
@@ -9,27 +7,11 @@ interface FooterProps {
 }
 
 export default function Footer({ scrollToSection, setActiveCategory }: FooterProps) {
-  const [email, setEmail] = useState("");
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    setIsSubmitting(true);
-    
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubscribed(true);
-      setEmail("");
-    }, 1200);
-  };
-
   return (
     <footer className="bg-white border-t border-black/5 text-[#111111] overflow-hidden">
       
       {/* 2. Structured Sitemap navigation directories */}
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left text-sm">
+      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-8 text-left text-sm">
         
         {/* Brand details column */}
         <div className="md:col-span-2 space-y-6">
@@ -51,49 +33,61 @@ export default function Footer({ scrollToSection, setActiveCategory }: FooterPro
           </button>
           
           <p className="text-xs text-black/50 leading-relaxed font-sans max-w-sm">
-            Professional workflow expanders, preset systems, cinematic color grading variables, and organic audio beds recorded meticulously for elite content creators worldwide.
+            Get access to all my editing assets, plugins, sound effects, and creative tools in one place.<br /><br />Don't forget to follow our social pages to stay updated with the latest releases, updates, and exclusive content.
           </p>
-
+ 
           <div className="flex items-center space-x-3.5 text-black/55 select-none">
-            <a href="https://x.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="X Profile">
+            <a href="https://x.com/Ankitxed" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="X Profile">
               <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
             </a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="Instagram Handle">
+            <a href="https://www.instagram.com/aniket_visuals/" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="Instagram Handle">
               <Instagram className="w-4.5 h-4.5 stroke-[1.8]" />
             </a>
-            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="YouTube Channel">
+            <a href="https://youtube.com/@aniket_visuals?si=wC2Z8R1CwMmjPLPV" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="YouTube Channel">
               <Youtube className="w-4.5 h-4.5 stroke-[1.8]" />
             </a>
-            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="LinkedIn Profile">
+            <a href="https://www.linkedin.com/in/aniketvisuals/" target="_blank" rel="noreferrer" className="hover:text-black transition-colors" title="LinkedIn Profile">
               <Linkedin className="w-4.5 h-4.5 stroke-[1.8]" />
             </a>
           </div>
         </div>
-
-        {/* Resources direct list */}
-        <div className="space-y-4">
-          <h4 className="font-display font-bold text-xs uppercase tracking-widest text-brand-primary">Help Desk</h4>
-          <ul className="space-y-2.5 font-sans font-medium text-black/65">
+ 
+        {/* Extra links column */}
+        <div className="space-y-4 md:col-span-1 md:justify-self-end text-left">
+          <h4 className="font-display font-bold text-xs uppercase tracking-widest text-black/40">Extra links</h4>
+          <ul className="space-y-2.5 font-sans font-semibold">
             <li>
-              <button onClick={() => scrollToSection("faq")} className="hover:text-black cursor-pointer">
-                Accordion FAQ
-              </button>
-            </li>
-            <li>
-              <a href="mailto:support@editorsraj.com" className="hover:text-black">
-                Email Support
+              <a href="https://discord.gg/sxGeT4SCBD" target="_blank" rel="noreferrer" className="text-black/65 hover:text-brand-primary transition-colors">
+                Discord
               </a>
             </li>
             <li>
-              <a href="#discord" className="hover:text-black">
-                Discord Team
+              <a href="https://t.me/aniketvisuals" target="_blank" rel="noreferrer" className="text-black/65 hover:text-brand-primary transition-colors">
+                Telegram
               </a>
             </li>
             <li>
-              <a href="#licensing" className="hover:text-black">
-                License Terms
+              <a href="#about-us" className="text-black/65 hover:text-brand-primary transition-colors">
+                About Us
+              </a>
+            </li>
+          </ul>
+        </div>
+ 
+        {/* Contact column */}
+        <div className="space-y-4 md:col-span-1 md:justify-self-end text-left">
+          <h4 className="font-display font-bold text-xs uppercase tracking-widest text-black/40">Contact</h4>
+          <ul className="space-y-2.5 font-sans font-semibold">
+            <li>
+              <a 
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=aniketrajcargal123@gmail.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-black/65 hover:text-brand-primary transition-colors break-all"
+              >
+                aniketrajcargal123@gmail.com
               </a>
             </li>
           </ul>
@@ -106,14 +100,10 @@ export default function Footer({ scrollToSection, setActiveCategory }: FooterPro
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           
           <span>
-            © {new Date().getFullYear()} Editors Raj. Handcrafted with pixel perfection. All licensing cleared under global law.
+            © 2026 Editor's Raj Store. All Rights Reserved. Designed & Developed by Aniket Visuals.
           </span>
 
-          <div className="flex items-center space-x-6 font-medium">
-            <a href="#terms" className="hover:text-black transition-colors">Licensing Terms</a>
-            <a href="#privacy" className="hover:text-black transition-colors">Privacy Principles</a>
-            <a href="#cookies" className="hover:text-black transition-colors">Cookies Config</a>
-          </div>
+          {/* Links removed */}
 
         </div>
       </div>

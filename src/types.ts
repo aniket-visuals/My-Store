@@ -16,6 +16,7 @@ export interface Product {
   videoPreview?: string;
   audioPreview?: string;
   isPopular?: boolean;
+  releaseDate?: string;
 }
 
 export interface Category {

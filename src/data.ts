@@ -25,11 +25,12 @@ export const PRODUCTS_DATA: Product[] = [
     description: "A premium collection of high-quality sound effects made for video editors and motion designers. Add more impact to your edits with professional sounds and enjoy **lifetime updates** at no extra cost.",
     features: ["Professional-quality sound effects", "Made for Video Editors & Motion Designers", "Organized & Easy to Use", "Lifetime Updates"],
     compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, CapCut, etc.)",
-    fileSize: "1.4 GB",
+    fileSize: "70 MB",
     fileType: "WAV",
     image: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
     audioPreview: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    isPopular: true
+    isPopular: true,
+    releaseDate: "June 2, 2026"
   }
 ];
 
@@ -142,27 +143,22 @@ export const FAQ_DATA: FaqItem[] = [
   {
     id: "faq-1",
     question: "What products do you sell?",
-    answer: "We offer professional sound effects, highly adjustable Premiere Pro and After Effects template rigs, cinematic color LUT tables (cube files), motion graphics overlays with transparency built-in, and high-retention graphic resources for graphic designers."
+    answer: "We sell editing assets, plugins, and creative tools made and used by me in my YouTube live streams."
   },
   {
     id: "faq-2",
-    question: "How do downloads work?",
-    answer: "Directly after your payment completes, you'll receive a high-speed secure download link via email and on your post-purchase layout. You can also re-download your assets at any time by signing in or requesting a magic recovery code."
+    question: "How can I get the assets?",
+    answer: "After filling out the form, we will contact you through the platform you selected. Once the payment is completed, the assets will be delivered directly to you."
   },
   {
     id: "faq-3",
-    question: "Are updates included?",
-    answer: "Yes, completely! Any minor optimizations, bug fixes, or compatibility updates for newly released versions of Adobe Premiere or After Effects are sent to your inbox automatically and can be downloaded free for life."
+    question: "How much time will it take after I submit the form?",
+    answer: "Once your form is submitted, we will reach out to you as soon as possible."
   },
   {
     id: "faq-4",
-    question: "Can I use assets commercially?",
-    answer: "Absolutely. Every Single asset pack includes a perpetual commercial usage license. You can use them for personal videos, commercial YouTube clips, client reels, paid advertisements, and large production broadcasts."
-  },
-  {
-    id: "faq-5",
-    question: "What software is supported?",
-    answer: "Our Sound effects (.wav) work on all audio and editing software. LUTs (.cube) work on Premiere, DaVinci Resolve, FCPX, Photoshop, and OBS. Our presets are specifically prepared for Premiere Pro and After Effects (version 2021+ is highly recommended)."
+    question: "What payment options are available?",
+    answer: "We accept Wise, PayPal, and UPI (for customers in India)."
   }
 ];
 

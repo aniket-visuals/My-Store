@@ -33,11 +33,12 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
     description: "A meticulously recorded collection of sub-heavy impacts, analog synth sweeps, foley textures, and atmospheric whooshes. Perfect for cinematic videos and visual essays.",
     features: ["Professional-quality sound effects", "Made for Video Editors & Motion Designers", "Organized & Easy to Use", "Lifetime Updates"],
     compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, CapCut, etc.)",
-    fileSize: "1.4 GB",
+    fileSize: "70 MB",
     fileType: "WAV",
     image: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
     audioPreview: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    isPopular: true
+    isPopular: true,
+    releaseDate: "June 2, 2026"
   },
   {
     id: "p2",
@@ -54,7 +55,8 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
     fileSize: "140 MB",
     fileType: "CUBE Look Files",
     image: "https://images.unsplash.com/photo-1492044715545-15ddedd84e5e?auto=format&fit=crop&w=800&q=80",
-    isPopular: false
+    isPopular: false,
+    releaseDate: "May 10, 2026"
   },
   {
     id: "p3",
@@ -71,7 +73,8 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
     fileSize: "512 MB",
     fileType: "MOGRT Templates",
     image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=800&q=80",
-    isPopular: true
+    isPopular: true,
+    releaseDate: "May 20, 2026"
   },
   {
     id: "p4",
@@ -88,7 +91,8 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
     fileSize: "2.3 GB",
     fileType: "MOV Files (Pre-Keyed)",
     image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
-    isPopular: false
+    isPopular: false,
+    releaseDate: "June 3, 2026"
   }
 ];
 
@@ -1036,38 +1040,30 @@ export default function ProductDetailPage({
                 </span>
                 
                 <h3 className="font-display font-bold text-base text-brand-dark uppercase tracking-wide">
-                  Checkout License Option
+                  checkout buy option
                 </h3>
 
-                {/* Unified License Standard Option */}
-                <div className="flex items-center space-x-2.5 bg-emerald-500/[0.04] border border-emerald-500/15 p-3.5 rounded-xl text-left select-none">
-                  <Check className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
-                  <div className="space-y-0.5">
-                    <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 leading-none">
-                      Perpetual Commercial License Included
-                    </span>
-                    <span className="block text-[9px] font-mono text-brand-dark/40 font-medium leading-none">
-                      Full lifetime access with absolute clearance
-                    </span>
-                  </div>
-                </div>
-
                 {/* Dynamic Price Tracker Info */}
-                <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-4.5 rounded-xl flex items-center justify-between shadow-sm">
-                  <div>
-                    <p className="text-[9px] font-mono text-brand-dark/40 uppercase tracking-widest">Pricing Structure</p>
-                    <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider font-mono mt-0.5">
-                      Full Creator Clearance
-                    </p>
+                <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-4.5 rounded-xl flex flex-col gap-2 shadow-sm">
+                  <div className="flex items-center justify-between w-full">
+                    <div>
+                      <p className="text-[9px] font-mono text-brand-dark/40 uppercase tracking-widest">Pricing Structure</p>
+                      <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider font-mono mt-0.5">
+                        Full Creator Clearance
+                      </p>
+                    </div>
+                    
+                    <div className="text-right leading-none">
+                      <span className="text-[10px] font-mono text-brand-dark/30 line-through block mb-1">
+                        ${getTierOriginalPrice()} USD
+                      </span>
+                      <span className="font-display font-bold text-2xl tracking-tight text-brand-dark">
+                        ${getTierPrice()} USD
+                      </span>
+                    </div>
                   </div>
-                  
-                  <div className="text-right leading-none">
-                    <span className="text-[10px] font-mono text-brand-dark/30 line-through block mb-1">
-                      ${getTierOriginalPrice()} USD
-                    </span>
-                    <span className="font-display font-bold text-2xl tracking-tight text-brand-dark">
-                      ${getTierPrice()} USD
-                    </span>
+                  <div className="border-t border-brand-dark/5 pt-1.5 text-left text-[9px] font-mono text-brand-dark/40 italic">
+                    * Note: Price may be different in future
                   </div>
                 </div>
 
@@ -1101,31 +1097,15 @@ export default function ProductDetailPage({
               </h4>
               
               <div className="grid grid-cols-2 gap-4 font-mono text-[11px] text-brand-dark">
-                <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-2 rounded">
+                <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-2 rounded col-span-2">
                   <span className="text-brand-dark/40 block text-[9px] uppercase tracking-wider">Weight:</span>
                   <span className="font-semibold text-xs mt-0.5 block">{currentProduct.fileSize}</span>
                 </div>
-                <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-2 rounded">
-                  <span className="text-brand-dark/40 block text-[9px] uppercase tracking-wider">Codec Type:</span>
-                  <span className="font-semibold text-xs mt-0.5 block">{currentProduct.fileType}</span>
-                </div>
                 <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-2 rounded col-span-2">
-                  <span className="text-brand-dark/40 block text-[9px] uppercase tracking-wider">Authorized Licensee:</span>
-                  <span className="font-semibold text-xs mt-0.5 block uppercase tracking-wider text-brand-primary">Perpetual commercial cleared</span>
+                  <span className="text-brand-dark/40 block text-[9px] uppercase tracking-wider">Release Date:</span>
+                  <span className="font-semibold text-xs mt-0.5 block text-brand-primary">{currentProduct.releaseDate || "June 2, 2026"}</span>
                 </div>
               </div>
-            </div>
-
-            {/* Creator Support Help Desk panel */}
-            <div className="bg-brand-dark text-white p-6 rounded-2xl text-left space-y-4 border border-white/5 shadow-xl shadow-brand-dark/10">
-              <div className="flex items-center space-x-3 text-white/95">
-                <Headphones className="w-5 h-5 text-brand-primary" />
-                <h4 className="font-display font-medium text-sm uppercase tracking-wider">Fast Editor Support</h4>
-              </div>
-              
-              <p className="text-xs text-white/70 leading-relaxed font-sans">
-                Need color-grading format conversion files? Or format triggers for After Effects? Shoot us feedback or replies directly. Standard average turnaround is less than <strong>15 minutes</strong>.
-              </p>
             </div>
 
           </div>

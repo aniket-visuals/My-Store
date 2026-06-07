@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Eye, Sparkles, AlertCircle } from "lucide-react";
+import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Eye, Sparkles, AlertCircle, Calendar } from "lucide-react";
 import { Product } from "../types";
 import { PRODUCTS_DATA, CATEGORIES_DATA } from "../data";
 import { formatDescription } from "../utils";
@@ -121,10 +121,10 @@ export default function FeaturedProducts({
                       <Eye className="w-4 h-4 stroke-[2]" />
                     </button>
                     
-                    {/* Downloads count ticker */}
+                    {/* Release Date ticker */}
                     <div className="absolute bottom-4 left-4 flex items-center space-x-1 font-mono text-[10px] text-white/95">
-                      <Download className="w-3 h-3" />
-                      <span>{product.downloadCount.toLocaleString()} downloads</span>
+                      <Calendar className="w-3 h-3 text-brand-primary" />
+                      <span>Released: {product.releaseDate || "June 2, 2026"}</span>
                     </div>
 
                   </div>
@@ -151,15 +151,10 @@ export default function FeaturedProducts({
                       {/* Info and Price line */}
                       <div className="flex items-center justify-between">
                         
-                        {/* Rating row */}
-                        <div className="flex items-center space-x-1">
-                          <Star className="w-3.5 h-3.5 fill-brand-primary stroke-transparent" />
-                          <span className="text-xs font-bold font-mono text-black">
-                            {product.rating}
-                          </span>
-                          <span className="text-xs text-black/30 font-mono">
-                            ({product.reviewsCount} reviews)
-                          </span>
+                        {/* Release Date row */}
+                        <div className="flex items-center space-x-1 text-xs text-black/60 font-mono">
+                          <Calendar className="w-3.5 h-3.5 text-brand-primary" />
+                          <span>Released: {product.releaseDate || "June 2, 2026"}</span>
                         </div>
 
                         {/* Price label */}

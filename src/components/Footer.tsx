@@ -22,13 +22,13 @@ export default function Footer({ scrollToSection, setActiveCategory }: FooterPro
             <div className="w-8 h-8 flex items-center justify-center shrink-0 relative overflow-hidden rounded-lg">
               <img 
                 src="https://res.cloudinary.com/df5rgwdng/image/upload/v1773434133/looooo_y1n4b3.png"
-                alt="Editors Raj Logo"
+                alt="Editors Hub Logo"
                 className="w-full h-full object-cover origin-center"
                 referrerPolicy="no-referrer"
               />
             </div>
             <span className="font-display font-bold text-base text-black tracking-tight">
-              Editors Raj
+              Editors Hub
             </span>
           </button>
           
@@ -100,7 +100,7 @@ export default function Footer({ scrollToSection, setActiveCategory }: FooterPro
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           
           <span>
-            © 2026 Editor's Raj Store. All Rights Reserved. Designed & Developed by Aniket Visuals.
+            © 2026 Editors Hub Store. All Rights Reserved. Designed & Developed by Aniket Visuals.
           </span>
 
           {/* Links removed */}

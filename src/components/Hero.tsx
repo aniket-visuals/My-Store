@@ -293,7 +293,7 @@ export default function Hero({ onExploreClick }: HeroProps) {
               />
 
               <div className="absolute bottom-4 left-6 z-20 bg-black/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/5 max-w-sm hidden sm:block">
-                <p className="text-xs font-bold text-white leading-tight">Editors Raj Cinema Reel</p>
+                <p className="text-xs font-bold text-white leading-tight">Editors Hub Cinema Reel</p>
                 <p className="text-[10px] text-white/50 font-mono mt-0.5">Asset overlays, sound beds, film textures, and LUTs in combination view.</p>
               </div>
             </motion.div>

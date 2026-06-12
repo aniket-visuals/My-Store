@@ -85,14 +85,14 @@ export default function Navbar({
           <div className="w-10 h-10 flex items-center justify-center shrink-0 relative overflow-hidden rounded-lg">
             <img 
               src="https://res.cloudinary.com/df5rgwdng/image/upload/v1773434133/looooo_y1n4b3.png"
-              alt="Editors Raj Logo"
+              alt="Editors Hub Logo"
               className="w-full h-full object-cover origin-center group-hover:scale-110 transition-transform duration-300"
               referrerPolicy="no-referrer"
             />
           </div>
           <div className="flex flex-col items-start translate-y-[1px]">
             <span className="font-display font-bold tracking-tight text-lg text-black leading-none">
-              Editors Raj
+              Editors Hub
             </span>
             <span className="text-[10px] uppercase tracking-widest font-mono text-black/40 mt-1">
               Creative Assets
@@ -249,7 +249,7 @@ export default function Navbar({
 
               <div className="py-3 px-5 border-t border-black/5 bg-brand-bg flex justify-between items-center text-xs text-black/50">
                 <span>Select an asset to view quick file details & play preview</span>
-                <span className="font-mono">Editors Raj v1.0.4</span>
+                <span className="font-mono">Editors Hub v1.0.4</span>
               </div>
             </motion.div>
           </div>

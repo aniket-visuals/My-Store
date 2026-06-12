@@ -80,7 +80,7 @@ export const TESTIMONIALS_DATA: Testimonial[] = [
     role: "Freelance Commercial Editor",
     handle: "@marcus_vanced",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80",
-    comment: "Editors Raj assets completely changed my speed. The Cinematic Whooshes pack and Helios LUTs have becomes a constant staple of my high-end commercial projects.",
+    comment: "Editors Hub assets completely changed my speed. The Cinematic Whooshes pack and Helios LUTs have becomes a constant staple of my high-end commercial projects.",
     rating: 5,
     verified: true
   },
@@ -111,7 +111,7 @@ export const PORTFOLIO_DATA: PortfolioItem[] = [
     id: "port-1",
     title: "Commercial Concept Reel 2026",
     category: "Director's Cut",
-    creator: "Editors Raj",
+    creator: "Editors Hub",
     thumbnail: "https://images.unsplash.com/photo-1492044715545-15ddedd84e5e?auto=format&fit=crop&w=800&q=80",
     videoMockUrl: "https://assets.mixkit.co/videos/preview/mixkit-urban-traffic-at-night-time-lapse-42289-large.mp4",
     likes: 852,

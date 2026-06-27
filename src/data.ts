@@ -16,13 +16,14 @@ export const PRODUCTS_DATA: Product[] = [
   {
     id: "p1",
     name: "MotionFX",
+    slug: "motionfx",
     price: 10,
     originalPrice: 19,
     category: "sound-effects",
     rating: 4.9,
     reviewsCount: 148,
-    downloadCount: 0,
-    description: "A premium collection of high-quality sound effects made for video editors and motion designers. Add more impact to your edits with professional sounds and enjoy **lifetime updates** at no extra cost.",
+    downloadCount: 1240,
+    description: "A meticulously recorded collection of sub-heavy impacts, analog synth sweeps, foley textures, and atmospheric whooshes. Perfect for cinematic videos and visual essays.",
     features: ["Professional-quality sound effects", "Made for Video Editors & Motion Designers", "Organized & Easy to Use", "Lifetime Updates"],
     compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, CapCut, etc.)",
     fileSize: "70 MB",
@@ -35,18 +36,6 @@ export const PRODUCTS_DATA: Product[] = [
 ];
 
 export const FEATURE_ITEMS: FeatureItem[] = [
-  {
-    id: "f1",
-    title: "Professional-Grade Assets",
-    description: "Every asset is personally collected, tested, and curated by Aniket Visuals to meet top-tier industry standards. Perfect for high-end professional projects.",
-    iconName: "Award"
-  },
-  {
-    id: "f2",
-    title: "Handpicked Collection",
-    description: "An exclusive, handpicked selection of premium resources. No generic fillers—only high-conversion, rare assets that elevate your production value.",
-    iconName: "Sparkles"
-  },
   {
     id: "f3",
     title: "Fast Support",
@@ -165,7 +154,7 @@ export const FAQ_DATA: FaqItem[] = [
 export const STATS_DATA: StatItem[] = [
   {
     id: "s1",
-    value: "0",
+    value: "1",
     label: "Active Community Members",
     subLabel: "Global creators trust us"
   },
@@ -177,7 +166,7 @@ export const STATS_DATA: StatItem[] = [
   },
   {
     id: "s3",
-    value: "0",
+    value: "1",
     label: "Successful Downloads",
     subLabel: "Helping creators worldwide daily"
   },

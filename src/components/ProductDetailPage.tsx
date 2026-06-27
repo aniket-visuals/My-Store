@@ -24,6 +24,7 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
   {
     id: "p1",
     name: "MotionFX",
+    slug: "motionfx",
     price: 10,
     originalPrice: 19,
     category: "sound-effects",
@@ -39,60 +40,6 @@ const MOCK_RELATED_PRODUCTS: Product[] = [
     audioPreview: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     isPopular: true,
     releaseDate: "June 2, 2026"
-  },
-  {
-    id: "p2",
-    name: "Helios Cinema LUTs & Color Grading Kit",
-    price: 10,
-    originalPrice: 19,
-    category: "color-grading",
-    rating: 4.8,
-    reviewsCount: 92,
-    downloadCount: 840,
-    description: "Bring rich filmic color curves, aesthetic shadows, and cinematic highlight rolls to any source footage. Includes generic 10-bit log and cinematic rec. 709 converters.",
-    features: ["15 Professional grade .CUBE conversion LUTs", "Aesthetic vintage & modern film style maps", "Perfect highlight recovery & soft roll-off templates", "Cleared for YouTube, commercial ads & broadcasts"],
-    compatibility: "Premiere, DaVinci Resolve, Final Cut Pro, CapCut Pro",
-    fileSize: "140 MB",
-    fileType: "CUBE Look Files",
-    image: "https://images.unsplash.com/photo-1492044715545-15ddedd84e5e?auto=format&fit=crop&w=800&q=80",
-    isPopular: false,
-    releaseDate: "May 10, 2026"
-  },
-  {
-    id: "p3",
-    name: "Neptune Kinetic Typography Engine",
-    price: 10,
-    originalPrice: 19,
-    category: "templates",
-    rating: 5.0,
-    reviewsCount: 64,
-    downloadCount: 420,
-    description: "Drop gorgeous dynamic kinetic subtitles, responsive background titles, and high-retention text cards right inside your editing timeline with a single click.",
-    features: ["30 High-retention kinetic Premiere Pro templates", "Auto-responsive timeline scale boundaries", "No keyframing required, 1-click text replacement", "Dynamic color controls & adjustable spring speed"],
-    compatibility: "Adobe Premiere Pro / After Effects CC 2021+",
-    fileSize: "512 MB",
-    fileType: "MOGRT Templates",
-    image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=800&q=80",
-    isPopular: true,
-    releaseDate: "May 20, 2026"
-  },
-  {
-    id: "p4",
-    name: "Cyberpunk HUD Futuristic Overlay Kit",
-    price: 10,
-    originalPrice: 19,
-    category: "overlays",
-    rating: 4.7,
-    reviewsCount: 112,
-    downloadCount: 670,
-    description: "Dumbfound your audience with ultra-detailed holographic widgets, tactical scope metrics, blinking terminal panels, and animated code telemetry lines.",
-    features: ["45 ProRes 4444 pre-keyed 4K HUD layouts", "Transparent background, drag-and-drop workflow", "Loopable files for long ambient backdrops", "Aesthetic grid widgets and focus tracker overlays"],
-    compatibility: "Any non-linear editing software supporting Alpha",
-    fileSize: "2.3 GB",
-    fileType: "MOV Files (Pre-Keyed)",
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
-    isPopular: false,
-    releaseDate: "June 3, 2026"
   }
 ];
 
@@ -101,19 +48,6 @@ const DYNAMIC_FAQS: Record<string, { q: string; a: string }[]> = {
     { q: "Do these sound effects work on mobile video editing apps?", a: "Yes! Since they are saved in industry-standard premium 24-bit WAV format, you can import and play them perfectly inside CapCut, LumaFusion, Premiere Rush, or any other mobile timeline." },
     { q: "Is attribution or a visual credit required?", a: "No attribution is required. You can use these royalty-free files completely anonymously in commercials, YouTube videos, and client assets without paying royalties or tagging are store." },
     { q: "Will I receive notifications for newly added files?", a: "Yes! Whenever we expand our catalog or add bonus tracks to the pack, a direct link and email notification will automatically reach your inbox free of charge." }
-  ],
-  p2: [
-    { q: "Will this LUT kit slow down my Premiere playback?", a: "No, these are highly optimized 33-point cube profiles which process exceptionally fast in real-time, even on older laptop workstations." },
-    { q: "Which log patterns work best with this color kit?", a: "They are built globally to match Sony S-Log3, DJI D-Log, Canon C-Log, iPhone cinematic formats, or generic default Rec.709 footage." },
-    { q: "Are these LUTs fully adjustable?", a: "Absolutely! You can easily adjust the intensity/opacity slider in Lumetri, HDR, or DaVinci's node panel to fine-tune the output to your taste." }
-  ],
-  p3: [
-    { q: "Do I need Adobe After Effects installed to use templates in Premiere?", a: "No! These are pre-rendered MOGRT templates. You can adjust texts, font files, and positioning values directly in Premiere's Essential Graphics deck." },
-    { q: "Can I use custom system fonts with these presets?", a: "Yes, you can search and apply any fonts already installed on your system or active Adobe Creative Cloud subscription." }
-  ],
-  p4: [
-    { q: "Are the alpha video overlays pre-rendered with black screens?", a: "No, these are pre-encoded in genuine Apple ProRes 4444 which has full alpha channel transparency pre-cleared. Just drag, drop, and overlay!" },
-    { q: "Can I adjust the orange laser color to match my channel colors?", a: "Yes, you can drop a simple 'HSL Tune' or 'Change Color' effect on your track to shift the neon orange to green, purple, yellow, or teal." }
   ]
 };
 
@@ -121,16 +55,6 @@ const DYNAMIC_REVIEWS: Record<string, { author: string; handle: string; rate: nu
   p1: [
     { author: "Marcus Vance", handle: "@marcus_vanced", rate: 5, date: "May 28, 2026", review: "The deep sub drops and industrial sweep whooshes are exactly what I needed. They add instant dramatic power to my commercials. Phenomenal foley quality.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" },
     { author: "Evelyn Reed", handle: "@evelyncreative", rate: 5, date: "June 2, 2026", review: "Crisp sounding, low latency, and cleared right out of the box with zero YouTube claims. Extremely satisfied with the acoustic depth.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
-  ],
-  p2: [
-    { author: "Tyler K.", handle: "@tylershots", rate: 5, date: "April 14, 2026", review: "The skin tonalities remain super natural while delivering that deep, cinematic Hollywood steel-blue backdrop. Absolute magic for commercial B-rolls.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" },
-    { author: "Sara J.", handle: "@saralogs", rate: 5, date: "May 10, 2026", review: "Excellent conversion for DJI D-Cinelike. The atmospheric warmth curves are gorgeous. Recommending this strongly to other travel filmmakers.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
-  ],
-  p3: [
-    { author: "Nate Patterson", handle: "@nate_renders", rate: 5, date: "May 20, 2026", review: "High-retention kinetic titles that actually engage! The keyframe responsive duration scaling works like standard CSS container queries. Saved me hours of timing.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
-  ],
-  p4: [
-    { author: "Clara Brooks", handle: "@claracut", rate: 5, date: "June 3, 2026", review: "The HUD holographic widgets look so incredibly sharp. Highly modular widgets that make any high-tech breakdown feel alive. Worth every penny.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
   ]
 };
 
@@ -146,21 +70,6 @@ const getGalleryImages = (prod: Product): string[] => {
       "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
       "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825428/Untitled_design_7_snbmyb.png",
       "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825500/Untitled_design_8_mvtkil.png"
-    ],
-    p2: [
-      "https://images.unsplash.com/photo-1492044715545-15ddedd84e5e?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80"
-    ],
-    p3: [
-      "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
-    ],
-    p4: [
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80"
     ]
   };
   

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Search, ShoppingCart, Menu, X, ArrowRight, Sparkles, User, Check, Download } from "lucide-react";
 import { Product } from "../types";
 import { PRODUCTS_DATA } from "../data";
+import { logout as firebaseLogout } from "../services/authService";
 
 interface NavbarProps {
   cart: Product[];
@@ -10,6 +11,12 @@ interface NavbarProps {
   clearCart: () => void;
   openProductPreview: (product: Product) => void;
   scrollToSection: (id: string) => void;
+  isLoginOpen: boolean;
+  setIsLoginOpen: (open: boolean) => void;
+  isLoggedIn: boolean;
+  setIsLoggedIn: (loggedIn: boolean) => void;
+  userEmail: string;
+  setUserEmail: (email: string) => void;
 }
 
 export default function Navbar({
@@ -17,19 +24,22 @@ export default function Navbar({
   removeFromCart,
   clearCart,
   openProductPreview,
-  scrollToSection
+  scrollToSection,
+  isLoginOpen,
+  setIsLoginOpen,
+  isLoggedIn,
+  setIsLoggedIn,
+  userEmail,
+  setUserEmail
 }: NavbarProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isGetStartedOpen, setIsGetStartedOpen] = useState(false);
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userEmail, setUserEmail] = useState("");
   const [copiedKit, setCopiedKit] = useState(false);
 
   // Filter products based on search query
@@ -41,19 +51,12 @@ export default function Navbar({
       )
     : PRODUCTS_DATA.slice(0, 3); // Quick suggestions
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailInput) return;
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsLoggedIn(true);
-      setUserEmail(emailInput);
-      setIsLoginOpen(false);
-    }, 1200);
-  };
-
-  const handleSignout = () => {
+  const handleSignout = async () => {
+    try {
+      await firebaseLogout();
+    } catch (err) {
+      console.error(err);
+    }
     setIsLoggedIn(false);
     setUserEmail("");
   };
@@ -137,6 +140,15 @@ export default function Navbar({
             title="Search assets"
           >
             <Search className="w-5 h-5 stroke-[1.8]" />
+          </button>
+
+          {/* Account Portal Sign In / Account status */}
+          <button
+            onClick={() => setIsLoginOpen(true)}
+            className="hidden md:flex items-center space-x-2 border border-black/10 text-black/80 hover:bg-black/5 text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer"
+          >
+            <User className="w-4 h-4 text-black/60" />
+            <span>{isLoggedIn ? "My Account" : "Sign In"}</span>
           </button>
 
           {/* Primary CTA */}
@@ -442,8 +454,17 @@ export default function Navbar({
                 <hr className="border-black/5 my-4" />
 
                 {isLoggedIn ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <p className="text-xs text-black/50 font-mono">Logged in as {userEmail}</p>
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsLoginOpen(true);
+                      }}
+                      className="w-full text-center border border-black/10 py-2.5 rounded-full text-xs font-semibold"
+                    >
+                      Account & Sheet Sync
+                    </button>
                     <button
                       onClick={() => {
                         handleSignout();
@@ -476,90 +497,6 @@ export default function Navbar({
                   Get Creator Starter Kit
                 </button>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* LOGIN OVERLAY MODAL */}
-      <AnimatePresence>
-        {isLoginOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsLoginOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            />
-
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden p-8 z-10"
-            >
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-brand-bg border border-black/5 flex items-center justify-center mx-auto mb-3">
-                  <User className="w-5 h-5 text-black" />
-                </div>
-                <h3 className="font-display font-bold text-xl text-black">Creator Portal</h3>
-                <p className="text-xs text-black/50 mt-1">
-                  Access purchased files, license keys, and community assets
-                </p>
-              </div>
-
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-[11px] font-mono text-black/60 uppercase tracking-widest mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="you@creator.com"
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-black/5 bg-brand-bg outline-none text-sm text-black focus:border-black/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono text-black/60 uppercase tracking-widest mb-1">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-black/5 bg-brand-bg outline-none text-sm text-black focus:border-black/20"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <label className="flex items-center space-x-2 text-black/60 cursor-pointer">
-                    <input type="checkbox" className="rounded border-black/10 text-black focus:ring-0" />
-                    <span>Remember this machine</span>
-                  </label>
-                  <span className="text-black/40 hover:text-black cursor-pointer">Forgot?</span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-brand-primary text-white py-3 rounded-xl font-semibold hover:bg-brand-accent transition-colors mt-2 text-sm"
-                >
-                  {isSubmitting ? "Verifying signature credentials..." : "Sign In with Security"}
-                </button>
-              </form>
-
-              <button
-                onClick={() => setIsLoginOpen(false)}
-                className="mt-4 w-full text-center text-xs text-black/50 hover:text-black"
-              >
-                Cancel & return home
-              </button>
             </motion.div>
           </div>
         )}

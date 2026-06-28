@@ -9,10 +9,14 @@ import WhyChooseUs from "./components/WhyChooseUs";
 import FaqSection from "./components/FaqSection";
 import Footer from "./components/Footer";
 import ProductDetailPage from "./components/ProductDetailPage";
+import AccountPortal from "./components/AccountPortal";
 
 export default function App() {
   const [cart, setCart] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -79,6 +83,12 @@ export default function App() {
         clearCart={clearCart}
         openProductPreview={openProductPreview}
         scrollToSection={scrollToSection}
+        isLoginOpen={isLoginOpen}
+        setIsLoginOpen={setIsLoginOpen}
+        isLoggedIn={isLoggedIn}
+        setIsLoggedIn={setIsLoggedIn}
+        userEmail={userEmail}
+        setUserEmail={setUserEmail}
       />
 
       {/* 2. Interactive Main Canvas */}
@@ -124,6 +134,16 @@ export default function App() {
       <Footer
         scrollToSection={scrollToSection}
         setActiveCategory={setActiveCategory}
+      />
+
+      {/* ACCOUNT & GOOGLE SHEETS PORTAL MODAL */}
+      <AccountPortal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onLoginStateChange={(loggedIn, email) => {
+          setIsLoggedIn(loggedIn);
+          setUserEmail(email);
+        }}
       />
 
     </div>

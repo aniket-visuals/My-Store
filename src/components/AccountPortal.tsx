@@ -121,7 +121,8 @@ export default function AccountPortal({
       setSuccessMsg("Welcome back!");
       setTimeout(() => {
         setSuccessMsg(null);
-      }, 2000);
+        navigate("/");
+      }, 1500);
     } catch (err: any) {
       if (err.message === "EMAIL_NOT_VERIFIED") {
         setUnverifiedEmail(email);
@@ -182,7 +183,8 @@ export default function AccountPortal({
         await refreshSignups();
         setTimeout(() => {
           setSuccessMsg(null);
-        }, 2000);
+          navigate("/");
+        }, 1500);
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Google Sign-In aborted or failed.");

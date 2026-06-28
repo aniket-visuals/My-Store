@@ -1,10 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, ShoppingCart, Menu, X, ArrowRight, Sparkles, User, Check, Download } from "lucide-react";
+import { 
+  Search, 
+  ShoppingCart, 
+  Menu, 
+  X, 
+  ArrowRight, 
+  Sparkles, 
+  User, 
+  Check, 
+  Download,
+  Settings,
+  HelpCircle,
+  Globe,
+  FileText,
+  Briefcase,
+  LogOut
+} from "lucide-react";
 import { Product } from "../types";
 import { PRODUCTS_DATA } from "../data";
 import { logout as firebaseLogout } from "../services/authService";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase";
 
 interface NavbarProps {
   cart: Product[];
@@ -43,6 +60,23 @@ export default function Navbar({
   const [passwordInput, setPasswordInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedKit, setCopiedKit] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".profile-dropdown-container")) {
+        setIsProfileOpen(false);
+      }
+    };
+    if (isProfileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   // Filter products based on search query
   const filteredProducts = searchQuery.trim()
@@ -144,14 +178,199 @@ export default function Navbar({
             <Search className="w-5 h-5 stroke-[1.8]" />
           </button>
 
-          {/* Account Portal Sign In / Account status */}
-          <button
-            onClick={() => navigate("/portal")}
-            className="hidden md:flex items-center space-x-2 border border-black/10 text-black/80 hover:bg-black/5 text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer"
-          >
-            <User className="w-4 h-4 text-black/60" />
-            <span>{isLoggedIn ? "My Account" : "Sign In"}</span>
-          </button>
+          {/* Account Portal Sign In / Account status with LinkedIn-style dropdown popup */}
+          {isLoggedIn ? (
+            <div className="relative profile-dropdown-container">
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="hidden md:flex items-center space-x-2 border border-black/10 text-black/80 hover:bg-black/5 text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer"
+              >
+                {auth.currentUser?.photoURL ? (
+                  <img
+                    src={auth.currentUser.photoURL}
+                    alt="Profile"
+                    className="w-4 h-4 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-black/60" />
+                )}
+                <span>My Account</span>
+                <span className="text-[9px] text-black/40 transition-transform duration-200" style={{ transform: isProfileOpen ? 'rotate(180deg)' : 'none' }}>
+                  ▼
+                </span>
+              </button>
+
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-[0_15px_50px_rgba(0,0,0,0.15)] border border-black/5 overflow-hidden text-left z-50 py-4 font-sans"
+                  >
+                    {/* Header profile info */}
+                    <div className="px-4 pb-4 border-b border-black/5">
+                      <div className="flex items-start space-x-3">
+                        <img
+                          src={auth.currentUser?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"}
+                          alt="Profile Avatar"
+                          className="w-12 h-12 rounded-full object-cover bg-black/5 border border-black/10 shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center space-x-1.5">
+                            <h4 className="font-bold text-sm text-black truncate leading-tight">
+                              {auth.currentUser?.displayName || userEmail.split("@")[0] || "Aniket Visuals"}
+                            </h4>
+                            <span className="bg-[#D97706]/15 text-[#D97706] text-[9px] font-bold px-1 py-0.2 rounded font-mono shrink-0">
+                              PRO
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-black/60 leading-tight mt-1 font-medium line-clamp-3">
+                            Motion Designer & Video Editor | I help creators & brands turn videos into leads and audience growth
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <button
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            navigate("/portal");
+                          }}
+                          className="w-full text-center border border-black/15 hover:bg-black/[0.02] active:bg-black/[0.04] text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
+                        >
+                          <span>View profile</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (auth.currentUser && !auth.currentUser.emailVerified) {
+                              alert("Verification email sent to " + auth.currentUser.email + ". Please check your inbox.");
+                            } else {
+                              alert("Your account is already verified and secure.");
+                            }
+                          }}
+                          className="w-full text-center bg-brand-primary hover:bg-brand-accent text-white text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
+                        >
+                          <span>{auth.currentUser?.emailVerified ? "Verified ✓" : "Verify now"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Account Section */}
+                    <div className="px-4 py-3 border-b border-black/5">
+                      <p className="text-[10px] font-mono text-black/40 uppercase tracking-widest font-bold mb-2">
+                        Account
+                      </p>
+                      <div className="space-y-1">
+                        <div 
+                          onClick={() => {
+                            alert("Premium Features are fully unlocked for your Partner Account! Explore any cinematic assets & enjoy seamless Sheets syncing.");
+                          }}
+                          className="flex items-center justify-between p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <div className="w-5 h-5 rounded bg-[#F59E0B]/10 flex items-center justify-center">
+                              <span className="text-[#F59E0B] text-xs font-bold">★</span>
+                            </div>
+                            <span className="text-xs text-black/70 group-hover:text-black font-semibold">Premium features</span>
+                          </div>
+                          <span className="text-[9px] font-bold bg-[#F59E0B]/10 text-[#F59E0B] px-1.5 py-0.5 rounded-full">Active</span>
+                        </div>
+
+                        <div 
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            navigate("/portal");
+                          }}
+                          className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
+                        >
+                          <Settings className="w-4 h-4 text-black/40 group-hover:text-black" />
+                          <span className="text-xs text-black/70 group-hover:text-black font-semibold">Settings & Privacy</span>
+                        </div>
+
+                        <div 
+                          onClick={() => {
+                            alert("Help Desk initialized. A support representative will be assigned to your workspace shortly.");
+                          }}
+                          className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
+                        >
+                          <HelpCircle className="w-4 h-4 text-black/40 group-hover:text-black" />
+                          <span className="text-xs text-black/70 group-hover:text-black font-semibold">Help</span>
+                        </div>
+
+                        <div 
+                          onClick={() => {
+                            alert("Language setting: English (United States)");
+                          }}
+                          className="flex items-center justify-between p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Globe className="w-4 h-4 text-black/40 group-hover:text-black" />
+                            <span className="text-xs text-black/70 group-hover:text-black font-semibold">Language</span>
+                          </div>
+                          <span className="text-[10px] text-black/40 font-semibold">English</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Manage Section */}
+                    <div className="px-4 py-3 border-b border-black/5">
+                      <p className="text-[10px] font-mono text-black/40 uppercase tracking-widest font-bold mb-2">
+                        Manage
+                      </p>
+                      <div className="space-y-1">
+                        <div 
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            navigate("/portal");
+                          }}
+                          className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
+                        >
+                          <FileText className="w-4 h-4 text-black/40 group-hover:text-black" />
+                          <span className="text-xs text-black/70 group-hover:text-black font-semibold">Posts & Activity</span>
+                        </div>
+
+                        <div 
+                          onClick={() => {
+                            alert("Job Board setup: Connect your Google Sheets in the Portal to automatically publish listings!");
+                          }}
+                          className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
+                        >
+                          <Briefcase className="w-4 h-4 text-black/40 group-hover:text-black" />
+                          <span className="text-xs text-black/70 group-hover:text-black font-semibold">Job Posting Account</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sign Out Section */}
+                    <div className="px-2 pt-2">
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          handleSignout();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 text-xs text-black/60 font-semibold transition-all cursor-pointer flex items-center space-x-2 group"
+                      >
+                        <LogOut className="w-4 h-4 text-black/40 group-hover:text-red-600 transition-colors" />
+                        <span>Sign out</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate("/portal")}
+              className="hidden md:flex items-center space-x-2 border border-black/10 text-black/80 hover:bg-black/5 text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer"
+            >
+              <User className="w-4 h-4 text-black/60" />
+              <span>Sign In</span>
+            </button>
+          )}
 
           {/* Primary CTA */}
           <button

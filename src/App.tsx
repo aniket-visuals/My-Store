@@ -14,7 +14,6 @@ import AccountPortal from "./components/AccountPortal";
 export default function App() {
   const [cart, setCart] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
@@ -77,19 +76,19 @@ export default function App() {
     <div className="min-h-screen bg-brand-bg flex flex-col font-sans selection:bg-brand-primary/20">
       
       {/* 1. Header component */}
-      <Navbar
-        cart={cart}
-        removeFromCart={removeFromCart}
-        clearCart={clearCart}
-        openProductPreview={openProductPreview}
-        scrollToSection={scrollToSection}
-        isLoginOpen={isLoginOpen}
-        setIsLoginOpen={setIsLoginOpen}
-        isLoggedIn={isLoggedIn}
-        setIsLoggedIn={setIsLoggedIn}
-        userEmail={userEmail}
-        setUserEmail={setUserEmail}
-      />
+      {location.pathname !== "/portal" && (
+        <Navbar
+          cart={cart}
+          removeFromCart={removeFromCart}
+          clearCart={clearCart}
+          openProductPreview={openProductPreview}
+          scrollToSection={scrollToSection}
+          isLoggedIn={isLoggedIn}
+          setIsLoggedIn={setIsLoggedIn}
+          userEmail={userEmail}
+          setUserEmail={setUserEmail}
+        />
+      )}
 
       {/* 2. Interactive Main Canvas */}
       <main className="flex-1">
@@ -125,26 +124,27 @@ export default function App() {
             />
           } />
 
+          <Route path="/portal" element={
+            <AccountPortal
+              onLoginStateChange={(loggedIn, email) => {
+                setIsLoggedIn(loggedIn);
+                setUserEmail(email);
+              }}
+            />
+          } />
+
           {/* Catch-all route to redirect back to main storefront */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
       {/* 3. Multi-column detailed footer */}
-      <Footer
-        scrollToSection={scrollToSection}
-        setActiveCategory={setActiveCategory}
-      />
-
-      {/* ACCOUNT & GOOGLE SHEETS PORTAL MODAL */}
-      <AccountPortal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onLoginStateChange={(loggedIn, email) => {
-          setIsLoggedIn(loggedIn);
-          setUserEmail(email);
-        }}
-      />
+      {location.pathname !== "/portal" && (
+        <Footer
+          scrollToSection={scrollToSection}
+          setActiveCategory={setActiveCategory}
+        />
+      )}
 
     </div>
   );

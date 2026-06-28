@@ -1,9 +1,8 @@
 {
-  "projectId": "exemplary-wares-x83b3",
-  "appId": "1:612371850880:web:068394d1d9244b0e952865",
-  "apiKey": "AIzaSyC9pgug13-LqBAzZ5jbeswt5irY0E0vVq8",
-  "authDomain": "exemplary-wares-x83b3.firebaseapp.com",
-  "storageBucket": "exemplary-wares-x83b3.firebasestorage.app",
-  "messagingSenderId": "612371850880",
-  "measurementId": ""
+  "apiKey": "AIzaSyBvG2IZvwarOMPV7JYcSlfYoITJipp7ECc",
+  "authDomain": "editors-hub-store.firebaseapp.com",
+  "projectId": "editors-hub-store",
+  "storageBucket": "editors-hub-store.firebasestorage.app",
+  "messagingSenderId": "1023425941255",
+  "appId": "1:1023425941255:web:7959df1d7498e82953ffa2"
 }

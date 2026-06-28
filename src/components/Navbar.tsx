@@ -4,6 +4,7 @@ import { Search, ShoppingCart, Menu, X, ArrowRight, Sparkles, User, Check, Downl
 import { Product } from "../types";
 import { PRODUCTS_DATA } from "../data";
 import { logout as firebaseLogout } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
 interface NavbarProps {
   cart: Product[];
@@ -11,8 +12,8 @@ interface NavbarProps {
   clearCart: () => void;
   openProductPreview: (product: Product) => void;
   scrollToSection: (id: string) => void;
-  isLoginOpen: boolean;
-  setIsLoginOpen: (open: boolean) => void;
+  isLoginOpen?: boolean;
+  setIsLoginOpen?: (open: boolean) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
   userEmail: string;
@@ -32,6 +33,7 @@ export default function Navbar({
   userEmail,
   setUserEmail
 }: NavbarProps) {
+  const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -144,7 +146,7 @@ export default function Navbar({
 
           {/* Account Portal Sign In / Account status */}
           <button
-            onClick={() => setIsLoginOpen(true)}
+            onClick={() => navigate("/portal")}
             className="hidden md:flex items-center space-x-2 border border-black/10 text-black/80 hover:bg-black/5 text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer"
           >
             <User className="w-4 h-4 text-black/60" />
@@ -459,7 +461,7 @@ export default function Navbar({
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
-                        setIsLoginOpen(true);
+                        navigate("/portal");
                       }}
                       className="w-full text-center border border-black/10 py-2.5 rounded-full text-xs font-semibold"
                     >
@@ -479,7 +481,7 @@ export default function Navbar({
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      setIsLoginOpen(true);
+                      navigate("/portal");
                     }}
                     className="w-full text-center border border-black/10 py-2.5 rounded-full text-xs font-semibold"
                   >

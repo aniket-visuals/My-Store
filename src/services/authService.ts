@@ -7,6 +7,8 @@ import {
   signInWithEmailAndPassword, 
   updateProfile, 
   signOut, 
+  sendEmailVerification,
+  sendPasswordResetEmail,
   User, 
   Auth
 } from "firebase/auth";
@@ -39,6 +41,12 @@ export const initAuth = (
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
+      if (!user.emailVerified) {
+        await signOut(auth);
+        cachedAccessToken = null;
+        if (onAuthFailure) onAuthFailure();
+        return;
+      }
       if (onAuthSuccess) {
         onAuthSuccess(user, cachedAccessToken);
       }
@@ -63,7 +71,8 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 
     cachedAccessToken = credential?.accessToken || null;
 
-    // Log user registration to Firestore
+    // Log user registration to Firestore - Disabled as per requirements
+    /*
     if (result.user) {
       await registerSignupInFirestore(
         result.user.uid,
@@ -72,6 +81,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
         "Google OAuth"
       );
     }
+    */
 
     return { user: result.user, accessToken: cachedAccessToken || "" };
   } catch (error: any) {
@@ -93,12 +103,18 @@ export const emailSignUp = async (email: string, password: string, displayName: 
     // Update display name
     await updateProfile(user, { displayName });
 
-    // Log user registration to Firestore
-    await registerSignupInFirestore(user.uid, displayName, email, "Email/Password");
+    // Send verification email
+    await sendEmailVerification(user);
+
+    // Sign out immediately so they are not signed in automatically
+    await signOut(auth);
 
     return user;
   } catch (error: any) {
     console.error("Email sign up error:", error);
+    if (error.code === "auth/email-already-in-use") {
+      throw new Error("User already exists. Please sign in");
+    }
     throw error;
   }
 };
@@ -109,9 +125,42 @@ export const emailSignUp = async (email: string, password: string, displayName: 
 export const emailSignIn = async (email: string, password: string): Promise<User> => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    const user = userCredential.user;
+
+    if (!user.emailVerified) {
+      await signOut(auth);
+      throw new Error("EMAIL_NOT_VERIFIED");
+    }
+
+    return user;
   } catch (error: any) {
     console.error("Email sign in error:", error);
+    if (error.message === "EMAIL_NOT_VERIFIED") {
+      throw error;
+    }
+    if (
+      error.code === "auth/invalid-credential" ||
+      error.code === "auth/user-not-found" ||
+      error.code === "auth/wrong-password" ||
+      error.code === "auth/invalid-email"
+    ) {
+      throw new Error("Email or password is incorrect");
+    }
+    throw new Error("Email or password is incorrect");
+  }
+};
+
+/**
+ * Send password reset email
+ */
+export const sendForgotPasswordEmail = async (email: string): Promise<void> => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error: any) {
+    console.error("Password reset error:", error);
+    if (error.code === "auth/user-not-found" || error.code === "auth/invalid-email") {
+      throw new Error("Invalid or unregistered email address");
+    }
     throw error;
   }
 };
@@ -156,51 +205,13 @@ export async function registerSignupInFirestore(
   email: string,
   provider: string
 ): Promise<void> {
-  try {
-    const signupDoc = doc(db, "signups", uid);
-    const signupData: SignupRecord = {
-      id: uid,
-      name,
-      email,
-      date: new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      provider,
-    };
-    await setDoc(signupDoc, {
-      ...signupData,
-      createdAt: serverTimestamp(),
-    });
-  } catch (error) {
-    console.error("Failed to write user to Firestore:", error);
-  }
+  // Disabled as per requirements (Do NOT use Firestore or Storage yet)
 }
 
 /**
  * Fetch all signups from Firestore
  */
 export async function getAllSignupsFromFirestore(): Promise<SignupRecord[]> {
-  try {
-    const q = query(collection(db, "signups"), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    const signups: SignupRecord[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      signups.push({
-        id: docSnap.id,
-        name: data.name,
-        email: data.email,
-        date: data.date,
-        provider: data.provider,
-      });
-    });
-    return signups;
-  } catch (error) {
-    console.error("Error reading signups:", error);
-    return [];
-  }
+  // Disabled as per requirements (Do NOT use Firestore or Storage yet)
+  return [];
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   X, 
@@ -15,7 +15,30 @@ import {
   PlusCircle,
   Eye,
   EyeOff,
-  AlertTriangle
+  AlertTriangle,
+  Bell,
+  Edit3,
+  Instagram,
+  Twitter,
+  Globe,
+  Search,
+  Wallet,
+  LayoutGrid,
+  HelpCircle,
+  Phone,
+  MapPin,
+  Compass,
+  FileText,
+  CheckCircle2,
+  ChevronRight,
+  Trash2,
+  Calendar,
+  CreditCard,
+  Landmark,
+  Languages,
+  Shield,
+  Info,
+  Menu
 } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import { 
@@ -35,6 +58,7 @@ import {
 } from "../services/sheetsService";
 
 import { useNavigate } from "react-router-dom";
+import { AuthenticatedDashboard } from "./AuthenticatedDashboard";
 
 interface AccountPortalProps {
   isOpen?: boolean;
@@ -72,6 +96,107 @@ export default function AccountPortal({
   const [signupsList, setSignupsList] = useState<SignupRecord[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
+
+  // Profile custom states for Gridlines UI look
+  const [profileName, setProfileName] = useState(() => {
+    return localStorage.getItem("profile_name") || "Ronald Richards";
+  });
+  const [profileHandle, setProfileHandle] = useState(() => {
+    return localStorage.getItem("profile_handle") || "RonaldRich@example.com";
+  });
+  const [bio1, setBio1] = useState(() => {
+    return localStorage.getItem("profile_bio1") || "🏝️ Vibe curator @Islands (internet money x communities)";
+  });
+  const [bio2, setBio2] = useState(() => {
+    return localStorage.getItem("profile_bio2") || "🎬 Motion Designer & Video Editor";
+  });
+  const [bio3, setBio3] = useState(() => {
+    return localStorage.getItem("profile_bio3") || "🤫 gen z whisperer";
+  });
+  const [bio4, setBio4] = useState(() => {
+    return localStorage.getItem("profile_bio4") || "🏰 RonaldRich.eth";
+  });
+  const [linkWallet, setLinkWallet] = useState(() => {
+    return localStorage.getItem("profile_link_wallet") || "0x53f1...8472";
+  });
+  const [linkInstagram, setLinkInstagram] = useState(() => {
+    return localStorage.getItem("profile_link_instagram") || "@RonaldRich";
+  });
+  const [linkTwitter, setLinkTwitter] = useState(() => {
+    return localStorage.getItem("profile_link_twitter") || "@RonaldRich";
+  });
+  const [linkDiscord, setLinkDiscord] = useState(() => {
+    return localStorage.getItem("profile_link_discord") || "RonaldRich#1337";
+  });
+  const [linkSnapchat, setLinkSnapchat] = useState(() => {
+    return localStorage.getItem("profile_link_snapchat") || "@RonaldRich";
+  });
+  const [selectedAvatar, setSelectedAvatar] = useState(() => {
+    return localStorage.getItem("profile_selected_avatar") || "ronald";
+  });
+
+  // Gridlines UI custom states
+  const [activeSidebarTab, setActiveSidebarTab] = useState<string>("edit-profile");
+  const [profilePhone, setProfilePhone] = useState(() => {
+    return localStorage.getItem("profile_phone") || "(219) 555-0114";
+  });
+  const [profileLocation, setProfileLocation] = useState(() => {
+    return localStorage.getItem("profile_location") || "California";
+  });
+  const [profileBioText, setProfileBioText] = useState(() => {
+    return localStorage.getItem("profile_bio_text") || "Hi 👋, I'm Ronald, a passionate UX designer with 10 years of experience in creating intuitive and user-centered digital experiences. With a strong background in user research, information architecture, and interaction design, I am dedicated to crafting seamless digital products that delight users and drive business results.";
+  });
+
+  // Sidebar mobile drawer state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Editing states for Cards
+  const [isEditingPersonalInfo, setIsEditingPersonalInfo] = useState(false);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+
+  // Temporary/Draft values for Inputs
+  const [tempProfileName, setTempProfileName] = useState(profileName);
+  const [tempProfilePhone, setTempProfilePhone] = useState(profilePhone);
+  const [tempProfileLocation, setTempProfileLocation] = useState(profileLocation);
+  const [tempProfileBioText, setTempProfileBioText] = useState(profileBioText);
+
+  // Other tabs' state variables
+  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+    return localStorage.getItem("profile_language") || "english";
+  });
+  const [notifyAccountActivity, setNotifyAccountActivity] = useState(true);
+  const [notifySheetsSync, setNotifySheetsSync] = useState(true);
+  const [notifyWeeklySummary, setNotifyWeeklySummary] = useState(false);
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileTab, setProfileTab] = useState<"gallery" | "activity">("gallery");
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [bellActive, setBellActive] = useState(false);
+
+  const saveProfileChanges = () => {
+    localStorage.setItem("profile_name", profileName);
+    localStorage.setItem("profile_handle", profileHandle);
+    localStorage.setItem("profile_bio1", bio1);
+    localStorage.setItem("profile_bio2", bio2);
+    localStorage.setItem("profile_bio3", bio3);
+    localStorage.setItem("profile_bio4", bio4);
+    localStorage.setItem("profile_link_wallet", linkWallet);
+    localStorage.setItem("profile_link_instagram", linkInstagram);
+    localStorage.setItem("profile_link_twitter", linkTwitter);
+    localStorage.setItem("profile_link_discord", linkDiscord);
+    localStorage.setItem("profile_link_snapchat", linkSnapchat);
+    localStorage.setItem("profile_selected_avatar", selectedAvatar);
+    
+    localStorage.setItem("profile_phone", profilePhone);
+    localStorage.setItem("profile_location", profileLocation);
+    localStorage.setItem("profile_bio_text", profileBioText);
+    localStorage.setItem("profile_language", selectedLanguage);
+    
+    setIsEditingProfile(false);
+    setSuccessMsg("Profile settings updated successfully!");
+    setTimeout(() => setSuccessMsg(null), 3000);
+  };
 
   // Track authentication status
   useEffect(() => {
@@ -270,6 +395,738 @@ export default function AccountPortal({
       setIsSyncing(false);
     }
   };
+
+  if (user && !unverifiedEmail) {
+    return (
+      <AuthenticatedDashboard
+        user={user}
+        accessToken={accessToken}
+        spreadsheetId={spreadsheetId}
+        spreadsheetUrl={spreadsheetUrl}
+        signupsList={signupsList}
+        isSyncing={isSyncing}
+        isCreatingSheet={isCreatingSheet}
+        isLoading={isLoading}
+        handleSignout={handleSignout}
+        handleGoogleSignIn={handleGoogleSignIn}
+        handleCreateNewSheet={handleCreateNewSheet}
+        handleSyncToSheet={handleSyncToSheet}
+        refreshSignups={refreshSignups}
+        onClose={onClose}
+        sendForgotPasswordEmail={sendForgotPasswordEmail}
+      />
+    );
+  }
+
+  if (false) {
+    return (
+      <div className="min-h-screen w-full relative bg-white flex flex-col items-stretch justify-start font-sans">
+        {/* Background Decorative Gradient Orbs matching the brand's aesthetics */}
+        <div className="absolute top-[-15%] left-[-10%] w-[600px] h-[600px] bg-purple-200/40 blur-[130px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-[-15%] right-[-10%] w-[650px] h-[650px] bg-rose-200/40 blur-[140px] rounded-full pointer-events-none" />
+        <div className="absolute top-[35%] right-[10%] w-[500px] h-[500px] bg-sky-200/30 blur-[120px] rounded-full pointer-events-none" />
+
+        {/* Dynamic Action Success Notification Alert Bar */}
+        <AnimatePresence>
+          {successMsg && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className="fixed top-6 left-1/2 -translate-x-1/2 bg-black text-white font-bold text-xs px-6 py-3.5 rounded-full shadow-2xl z-50 flex items-center space-x-2.5 border border-white/10 backdrop-blur-md"
+            >
+              <Check className="w-4 h-4 text-emerald-400" />
+              <span>{successMsg}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Immersive Creator Profile Card Wrapper - Now Full Screen */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="relative w-full bg-white z-10 flex flex-col min-h-screen"
+        >
+          {/* 1. Header Banner exactly styled matching the image gradient */}
+          <div className="relative h-48 sm:h-64 w-full bg-gradient-to-r from-[#f472b6] via-[#c084fc] to-[#f43f5e] overflow-hidden">
+            {/* Ambient internal soft pulses */}
+            <div className="absolute top-[-50%] left-[-10%] w-[450px] h-[450px] rounded-full bg-yellow-300/20 blur-3xl" />
+            <div className="absolute bottom-[-20%] right-[10%] w-[400px] h-[400px] rounded-full bg-purple-400/25 blur-2xl" />
+
+            {/* Responsive aligned header controls */}
+            <div className="max-w-6xl mx-auto px-6 sm:px-12 w-full h-full relative">
+              {/* Float home trigger back button */}
+              <button
+                onClick={() => {
+                  if (onClose) onClose();
+                  else navigate("/");
+                }}
+                className="absolute top-4 left-6 sm:top-6 sm:left-12 inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-bold text-xs backdrop-blur-md border border-white/20 transition-all cursor-pointer z-20 shadow-sm"
+              >
+                <span>← Back to Storefront</span>
+              </button>
+
+              {/* Middle search bar inside the banner exactly matching the image layout */}
+              <div className="absolute top-4 right-24 sm:top-6 sm:right-40 flex items-center bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 w-36 sm:w-48 text-xs transition-all text-white z-20 shadow-sm">
+                <Search className="w-3.5 h-3.5 text-white/80 mr-2 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search Islands..."
+                  className="bg-transparent text-white placeholder-white/80 text-xs outline-none w-full font-sans font-semibold border-none focus:ring-0 p-0"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      navigate("/");
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Custom user wallet/ens capsule - exactly matching top right user info of image */}
+              <div className="absolute top-4 right-6 sm:top-6 sm:right-12 flex items-center space-x-1.5 bg-white/15 backdrop-blur-md border border-white/20 px-3.5 py-2 rounded-full z-20 shadow-sm select-none">
+                <img
+                  src={user?.photoURL || "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=120"}
+                  alt="Profile Mini"
+                  className="w-4.5 h-4.5 rounded-full object-cover bg-white/20 border border-white/10 shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="font-mono text-[10px] text-white font-black uppercase tracking-wider">
+                  {user?.email ? `${user.email.split("@")[0]}.eth` : "aniket.eth"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Overlapping Profile Avatar Row & Followers stack & CTAs */}
+          <div className="max-w-6xl mx-auto w-full px-6 sm:px-12 pb-6 relative z-10 flex flex-col md:flex-row md:items-end justify-between -mt-12 sm:-mt-16 gap-6">
+            {/* Circular avatar with gradient border of the image */}
+            <div className="relative shrink-0 select-none">
+              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-tr from-[#f472b6] via-[#c084fc] to-[#f43f5e] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.12)]">
+                <div className="w-full h-full rounded-full bg-white p-0.5">
+                  <img
+                    src={
+                      selectedAvatar === "cat"
+                        ? "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=240"
+                        : selectedAvatar === "neon"
+                        ? "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=240"
+                        : selectedAvatar === "designer"
+                        ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=240"
+                        : selectedAvatar === "pixel"
+                        ? "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=240"
+                        : user?.photoURL || "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=240"
+                    }
+                    alt="Profile Avatar"
+                    className="w-full h-full rounded-full object-cover bg-black/[0.02]"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              </div>
+              {/* Blue presence verification ring badge exactly matching picture */}
+              <span className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 bg-[#4f46e5] rounded-full border-[3px] border-white flex items-center justify-center text-[10px] text-white font-black shadow-md select-none">
+                ✓
+              </span>
+            </div>
+
+            {/* Followers stack & CTAs matching image exactly */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 md:pb-3 text-left">
+              {/* Overlapping followers stacked row */}
+              <div className="flex items-center space-x-2 select-none">
+                <div className="flex -space-x-2">
+                  <img
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=80"
+                    alt="Follower 1"
+                    className="w-6.5 h-6.5 rounded-full border-2 border-white object-cover shadow-sm shrink-0"
+                  />
+                  <img
+                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=80"
+                    alt="Follower 2"
+                    className="w-6.5 h-6.5 rounded-full border-2 border-white object-cover shadow-sm shrink-0"
+                  />
+                  <img
+                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=80"
+                    alt="Follower 3"
+                    className="w-6.5 h-6.5 rounded-full border-2 border-white object-cover shadow-sm shrink-0"
+                  />
+                </div>
+                <span className="text-xs text-black/50 font-sans font-medium">
+                  Followed by <span className="text-black font-semibold">@tomz</span>, and 10 others you follow
+                </span>
+              </div>
+
+              {/* Action capsule layout */}
+              <div className="flex items-center space-x-2 shrink-0">
+                {/* Bell Icon for subscription */}
+                <button
+                  onClick={() => {
+                    setBellActive(!bellActive);
+                    if (!bellActive) {
+                      alert("Creator notifications turned ON. You'll receive live design assets and updates.");
+                    } else {
+                      alert("Notifications turned off.");
+                    }
+                  }}
+                  className={`p-2.5 rounded-full border border-black/10 hover:bg-black/[0.03] transition-colors cursor-pointer shrink-0 flex items-center justify-center ${
+                    bellActive ? "bg-amber-500/10 text-amber-500 border-amber-500/25" : "bg-white text-black/60"
+                  }`}
+                  title="Subscribe to Notifications"
+                >
+                  <Bell className="w-4 h-4 fill-current" />
+                </button>
+
+                {/* Follow Button */}
+                <button
+                  onClick={() => {
+                    setIsFollowing(!isFollowing);
+                    if (!isFollowing) {
+                      alert(`You are now following ${profileName}!`);
+                    }
+                  }}
+                  className={`px-6 py-2 rounded-full font-bold text-xs tracking-wide transition-all duration-150 cursor-pointer ${
+                    isFollowing
+                      ? "bg-black/[0.05] hover:bg-black/10 text-black border border-black/10"
+                      : "bg-black hover:bg-black/90 text-white shadow-md active:scale-95"
+                  }`}
+                >
+                  {isFollowing ? "Following" : "Follow"}
+                </button>
+
+                {/* Edit details switcher toggle */}
+                <button
+                  onClick={() => setIsEditingProfile(!isEditingProfile)}
+                  className="px-4 py-2 rounded-full border border-black/15 hover:bg-black/[0.02] text-black text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>{isEditingProfile ? "Close Edit" : "Edit Profile"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Conditional Edit Form Slider */}
+          {isEditingProfile && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="w-full border-b border-black/5 bg-black/[0.01]"
+            >
+              <div className="max-w-6xl mx-auto px-6 sm:px-12 py-6 space-y-4 text-left font-sans">
+                <h5 className="text-xs font-bold uppercase tracking-wider text-black">Edit Creator Profile details</h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">Display Name</label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/10 rounded-xl text-xs bg-white outline-none focus:border-black/30 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">Username Handle</label>
+                    <input
+                      type="text"
+                      value={profileHandle}
+                      onChange={(e) => setProfileHandle(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/10 rounded-xl text-xs bg-white outline-none focus:border-black/30 font-semibold text-purple-600"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">Bio Line 1 (with emoji)</label>
+                    <input
+                      type="text"
+                      value={bio1}
+                      onChange={(e) => setBio1(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/10 rounded-xl text-xs bg-white outline-none focus:border-black/30 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">Bio Line 2 (with emoji)</label>
+                    <input
+                      type="text"
+                      value={bio2}
+                      onChange={(e) => setBio2(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/10 rounded-xl text-xs bg-white outline-none focus:border-black/30 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">Bio Line 3 (with emoji)</label>
+                    <input
+                      type="text"
+                      value={bio3}
+                      onChange={(e) => setBio3(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/10 rounded-xl text-xs bg-white outline-none focus:border-black/30 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">Bio Line 4 (with emoji)</label>
+                    <input
+                      type="text"
+                      value={bio4}
+                      onChange={(e) => setBio4(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/10 rounded-xl text-xs bg-white outline-none focus:border-black/30 font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">ETH Wallet Address</label>
+                    <input
+                      type="text"
+                      value={linkWallet}
+                      onChange={(e) => setLinkWallet(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/10 rounded-xl text-xs bg-white outline-none focus:border-black/30 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">Instagram Handle</label>
+                    <input
+                      type="text"
+                      value={linkInstagram}
+                      onChange={(e) => setLinkInstagram(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/10 rounded-xl text-xs bg-white outline-none focus:border-black/30 font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">Choose Avatar Vibe</label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {[
+                      { id: "cat", label: "😻 Anime Cat" },
+                      { id: "neon", label: "🌆 Synthwave Neon" },
+                      { id: "designer", label: "🎨 Vector Designer" },
+                      { id: "pixel", label: "🎮 Retro Pixel" },
+                      { id: "google", label: "👤 Google Photo" },
+                    ].map((avatarOpt) => (
+                      <button
+                        key={avatarOpt.id}
+                        onClick={() => setSelectedAvatar(avatarOpt.id)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                          selectedAvatar === avatarOpt.id
+                            ? "bg-black text-white border-black"
+                            : "bg-white text-black/60 border-black/10 hover:border-black/20"
+                        }`}
+                      >
+                        {avatarOpt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center space-x-2">
+                  <button
+                    onClick={saveProfileChanges}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer shadow-sm transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    onClick={() => setIsEditingProfile(false)}
+                    className="border border-black/15 text-black hover:bg-black/5 font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 4. Profile Text Elements Bio & Details */}
+          <div className="max-w-6xl mx-auto w-full px-6 sm:px-12 pb-6 space-y-4 text-left">
+            <div>
+              <h2 className="text-3xl font-black font-sans text-black tracking-tight leading-tight">
+                {profileName}
+              </h2>
+              <span className="text-[#c84bf0] text-sm font-bold tracking-tight">
+                @{profileHandle}
+              </span>
+            </div>
+
+            {/* Emoji bullet point list exactly matching image style */}
+            <div className="space-y-1 text-xs text-black/70 font-medium font-sans max-w-lg leading-relaxed">
+              <p>{bio1}</p>
+              <p>{bio2}</p>
+              <p>{bio3}</p>
+              <p>{bio4}</p>
+            </div>
+
+            {/* Premium visual social pills exact color structure of the image */}
+            <div className="flex flex-wrap gap-2 pt-3 select-none font-sans">
+              <div className="bg-black/[0.02] hover:bg-black/[0.04] border border-black/10 text-black text-xs font-semibold px-4 py-2 rounded-full inline-flex items-center gap-2 transition-all cursor-pointer">
+                <Wallet className="w-3.5 h-3.5 text-black/40 shrink-0" />
+                <span>{linkWallet}</span>
+              </div>
+
+              <div className="bg-black/[0.02] hover:bg-black/[0.04] border border-black/10 text-black text-xs font-semibold px-4 py-2 rounded-full inline-flex items-center gap-2 transition-all cursor-pointer">
+                <Instagram className="w-3.5 h-3.5 text-black/40 shrink-0" />
+                <span>{linkInstagram}</span>
+              </div>
+
+              <div className="bg-black/[0.02] hover:bg-black/[0.04] border border-black/10 text-black text-xs font-semibold px-4 py-2 rounded-full inline-flex items-center gap-2 transition-all cursor-pointer">
+                <Twitter className="w-3.5 h-3.5 text-black/40 shrink-0" />
+                <span>{linkTwitter}</span>
+              </div>
+
+              <div className="bg-black/[0.02] hover:bg-black/[0.04] border border-black/10 text-black text-xs font-semibold px-4 py-2 rounded-full inline-flex items-center gap-2 transition-all cursor-pointer">
+                <Globe className="w-3.5 h-3.5 text-black/40 shrink-0" />
+                <span>{linkDiscord}</span>
+              </div>
+
+              <div className="bg-black/[0.02] hover:bg-black/[0.04] border border-black/10 text-black text-xs font-semibold px-4 py-2 rounded-full inline-flex items-center gap-2 transition-all cursor-pointer">
+                <Sparkles className="w-3.5 h-3.5 text-black/40 shrink-0" />
+                <span>{linkSnapchat}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Tabs Navigation layout matching the image "Gallery / Activity" */}
+          <div className="w-full border-b border-black/5 bg-white">
+            <div className="max-w-6xl mx-auto px-6 sm:px-12 flex items-center space-x-6">
+              <button
+                onClick={() => setProfileTab("gallery")}
+                className={`pb-4 text-xs font-bold uppercase tracking-wider relative transition-colors cursor-pointer ${
+                  profileTab === "gallery" ? "text-black border-b-[3px] border-black" : "text-black/40 hover:text-black/70"
+                }`}
+              >
+                <span>Gallery</span>
+              </button>
+              <button
+                onClick={() => setProfileTab("activity")}
+                className={`pb-4 text-xs font-bold uppercase tracking-wider relative transition-colors cursor-pointer ${
+                  profileTab === "activity" ? "text-black border-b-[3px] border-black" : "text-black/40 hover:text-black/70"
+                }`}
+              >
+                <span>Activity & Workspace</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 6. Tabs dynamic content switcher */}
+          {profileTab === "gallery" ? (
+            <div className="w-full bg-[#fafbfc] flex-1 py-8 sm:py-12">
+              <div className="max-w-6xl mx-auto px-6 sm:px-12">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 text-left">
+                <div>
+                  <h4 className="font-sans font-black text-lg text-black uppercase tracking-tight">Portfolio & Design Assets</h4>
+                  <p className="text-xs text-black/40 mt-0.5">Explore unlocked assets, creative bundles, and active workspace downloads.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    alert("Creative library successfully refreshed! All connected assets are up to date.");
+                  }}
+                  className="inline-flex items-center space-x-2 text-xs font-bold text-black border border-black/10 bg-white hover:bg-black/[0.02] px-3.5 py-2 rounded-xl shadow-sm transition-all cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Refresh Library</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  {
+                    title: "Cinematic LUTs Bundle Pro",
+                    desc: "Premium color grading profiles calibrated for log profiles. Unlocks perfect cinematic tones instantly.",
+                    category: "Color Grading",
+                    tag: "PRO",
+                    img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=320",
+                    size: "48 MB"
+                  },
+                  {
+                    title: "Liquid Motion VFX Templates",
+                    desc: "Stunning hand-drawn liquid motion graphics. Highly customizable for After Effects & Premiere Pro.",
+                    category: "Motion Graphics",
+                    tag: "VFX",
+                    img: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=320",
+                    size: "128 MB"
+                  },
+                  {
+                    title: "Hyper-Foley Atmospheric SFX",
+                    desc: "High-definition sound design curves, sweeps, riser transitions, and everyday background atmospheres.",
+                    category: "Sound Effects",
+                    tag: "HQ Audio",
+                    img: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&q=80&w=320",
+                    size: "244 MB"
+                  },
+                  {
+                    title: "Cyberpunk Glow Graphics Pack",
+                    desc: "Futuristic HUDs, interfaces, holographic rings, and circuit flow assets optimized for quick overlay.",
+                    category: "Overlays",
+                    tag: "4K",
+                    img: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=320",
+                    size: "72 MB"
+                  },
+                  {
+                    title: "8K Film Grain & Textures",
+                    desc: "Real Kodak 35mm film scans, dust overlays, hair specs, and gate weavers to inject raw textures.",
+                    category: "Film Assets",
+                    tag: "8K Grain",
+                    img: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=320",
+                    size: "1.2 GB"
+                  },
+                  {
+                    title: "Premium Social Media Frame Kit",
+                    desc: "Clean desktop and phone frame layouts to display your video work with aesthetic minimalism.",
+                    category: "Templates",
+                    tag: "PSD / AE",
+                    img: "https://images.unsplash.com/photo-1522542550221-31fd19575a2d?auto=format&fit=crop&q=80&w=320",
+                    size: "15 MB"
+                  }
+                ].map((item, index) => (
+                  <div key={index} className="bg-white rounded-2xl border border-black/5 overflow-hidden shadow-sm hover:shadow-md transition-all group flex flex-col justify-between">
+                    <div>
+                      <div className="relative h-40 w-full overflow-hidden bg-black/5">
+                        <img
+                          src={item.img}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-black text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-sm">
+                          {item.category}
+                        </span>
+                        <span className="absolute top-3 right-3 bg-black text-white text-[8px] font-bold px-1.5 py-0.5 rounded font-mono">
+                          {item.tag}
+                        </span>
+                      </div>
+                      <div className="p-4 space-y-1.5 text-left">
+                        <h5 className="font-bold text-sm text-black group-hover:text-purple-600 transition-colors">
+                          {item.title}
+                        </h5>
+                        <p className="text-[11px] text-black/50 leading-relaxed font-sans line-clamp-2">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-4 pt-0 flex items-center justify-between border-t border-black/5 mt-2">
+                      <span className="text-[9px] text-black/40 font-mono font-bold">Size: {item.size}</span>
+                      <button
+                        onClick={() => {
+                          alert(`Starting high-speed download for ${item.title}... Your secure mirror is active.`);
+                        }}
+                        className="bg-black hover:bg-black/80 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl cursor-pointer transition-colors"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          ) : (
+            <div className="w-full bg-[#fafbfc] flex-1 py-8 sm:py-12 space-y-8 text-left">
+              <div className="max-w-6xl mx-auto px-6 sm:px-12 space-y-8">
+              {/* Database sync counts */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Sheets Connection Status */}
+                <div className="bg-white border border-black/5 rounded-2xl p-5 space-y-4 shadow-sm flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-[10px] font-mono uppercase tracking-widest text-black/40">Sheets API Link</h5>
+                      <span className={`text-[9px] uppercase px-2 py-0.5 rounded-full font-mono font-bold tracking-wider ${
+                        accessToken ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                      }`}>
+                        {accessToken ? "Authorized" : "Unauthorized"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-black/60 leading-relaxed font-sans font-medium">
+                      Synchronize all custom user registrants to your Google Sheets automatically.
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    {!accessToken ? (
+                      <button
+                        onClick={handleGoogleSignIn}
+                        disabled={isLoading}
+                        className="w-full flex items-center justify-center space-x-2 bg-black hover:bg-black/90 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all cursor-pointer"
+                      >
+                        <svg className="w-4 h-4 mr-1 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18A11.99 11.99 0 0 0 1.32 12c0 1.8.4 3.51 1.1 5l3.42-2.9z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span>Connect Sheets API</span>
+                      </button>
+                    ) : spreadsheetId ? (
+                      <div className="space-y-2">
+                        <a 
+                          href={spreadsheetUrl} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="w-full text-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+                        >
+                          <span>Open Live Sheet</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleCreateNewSheet}
+                        disabled={isCreatingSheet}
+                        className="w-full bg-black hover:bg-black/90 text-white rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <PlusCircle className="w-4 h-4 text-white shrink-0" />
+                        <span>{isCreatingSheet ? "Creating sheet..." : "Generate Synced Sheet"}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Database sync counts */}
+                <div className="bg-white border border-black/5 rounded-2xl p-5 space-y-4 shadow-sm flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-[10px] font-mono uppercase tracking-widest text-black/40">Database Live Entries</h5>
+                      <span className="text-[9px] uppercase px-2 py-0.5 rounded-full font-mono font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
+                        {signupsList.length} Accounts
+                      </span>
+                    </div>
+                    <p className="text-xs text-black/60 leading-relaxed font-sans font-medium">
+                      Pending registrations synced locally from the database to Sheets.
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={handleSyncToSheet}
+                      disabled={isSyncing || !accessToken || !spreadsheetId}
+                      className={`w-full font-bold text-xs py-2.5 px-4 rounded-xl transition-all duration-150 flex items-center justify-center space-x-2 ${
+                        !accessToken || !spreadsheetId
+                          ? "bg-black/[0.04] text-black/30 border border-black/5 cursor-not-allowed"
+                          : "bg-black hover:bg-black/90 text-white shadow-sm cursor-pointer"
+                      }`}
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+                      <span>{isSyncing ? "Syncing to Sheets..." : "Sync Database to Sheets"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Security Credentials */}
+                <div className="bg-white border border-black/5 rounded-2xl p-5 space-y-4 shadow-sm flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <h5 className="text-[10px] font-mono uppercase tracking-widest text-black/40">Security Credentials</h5>
+                    <div className="space-y-1.5 text-[11px] font-sans">
+                      <div className="flex justify-between">
+                        <span className="text-black/40">UID:</span>
+                        <span className="font-mono text-black/70 font-bold truncate max-w-[120px]" title={user.uid}>{user.uid}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-black/40">Account:</span>
+                        <span className="text-emerald-600 font-bold">Developer Pro</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-black/40">Auth Provider:</span>
+                        <span className="text-black/70 font-semibold uppercase">{user.providerData?.[0]?.providerId === "google.com" ? "Google" : "Email"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={handleSignout}
+                      className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer text-center flex items-center justify-center space-x-1"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out Session</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informative Welcome / Support block */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans">
+                <div className="p-5 bg-black/[0.02] border border-black/5 rounded-2xl flex items-start gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-black/5 flex items-center justify-center text-black shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-black uppercase tracking-wider">Welcome to Editors Hub!</h5>
+                    <p className="text-[11px] text-black/60 leading-relaxed mt-1">
+                      You have successfully authenticated with Firebase. Your personal creator space is online and active. Explore our premium LUTs, template assets, and cinematic sound rises!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-5 bg-black/[0.02] border border-black/5 rounded-2xl flex items-start gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-black/5 flex items-center justify-center text-black shrink-0">
+                    <Database className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-black uppercase tracking-wider">Authentication Shield Status</h5>
+                    <p className="text-[11px] text-black/60 leading-relaxed mt-1">
+                      Your session is protected by Firebase Authentication. Database integrations are active. All sync metrics can be published securely to Google Sheets.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Signups List Display */}
+              <div className="bg-white border border-black/5 rounded-3xl overflow-hidden shadow-sm text-left">
+                <div className="p-5 border-b border-black/5 flex items-center justify-between">
+                  <div>
+                    <h5 className="font-sans font-black text-sm text-black uppercase tracking-tight">User Registrations Table</h5>
+                    <p className="text-[11px] text-black/40">View other creator database registrations that will synchronize with Google Sheets.</p>
+                  </div>
+                  <button
+                    onClick={refreshSignups}
+                    className="p-2 rounded-xl border border-black/10 hover:bg-black/[0.02] transition-colors cursor-pointer"
+                    title="Refresh Registrants"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-black/60" />
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto max-h-[250px] overflow-y-auto">
+                  <table className="w-full text-left border-collapse text-xs font-sans">
+                    <thead>
+                      <tr className="bg-black/[0.01] border-b border-black/5 text-black/50 font-mono text-[9px] uppercase tracking-wider font-bold">
+                        <th className="py-3 px-5">Name</th>
+                        <th className="py-3 px-5">Email Address</th>
+                        <th className="py-3 px-5">Date Registered</th>
+                        <th className="py-3 px-5">Provider</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/5">
+                      {signupsList.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-black/30 font-semibold">
+                            No registered users in current Firestore collection database.
+                          </td>
+                        </tr>
+                      ) : (
+                        signupsList.map((signup, idx) => (
+                          <tr key={idx} className="hover:bg-black/[0.005] transition-colors">
+                            <td className="py-3 px-5 font-bold text-black">{signup.name}</td>
+                            <td className="py-3 px-5 font-mono text-black/70 text-[11px]">{signup.email}</td>
+                            <td className="py-3 px-5 text-black/60">{signup.date}</td>
+                            <td className="py-3 px-5">
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                signup.provider === "google.com" ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-700"
+                              }`}>
+                                {signup.provider === "google.com" ? "Google" : "Email"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          )}
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-tr from-[#ffbe90] via-[#fde2cb] to-[#fff8f2] flex flex-col items-center justify-center p-4 md:p-8 font-sans">

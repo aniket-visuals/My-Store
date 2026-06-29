@@ -222,14 +222,14 @@ export default function Navbar({
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center space-x-1.5">
                             <h4 className="font-bold text-sm text-black truncate leading-tight">
-                              {auth.currentUser?.displayName || userEmail.split("@")[0] || "Aniket Visuals"}
+                              {localStorage.getItem("profile_name") || auth.currentUser?.displayName || userEmail.split("@")[0] || "Aniket Visuals"}
                             </h4>
                             <span className="bg-[#D97706]/15 text-[#D97706] text-[9px] font-bold px-1 py-0.2 rounded font-mono shrink-0">
                               PRO
                             </span>
                           </div>
                           <p className="text-[11px] text-black/60 leading-tight mt-1 font-medium line-clamp-3">
-                            Motion Designer & Video Editor | I help creators & brands turn videos into leads and audience growth
+                            {localStorage.getItem("profile_bio2") || "Motion Designer & Video Editor | I help creators & brands turn videos into leads and audience growth"}
                           </p>
                         </div>
                       </div>

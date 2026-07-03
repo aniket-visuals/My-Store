@@ -23,7 +23,6 @@ import { PRODUCTS_DATA } from "../data";
 import { logout as firebaseLogout } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
-import { getProfileAvatarUrl } from "../utils";
 
 interface NavbarProps {
   cart: Product[];
@@ -94,9 +93,7 @@ export default function Navbar({
   }, [isProfileOpen]);
 
   const getUserAvatarUrl = () => {
-    const selectedAvatarKey = localStorage.getItem("profile_selected_avatar");
-    const localAvatarUrl = getProfileAvatarUrl(selectedAvatarKey);
-    return localAvatarUrl || auth.currentUser?.photoURL || null;
+    return auth.currentUser?.photoURL || null;
   };
 
   const getInitials = () => {

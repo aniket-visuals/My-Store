@@ -12,7 +12,7 @@ import { Product } from "../types";
 import { collection, query, where, getDocs, getDoc, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import { db, auth, OperationType, handleFirestoreError } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { formatDescription, getProfileAvatarUrl } from "../utils";
+import { formatDescription } from "../utils";
 
 interface ProductDetailPageProps {
   product: Product;
@@ -338,9 +338,7 @@ export default function ProductDetailPage({
     }
 
     
-    const selectedAvatarKey = localStorage.getItem("profile_selected_avatar");
-    const localAvatarUrl = getProfileAvatarUrl(selectedAvatarKey);
-    const finalAvatar = localAvatarUrl || currentUser.photoURL || "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png";
+    const finalAvatar = currentUser.photoURL || "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png";
 
     const newReviewItem = {
 
@@ -842,9 +840,7 @@ export default function ProductDetailPage({
                   }
                   const hasGenericAvatar = rev.avatar === "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png";
                   
-                  const selectedAvatarKey = localStorage.getItem("profile_selected_avatar");
-                  const localAvatarUrl = isCurrentUserReview ? getProfileAvatarUrl(selectedAvatarKey) : null;
-                  const displayAvatar = isCurrentUserReview ? (localAvatarUrl || currentUser.photoURL) : (hasGenericAvatar ? null : rev.avatar);
+                  const displayAvatar = isCurrentUserReview ? currentUser.photoURL : (hasGenericAvatar ? null : rev.avatar);
 
 
                   return (

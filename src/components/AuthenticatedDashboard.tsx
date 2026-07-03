@@ -431,7 +431,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
         </div>
         <div className="flex items-center space-x-3">
           {(() => {
-            const avatarSrc = getUserAvatarUrl(selectedAvatar) || user?.photoURL;
+            const avatarSrc = user?.photoURL;
             return avatarSrc ? (
             <img
               src={avatarSrc}
@@ -590,7 +590,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                 <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-black/5">
                   <div className="shrink-0">
                     {(() => {
-                    const avatarSrc = getUserAvatarUrl(selectedAvatar) || user?.photoURL;
+                    const avatarSrc = user?.photoURL;
                     return avatarSrc ? (
                       <div className="w-28 h-28 rounded-full shadow-md flex items-center justify-center overflow-hidden border-2 border-white bg-black/[0.02]">
                         <img

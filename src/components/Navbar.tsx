@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  Search, 
-  ShoppingCart, 
-  Menu, 
-  X, 
-  ArrowRight, 
-  Sparkles, 
-  User, 
-  Check, 
+import {
+  Search,
+  ShoppingCart,
+  Menu,
+  X,
+  ArrowRight,
+  Sparkles,
+  User,
+  Check,
   Download,
   Settings,
   HelpCircle,
   Globe,
   FileText,
   Briefcase,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { Product } from "../types";
 import { PRODUCTS_DATA } from "../data";
@@ -48,7 +48,7 @@ export default function Navbar({
   isLoggedIn,
   setIsLoggedIn,
   userEmail,
-  setUserEmail
+  setUserEmail,
 }: NavbarProps) {
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -78,12 +78,27 @@ export default function Navbar({
     };
   }, [isProfileOpen]);
 
+  const getUserAvatarUrl = () => {
+    if (auth.currentUser?.photoURL) return auth.currentUser.photoURL;
+    return null;
+  };
+
+  const getInitials = () => {
+    const name =
+      localStorage.getItem("profile_name") ||
+      auth.currentUser?.displayName ||
+      userEmail ||
+      "My Account";
+    return name.charAt(0).toUpperCase();
+  };
+
   // Filter products based on search query
   const filteredProducts = searchQuery.trim()
-    ? PRODUCTS_DATA.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase())
+    ? PRODUCTS_DATA.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : PRODUCTS_DATA.slice(0, 3); // Quick suggestions
 
@@ -107,7 +122,9 @@ export default function Navbar({
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-      alert("Demo Order Processed Successfully! Your files have been compiled. In a real environment, this starts your cloud downloads instantly.");
+      alert(
+        "Demo Order Processed Successfully! Your files have been compiled. In a real environment, this starts your cloud downloads instantly.",
+      );
       clearCart();
       setIsCartOpen(false);
     }, 1500);
@@ -122,8 +139,8 @@ export default function Navbar({
           className="flex items-center space-x-3 group cursor-pointer"
         >
           <div className="w-10 h-10 flex items-center justify-center shrink-0 relative overflow-hidden rounded-lg">
-            <img 
-              src="https://res.cloudinary.com/df5rgwdng/image/upload/v1773434133/looooo_y1n4b3.png"
+            <img
+              src="https://res.cloudinary.com/df5rgwdng/image/upload/v1782835978/Logo_A_yl3rjd.png"
               alt="Editors Hub Logo"
               className="w-full h-full object-cover origin-center group-hover:scale-110 transition-transform duration-300"
               referrerPolicy="no-referrer"
@@ -183,20 +200,31 @@ export default function Navbar({
             <div className="relative profile-dropdown-container">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="hidden md:flex items-center space-x-2 border border-black/10 text-black/80 hover:bg-black/5 text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer"
+                className="hidden md:flex items-center space-x-2 border border-black/10 text-black/80 hover:bg-black/5 text-xs font-semibold pl-2 pr-4 py-1.5 rounded-full transition-all cursor-pointer"
               >
-                {auth.currentUser?.photoURL ? (
+                {getUserAvatarUrl() ? (
                   <img
-                    src={auth.currentUser.photoURL}
+                    src={getUserAvatarUrl()!}
                     alt="Profile"
-                    className="w-4 h-4 rounded-full object-cover"
+                    className="w-6 h-6 rounded-full object-cover border border-black/5"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <User className="w-4 h-4 text-black/60" />
+                  <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-[10px] font-bold">
+                    {getInitials()}
+                  </div>
                 )}
-                <span>My Account</span>
-                <span className="text-[9px] text-black/40 transition-transform duration-200" style={{ transform: isProfileOpen ? 'rotate(180deg)' : 'none' }}>
+                <span className="max-w-[120px] truncate">
+                  {auth.currentUser?.displayName ||
+                    auth.currentUser?.email?.split("@")[0] ||
+                    "My Account"}
+                </span>
+                <span
+                  className="text-[9px] text-black/40 transition-transform duration-200"
+                  style={{
+                    transform: isProfileOpen ? "rotate(180deg)" : "none",
+                  }}
+                >
                   ▼
                 </span>
               </button>
@@ -213,23 +241,30 @@ export default function Navbar({
                     {/* Header profile info */}
                     <div className="px-4 pb-4 border-b border-black/5">
                       <div className="flex items-start space-x-3">
-                        <img
-                          src={auth.currentUser?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"}
-                          alt="Profile Avatar"
-                          className="w-12 h-12 rounded-full object-cover bg-black/5 border border-black/10 shrink-0"
-                          referrerPolicy="no-referrer"
-                        />
+                        {getUserAvatarUrl() ? (
+                          <img
+                            src={getUserAvatarUrl()!}
+                            alt="Profile Avatar"
+                            className="w-12 h-12 rounded-full object-cover bg-black/5 border border-black/10 shrink-0"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-brand-primary text-white flex items-center justify-center text-xl font-bold border border-black/10 shrink-0">
+                            {getInitials()}
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center space-x-1.5">
                             <h4 className="font-bold text-sm text-black truncate leading-tight">
-                              {localStorage.getItem("profile_name") || auth.currentUser?.displayName || userEmail.split("@")[0] || "Aniket Visuals"}
+                              {localStorage.getItem("profile_name") ||
+                                auth.currentUser?.displayName ||
+                                userEmail.split("@")[0] ||
+                                "Aniket Visuals"}
                             </h4>
-                            <span className="bg-[#D97706]/15 text-[#D97706] text-[9px] font-bold px-1 py-0.2 rounded font-mono shrink-0">
-                              PRO
-                            </span>
                           </div>
                           <p className="text-[11px] text-black/60 leading-tight mt-1 font-medium line-clamp-3">
-                            {localStorage.getItem("profile_bio2") || "Motion Designer & Video Editor | I help creators & brands turn videos into leads and audience growth"}
+                            {localStorage.getItem("profile_bio_text") ||
+                              "Hi 👋, I'm Ronald, a passionate UX designer with 10 years of experience in creating intuitive and user-centered digital experiences."}
                           </p>
                         </div>
                       </div>
@@ -242,106 +277,17 @@ export default function Navbar({
                           }}
                           className="w-full text-center border border-black/15 hover:bg-black/[0.02] active:bg-black/[0.04] text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
                         >
-                          <span>View profile</span>
+                          <span>Edit Profile</span>
                         </button>
                         <button
                           onClick={() => {
-                            if (auth.currentUser && !auth.currentUser.emailVerified) {
-                              alert("Verification email sent to " + auth.currentUser.email + ". Please check your inbox.");
-                            } else {
-                              alert("Your account is already verified and secure.");
-                            }
+                            setIsProfileOpen(false);
+                            navigate("/portal", { state: { tab: "settings" } });
                           }}
-                          className="w-full text-center bg-brand-primary hover:bg-brand-accent text-white text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
+                          className="w-full text-center bg-black/5 hover:bg-black/10 text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
                         >
-                          <span>{auth.currentUser?.emailVerified ? "Verified ✓" : "Verify now"}</span>
+                          <span>Settings</span>
                         </button>
-                      </div>
-                    </div>
-
-                    {/* Account Section */}
-                    <div className="px-4 py-3 border-b border-black/5">
-                      <p className="text-[10px] font-mono text-black/40 uppercase tracking-widest font-bold mb-2">
-                        Account
-                      </p>
-                      <div className="space-y-1">
-                        <div 
-                          onClick={() => {
-                            alert("Premium Features are fully unlocked for your Partner Account! Explore any cinematic assets & enjoy seamless Sheets syncing.");
-                          }}
-                          className="flex items-center justify-between p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <div className="w-5 h-5 rounded bg-[#F59E0B]/10 flex items-center justify-center">
-                              <span className="text-[#F59E0B] text-xs font-bold">★</span>
-                            </div>
-                            <span className="text-xs text-black/70 group-hover:text-black font-semibold">Premium features</span>
-                          </div>
-                          <span className="text-[9px] font-bold bg-[#F59E0B]/10 text-[#F59E0B] px-1.5 py-0.5 rounded-full">Active</span>
-                        </div>
-
-                        <div 
-                          onClick={() => {
-                            setIsProfileOpen(false);
-                            navigate("/portal");
-                          }}
-                          className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
-                        >
-                          <Settings className="w-4 h-4 text-black/40 group-hover:text-black" />
-                          <span className="text-xs text-black/70 group-hover:text-black font-semibold">Settings & Privacy</span>
-                        </div>
-
-                        <div 
-                          onClick={() => {
-                            alert("Help Desk initialized. A support representative will be assigned to your workspace shortly.");
-                          }}
-                          className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
-                        >
-                          <HelpCircle className="w-4 h-4 text-black/40 group-hover:text-black" />
-                          <span className="text-xs text-black/70 group-hover:text-black font-semibold">Help</span>
-                        </div>
-
-                        <div 
-                          onClick={() => {
-                            alert("Language setting: English (United States)");
-                          }}
-                          className="flex items-center justify-between p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <Globe className="w-4 h-4 text-black/40 group-hover:text-black" />
-                            <span className="text-xs text-black/70 group-hover:text-black font-semibold">Language</span>
-                          </div>
-                          <span className="text-[10px] text-black/40 font-semibold">English</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Manage Section */}
-                    <div className="px-4 py-3 border-b border-black/5">
-                      <p className="text-[10px] font-mono text-black/40 uppercase tracking-widest font-bold mb-2">
-                        Manage
-                      </p>
-                      <div className="space-y-1">
-                        <div 
-                          onClick={() => {
-                            setIsProfileOpen(false);
-                            navigate("/portal");
-                          }}
-                          className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
-                        >
-                          <FileText className="w-4 h-4 text-black/40 group-hover:text-black" />
-                          <span className="text-xs text-black/70 group-hover:text-black font-semibold">Posts & Activity</span>
-                        </div>
-
-                        <div 
-                          onClick={() => {
-                            alert("Job Board setup: Connect your Google Sheets in the Portal to automatically publish listings!");
-                          }}
-                          className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-black/[0.02] transition-colors cursor-pointer group"
-                        >
-                          <Briefcase className="w-4 h-4 text-black/40 group-hover:text-black" />
-                          <span className="text-xs text-black/70 group-hover:text-black font-semibold">Job Posting Account</span>
-                        </div>
                       </div>
                     </div>
 
@@ -371,15 +317,6 @@ export default function Navbar({
               <span>Sign In</span>
             </button>
           )}
-
-          {/* Primary CTA */}
-          <button
-            onClick={() => scrollToSection("shop")}
-            className="hidden lg:flex items-center space-x-2 bg-brand-primary text-white text-xs font-semibold px-5 py-2.5 rounded-full hover:bg-brand-accent transition-all shadow-sm cursor-pointer"
-          >
-            <span>Explore Assets</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
 
           {/* Mobile Menu Icon */}
           <button
@@ -468,7 +405,9 @@ export default function Navbar({
 
                   {filteredProducts.length === 0 && (
                     <div className="text-center py-8">
-                      <p className="text-sm text-black/50">No assets match "{searchQuery}"</p>
+                      <p className="text-sm text-black/50">
+                        No assets match "{searchQuery}"
+                      </p>
                       <button
                         onClick={() => setSearchQuery("")}
                         className="text-xs text-black font-semibold mt-2 underline"
@@ -481,7 +420,9 @@ export default function Navbar({
               </div>
 
               <div className="py-3 px-5 border-t border-black/5 bg-brand-bg flex justify-between items-center text-xs text-black/50">
-                <span>Select an asset to view quick file details & play preview</span>
+                <span>
+                  Select an asset to view quick file details & play preview
+                </span>
                 <span className="font-mono">Editors Hub v1.0.4</span>
               </div>
             </motion.div>
@@ -511,7 +452,9 @@ export default function Navbar({
               <div className="h-20 border-b border-black/5 px-6 flex items-center justify-between">
                 <div className="flex items-center space-x-2.5">
                   <ShoppingCart className="w-5 h-5 text-black" />
-                  <span className="font-display font-bold text-lg text-black">Your Cart</span>
+                  <span className="font-display font-bold text-lg text-black">
+                    Your Cart
+                  </span>
                   <span className="text-xs px-2.5 py-0.5 rounded-full bg-black/5 font-mono">
                     {cart.length}
                   </span>
@@ -530,9 +473,12 @@ export default function Navbar({
                     <div className="w-12 h-12 rounded-full bg-brand-bg flex items-center justify-center mx-auto mb-4 border border-black/5">
                       <ShoppingCart className="w-6 h-6 text-black/40" />
                     </div>
-                    <p className="text-sm font-semibold text-black">Your cart is empty</p>
+                    <p className="text-sm font-semibold text-black">
+                      Your cart is empty
+                    </p>
                     <p className="text-xs text-black/50 mt-1 max-w-[200px] mx-auto">
-                      Explore our premium marketplace assets and speed up your workflow today.
+                      Explore our premium marketplace assets and speed up your
+                      workflow today.
                     </p>
                     <button
                       onClick={() => {
@@ -563,7 +509,9 @@ export default function Navbar({
                           {item.fileType} • {item.fileSize}
                         </p>
                         <div className="flex items-center justify-between mt-2">
-                          <span className="text-sm font-semibold">${item.price}</span>
+                          <span className="text-sm font-semibold">
+                            ${item.price}
+                          </span>
                           <button
                             onClick={() => removeFromCart(item.id)}
                             className="text-xs text-brand-accent hover:underline font-mono"
@@ -595,7 +543,11 @@ export default function Navbar({
                     disabled={isSubmitting}
                     className="w-full bg-brand-primary text-white py-3.5 rounded-full font-semibold hover:bg-brand-accent transition-colors flex items-center justify-center space-x-2.5"
                   >
-                    <span>{isSubmitting ? "Processing secure path..." : "Complete Checkout"}</span>
+                    <span>
+                      {isSubmitting
+                        ? "Processing secure path..."
+                        : "Complete Checkout"}
+                    </span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -625,7 +577,9 @@ export default function Navbar({
               className="relative w-72 bg-white h-full flex flex-col z-10"
             >
               <div className="h-20 border-b border-black/5 px-6 flex items-center justify-between">
-                <span className="font-display font-bold text-lg text-black">Menu Navigation</span>
+                <span className="font-display font-bold text-lg text-black">
+                  Menu Navigation
+                </span>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 text-black"
@@ -676,7 +630,9 @@ export default function Navbar({
 
                 {isLoggedIn ? (
                   <div className="space-y-3">
-                    <p className="text-xs text-black/50 font-mono">Logged in as {userEmail}</p>
+                    <p className="text-xs text-black/50 font-mono">
+                      Logged in as {userEmail}
+                    </p>
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
@@ -751,7 +707,9 @@ export default function Navbar({
                   Accelerate Your Visual Craft
                 </h3>
                 <p className="text-sm text-black/60 mt-2 leading-relaxed">
-                  Join 5,000+ top motion designers and editors. Register a global designer account and claim our exclusive free bundle containing:
+                  Join 5,000+ top motion designers and editors. Register a
+                  global designer account and claim our exclusive free bundle
+                  containing:
                 </p>
 
                 <div className="mt-5 space-y-2.5">
@@ -759,9 +717,12 @@ export default function Navbar({
                     "5 Aether cinematic impact hits (24-bit WAV)",
                     "3 Essential MOGRT lower-thirds with auto resizing",
                     "2 PremiumBlock cine-color grades (Rec.709 Cube)",
-                    "High resolution foley loop assets"
+                    "High resolution foley loop assets",
                   ].map((benefit, idx) => (
-                    <div key={idx} className="flex items-start text-xs font-medium text-black">
+                    <div
+                      key={idx}
+                      className="flex items-start text-xs font-medium text-black"
+                    >
                       <div className="w-5 h-5 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary mr-2.5 mt-0.5 shrink-0">
                         <Check className="w-3 h-3" />
                       </div>
@@ -776,7 +737,9 @@ export default function Navbar({
                     className="flex-1 border border-black/10 px-5 py-3 rounded-full text-xs font-semibold hover:bg-black/5 flex items-center justify-center space-x-2"
                   >
                     <Download className="w-4 h-4 text-black/60" />
-                    <span>{copiedKit ? "Link Copied!" : "Copy Bundle Link"}</span>
+                    <span>
+                      {copiedKit ? "Link Copied!" : "Copy Bundle Link"}
+                    </span>
                   </button>
                   <button
                     onClick={() => {
@@ -792,7 +755,8 @@ export default function Navbar({
               </div>
 
               <div className="bg-brand-bg px-8 py-4 border-t border-black/5 text-[11px] text-black/40 text-center">
-                Signing up registers you for our weekly product catalog expansion releases.
+                Signing up registers you for our weekly product catalog
+                expansion releases.
               </div>
             </motion.div>
           </div>

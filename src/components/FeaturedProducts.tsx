@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Eye, Sparkles, AlertCircle, Calendar } from "lucide-react";
+import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Heart, Sparkles, AlertCircle, Calendar } from "lucide-react";
 import { Product } from "../types";
 import { PRODUCTS_DATA, CATEGORIES_DATA } from "../data";
 import { formatDescription } from "../utils";
@@ -11,6 +11,8 @@ interface FeaturedProductsProps {
   openProductPreview: (product: Product) => void;
   activeCategory: string;
   setActiveCategory: (category: string) => void;
+  wishlist: Product[];
+  toggleWishlist: (product: Product) => void;
 }
 
 export default function FeaturedProducts({
@@ -18,7 +20,9 @@ export default function FeaturedProducts({
   addToCart,
   openProductPreview,
   activeCategory,
-  setActiveCategory
+  setActiveCategory,
+  wishlist,
+  toggleWishlist
 }: FeaturedProductsProps) {
   
   // Filter products by selected category slug
@@ -29,6 +33,10 @@ export default function FeaturedProducts({
   // Helper check to see if item is already inside cart list
   const isItemInCart = (productId: string) => {
     return cart.some((p) => p.id === productId);
+  };
+  
+  const isItemInWishlist = (productId: string) => {
+    return wishlist.some((p) => p.id === productId);
   };
 
   return (
@@ -81,6 +89,7 @@ export default function FeaturedProducts({
           <AnimatePresence mode="popLayout">
             {filteredProducts.map((product) => {
               const inCart = isItemInCart(product.id);
+              const inWishlist = isItemInWishlist(product.id);
 
               return (
                 <motion.div
@@ -94,7 +103,7 @@ export default function FeaturedProducts({
                 >
                   
                   {/* Aspect Ratio Preview container */}
-                  <div className="relative aspect-[16/10] overflow-hidden bg-black/5 shrink-0">
+                  <div className="relative aspect-[16/10] overflow-hidden bg-black/5 shrink-0 cursor-pointer" onClick={() => openProductPreview(product)}>
                     <img
                       src={product.image}
                       alt={product.name}
@@ -114,11 +123,11 @@ export default function FeaturedProducts({
 
                     {/* Floating quick viewport preview icon button */}
                     <button
-                      onClick={() => openProductPreview(product)}
-                      className="absolute bottom-4 right-4 bg-white text-black w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-                      title="Quick preview details"
+                      onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
+                      className="absolute top-4 right-4 bg-white/90 backdrop-blur-md hover:bg-white text-black w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                      title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
                     >
-                      <Eye className="w-4 h-4 stroke-[2]" />
+                      <Heart className={`w-4 h-4 stroke-[2] ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
                     </button>
                     
                     {/* Release Date ticker */}
@@ -137,7 +146,7 @@ export default function FeaturedProducts({
                         {product.category.replace("-", " ")}
                       </p>
 
-                      <h3 className="font-display font-bold text-lg text-black mt-2 leading-snug group-hover:text-brand-primary transition-colors">
+                      <h3 className="font-display font-bold text-lg text-black mt-2 leading-snug group-hover:text-brand-primary transition-colors cursor-pointer" onClick={() => openProductPreview(product)}>
                         {product.name}
                       </h3>
 

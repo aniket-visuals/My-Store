@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ArrowLeft, Star, Download, Volume2, ShieldCheck, Play, Pause, 
   Sparkles, Check, Cpu, Send, Mail, AlertCircle, FileCode, Clock,
   Lock, ArrowRight, Video, FileCheck, Headphones, HelpCircle,
   Award, Shield, Calendar, Terminal, Info, Users, Share2, HelpCircle as FaqIcon, MessageSquare,
-  Trash2, X, ExternalLink
+  Trash2, X, ExternalLink, Heart
 } from "lucide-react";
 import { Product } from "../types";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
-import { db, OperationType, handleFirestoreError } from "../firebase";
+import { db, auth, OperationType, handleFirestoreError } from "../firebase";
+import { onAuthStateChanged, User } from "firebase/auth";
 import { formatDescription } from "../utils";
 
 interface ProductDetailPageProps {
@@ -17,6 +19,8 @@ interface ProductDetailPageProps {
   onBack: () => void;
   addToCart: (product: Product) => void;
   inCart: boolean;
+  wishlist?: Product[];
+  toggleWishlist?: (product: Product) => void;
 }
 
 // Simulated High-Fidelity products database to populate related products beautifully
@@ -51,12 +55,7 @@ const DYNAMIC_FAQS: Record<string, { q: string; a: string }[]> = {
   ]
 };
 
-const DYNAMIC_REVIEWS: Record<string, { author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]> = {
-  p1: [
-    { author: "Marcus Vance", handle: "@marcus_vanced", rate: 5, date: "May 28, 2026", review: "The deep sub drops and industrial sweep whooshes are exactly what I needed. They add instant dramatic power to my commercials. Phenomenal foley quality.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" },
-    { author: "Evelyn Reed", handle: "@evelyncreative", rate: 5, date: "June 2, 2026", review: "Crisp sounding, low latency, and cleared right out of the box with zero YouTube claims. Extremely satisfied with the acoustic depth.", avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" }
-  ]
-};
+
 
 const COMMON_FAQS = [
   { q: "Is payment absolutely safe?", a: "Yes, our processing systems utilize AES SSL 256-bit encryption pipelines ensuring complete tokenization and safe clearance." },
@@ -84,8 +83,11 @@ export default function ProductDetailPage({
   product,
   onBack,
   addToCart,
-  inCart
+  inCart,
+  wishlist = [],
+  toggleWishlist
 }: ProductDetailPageProps) {
+  const navigate = useNavigate();
   const [currentProduct, setCurrentProduct] = useState<Product>(product);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
@@ -99,17 +101,21 @@ export default function ProductDetailPage({
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
 
-  const [reviews, setReviews] = useState<{ id?: string; author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
+  const [reviews, setReviews] = useState<{ id?: string; userId?: string; email?: string; author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [verificationKey, setVerificationKey] = useState("");
-  const [isKeyUnlocked, setIsKeyUnlocked] = useState(false);
-  const [newAuthor, setNewAuthor] = useState("");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [newRate, setNewRate] = useState(5);
   const [newReview, setNewReview] = useState("");
   const [reviewError, setReviewError] = useState("");
-  const [keyError, setKeyError] = useState("");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Sync state if initial prop changes
   useEffect(() => {
@@ -119,7 +125,6 @@ export default function ProductDetailPage({
 
   // Scroll to top on product switch & sync reviews
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
     setDownloadStep("form");
     setIsPlayingAudio(false);
     setAudioProgress(0);
@@ -138,51 +143,19 @@ export default function ProductDetailPage({
           });
         });
 
-        // Seed default reviews inside Firestore if none exist yet for this product
-        if (fetched.length === 0) {
-          const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
-          const seeded: any[] = [];
-          for (const item of defaults) {
-            try {
-              const docRef = await addDoc(collection(db, "reviews"), {
-                productId: currentProduct.id,
-                author: item.author,
-                handle: item.handle,
-                rate: item.rate,
-                date: item.date,
-                review: item.review,
-                avatar: item.avatar,
-                createdAt: serverTimestamp()
-              });
-              seeded.push({
-                id: docRef.id,
-                productId: currentProduct.id,
-                ...item,
-                createdAt: { seconds: Math.floor(Date.now() / 1000) }
-              });
-            } catch (err) {
-              console.error("Failed to seed default review", err);
-            }
-          }
-          if (active) {
-            setReviews(seeded);
-          }
-        } else {
-          // Sort client-side by createdAt descending
-          fetched.sort((a, b) => {
-            const timeA = a.createdAt?.seconds || a.createdAt?.toDate?.()?.getTime() || 0;
-            const timeB = b.createdAt?.seconds || b.createdAt?.toDate?.()?.getTime() || 0;
-            return timeB - timeA;
-          });
-          if (active) {
-            setReviews(fetched);
-          }
+        // Sort client-side by createdAt descending
+        fetched.sort((a, b) => {
+          const timeA = a.createdAt?.seconds || a.createdAt?.toDate?.()?.getTime() || 0;
+          const timeB = b.createdAt?.seconds || b.createdAt?.toDate?.()?.getTime() || 0;
+          return timeB - timeA;
+        });
+        if (active) {
+          setReviews(fetched);
         }
       } catch (err) {
-        console.error("Error loading reviews from Firestore, falling back to local fallback", err);
-        const defaults = DYNAMIC_REVIEWS[currentProduct.id] || [];
+        console.error("Error loading reviews from Firestore:", err);
         if (active) {
-          setReviews(defaults);
+          setReviews([]);
         }
         try {
           handleFirestoreError(err, OperationType.LIST, "reviews");
@@ -196,13 +169,9 @@ export default function ProductDetailPage({
 
     // Reset review form state
     setShowReviewForm(false);
-    setVerificationKey("");
-    setIsKeyUnlocked(false);
-    setNewAuthor("");
     setNewRate(5);
     setNewReview("");
     setReviewError("");
-    setKeyError("");
 
     return () => {
       active = false;
@@ -320,39 +289,38 @@ export default function ProductDetailPage({
     return reviews.length;
   };
 
-  const handleVerifyKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanKey = verificationKey.trim();
-    if (cleanKey.toLowerCase() === "addverifiedreviews") {
-      setIsKeyUnlocked(true);
-      setKeyError("");
-    } else {
-      setKeyError('Incorrect key. Please check your private reviewer access token.');
-    }
-  };
-
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAuthor.trim()) {
-      setReviewError("Please enter your name.");
+    if (!currentUser) {
+      setReviewError("Please sign in to write a review.");
       return;
     }
+    
+    // Check if user already reviewed this product
+    const hasReviewed = reviews.some(r => r.userId === currentUser.uid);
+    if (hasReviewed) {
+      setReviewError("You have already reviewed this product.");
+      return;
+    }
+
     if (!newReview.trim()) {
       setReviewError("Please write a small review.");
       return;
     }
 
-    const cleanAuthor = newAuthor.trim();
+    const cleanAuthor = currentUser.displayName || currentUser.email?.split('@')[0] || "Anonymous";
     const formattedHandle = "@" + cleanAuthor.toLowerCase().replace(/[^a-z0-9_]/g, "");
 
     const newReviewItem = {
       productId: currentProduct.id,
+      userId: currentUser.uid,
+      email: currentUser.email || "",
       author: cleanAuthor,
       handle: formattedHandle,
       rate: newRate,
       date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       review: newReview.trim(),
-      avatar: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png",
+      avatar: currentUser.photoURL || "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png",
       createdAt: serverTimestamp()
     };
 
@@ -361,6 +329,8 @@ export default function ProductDetailPage({
       const localNewItem = {
         id: docRef.id,
         productId: currentProduct.id,
+        userId: currentUser.uid,
+        email: currentUser.email || "",
         author: cleanAuthor,
         handle: formattedHandle,
         rate: newRate,
@@ -382,16 +352,14 @@ export default function ProductDetailPage({
     }
 
     // Clear fields and close
-    setNewAuthor("");
     setNewRate(5);
     setNewReview("");
     setReviewError("");
     setShowReviewForm(false);
-    setIsKeyUnlocked(false);
-    setVerificationKey("");
   };
 
   const handleDeleteReview = async (reviewId: string) => {
+    // We already filter in the UI, but we can do a check here too if needed
     try {
       await deleteDoc(doc(db, "reviews", reviewId));
       setReviews(prev => prev.filter(r => r.id !== reviewId));
@@ -686,12 +654,6 @@ export default function ProductDetailPage({
                 <button
                   onClick={() => {
                     setShowReviewForm(!showReviewForm);
-                    // Reset fields
-                    if (showReviewForm) {
-                      setIsKeyUnlocked(false);
-                      setVerificationKey("");
-                    }
-                    setKeyError("");
                     setReviewError("");
                   }}
                   className="flex items-center justify-center space-x-1.5 bg-brand-dark text-white hover:bg-brand-primary text-[10px] font-mono tracking-wider font-bold uppercase px-4 py-2.5 rounded-xl transition-all select-none cursor-pointer duration-200"
@@ -720,71 +682,31 @@ export default function ProductDetailPage({
                     transition={{ duration: 0.25 }}
                     className="overflow-hidden bg-brand-dark/[0.015] border border-brand-dark/5 rounded-2xl p-5 sm:p-6 mb-4 space-y-4"
                   >
-                    {!isKeyUnlocked ? (
-                      /* Verification Key Challenge */
-                      <form onSubmit={handleVerifyKey} className="space-y-3 text-left">
-                        <div className="space-y-1.5">
-                          <span className="block text-[10px] font-mono font-bold uppercase tracking-widest text-brand-primary">
-                            Security Protocol
-                          </span>
-                          <h4 className="font-display font-bold text-sm text-brand-dark leading-snug">
-                            Unlock Verified Reviews Deck
-                          </h4>
-                          <p className="text-xs font-medium text-brand-dark/40 leading-relaxed">
-                            To publish a custom review, please enter your private reviewer access token:
-                          </p>
+                    {!currentUser ? (
+                      <div className="space-y-4 text-center py-6">
+                        <div className="w-12 h-12 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <Lock className="w-5 h-5 text-brand-primary" />
                         </div>
-
-                        <div className="space-y-1">
-                          <input
-                            type="password"
-                            placeholder="Enter private access key..."
-                            value={verificationKey}
-                            onChange={(e) => setVerificationKey(e.target.value)}
-                            className="w-full bg-white border border-brand-dark/15 px-4 py-2.5 rounded-xl text-xs font-mono placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-                          />
-                          {keyError && (
-                            <p className="text-[10px] font-mono font-extrabold text-red-600 mt-1 flex items-center space-x-1.5">
-                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-                              <span>{keyError}</span>
-                            </p>
-                          )}
-                        </div>
-
+                        <h4 className="font-display font-bold text-sm text-brand-dark">Sign in Required</h4>
+                        <p className="text-xs font-medium text-brand-dark/40 max-w-sm mx-auto">
+                          Please sign in to write a review.
+                        </p>
                         <button
-                          type="submit"
-                          className="w-full bg-brand-dark text-white hover:bg-brand-primary px-4 py-2.5 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider transition-colors cursor-pointer"
+                          onClick={() => navigate("/portal")}
+                          className="bg-brand-dark text-white hover:bg-brand-primary px-6 py-2.5 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider transition-colors cursor-pointer inline-flex"
                         >
-                          Unlock Entry Form
+                          Sign In
                         </button>
-                      </form>
+                      </div>
                     ) : (
                       /* Authenticated Creative Feedback Builder */
                       <form onSubmit={handleAddReview} className="space-y-4 text-left">
                         <div className="flex items-center space-x-2.5 bg-emerald-500/[0.04] border border-emerald-500/15 p-3 rounded-xl text-[10px] font-mono uppercase tracking-wider font-bold text-emerald-800">
                           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>Clearance Verified — Add Feedback Item</span>
+                          <span>Posting as {currentUser.displayName || currentUser.email}</span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {/* Author Title Name */}
-                          <div className="space-y-1.5">
-                            <label className="block text-[10px] font-mono text-brand-dark/50 uppercase tracking-widest font-bold">
-                              Your Name
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. Liam Parker"
-                              value={newAuthor}
-                              onChange={(e) => {
-                                setNewAuthor(e.target.value);
-                                setReviewError("");
-                              }}
-                              className="w-full bg-white border border-brand-dark/15 px-4 py-2.5 rounded-xl text-xs placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-                              required
-                            />
-                          </div>
-
                           {/* Interactive stars selectors */}
                           <div className="space-y-1.5">
                             <label className="block text-[10px] font-mono text-brand-dark/50 uppercase tracking-widest font-bold">
@@ -851,9 +773,7 @@ export default function ProductDetailPage({
                           <button
                             type="button"
                             onClick={() => {
-                              setIsKeyUnlocked(false);
                               setShowReviewForm(false);
-                              setVerificationKey("");
                             }}
                             className="px-4 py-2.5 h-[38px] border border-brand-dark/10 hover:border-brand-dark hover:bg-brand-dark/5 rounded-xl text-brand-dark/70 text-[10px] font-mono uppercase tracking-wider font-bold transition-all shrink-0 cursor-pointer"
                           >
@@ -917,7 +837,7 @@ export default function ProductDetailPage({
                         </div>
 
                         {/* Owner Admin Mode Delete Action Button (Visible only when unlocked with 'Verified reviews' key) */}
-                        {isKeyUnlocked && (
+                        {currentUser?.uid === rev.userId && (
                           <button
                             onClick={() => handleDeleteReview(rev.id || idx.toString())}
                             className="flex items-center space-x-1 hover:text-red-600 text-brand-dark/40 font-mono text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer select-none border border-transparent hover:border-red-500/10"
@@ -978,15 +898,26 @@ export default function ProductDetailPage({
 
                 {/* Checkout Gateway Trigger */}
                 <div className="pt-4 border-t border-brand-dark/5">
-                  <a
-                    href="https://forms.gle/24c73JM3HF6hErDdA"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
-                  >
-                    <ExternalLink className="w-4 h-4 shrink-0" />
-                    <span>Buy Now — ${getTierPrice()} USD</span>
-                  </a>
+                  <div className="flex gap-2">
+                    <a
+                      href="https://forms.gle/24c73JM3HF6hErDdA"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
+                    >
+                      <ExternalLink className="w-4 h-4 shrink-0" />
+                      <span>Buy Now — ${getTierPrice()} USD</span>
+                    </a>
+                    <button
+                      onClick={() => toggleWishlist?.(currentProduct)}
+                      className={`w-14 shrink-0 border border-brand-dark/10 bg-brand-dark/[0.02] hover:bg-brand-dark/[0.05] rounded-xl flex items-center justify-center transition-all cursor-pointer hover:-translate-y-0.5 ${
+                        wishlist.some((p) => p.id === currentProduct.id) ? "text-red-500" : "text-brand-dark/40"
+                      }`}
+                      title={wishlist.some((p) => p.id === currentProduct.id) ? "Remove from wishlist" : "Add to wishlist"}
+                    >
+                      <Heart className={`w-5 h-5 ${wishlist.some((p) => p.id === currentProduct.id) ? 'fill-current' : ''}`} />
+                    </button>
+                  </div>
                   <p className="text-[10px] text-brand-dark/45 font-mono text-center mt-2.5 leading-relaxed font-semibold">
                     Clicking opens our secure Google Form order and delivery gateway
                   </p>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
+import { AnimatePresence, motion } from "motion/react";
 import { Product } from "./types";
 import { PRODUCTS_DATA } from "./data";
 import Navbar from "./components/Navbar";
@@ -10,17 +11,51 @@ import FaqSection from "./components/FaqSection";
 import Footer from "./components/Footer";
 import ProductDetailPage from "./components/ProductDetailPage";
 import AccountPortal from "./components/AccountPortal";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "./firebase";
 
 export default function App() {
   const [cart, setCart] = useState<Product[]>([]);
+  const [wishlist, setWishlist] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        setUserEmail(user.email || "");
+        
+        try {
+          const docRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.wishlist) {
+              setWishlist(data.wishlist);
+            }
+          }
+        } catch (err) {
+          console.error("Error loading wishlist from Firebase:", err);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserEmail("");
+        setWishlist([]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Reset standard titles and meta description when returning to home page
   useEffect(() => {
+    // Scroll to top on path change
+    window.scrollTo({ top: 0, behavior: "instant" as any });
+
     if (location.pathname === "/") {
       document.title = "Editors Hub Store — Professional Creative Assets for Editors & Designers";
       const metaDesc = document.querySelector('meta[name="description"]');
@@ -67,9 +102,26 @@ export default function App() {
     setCart([]);
   };
 
+  // Wishlist pipeline
+  const toggleWishlist = async (product: Product) => {
+    const exists = wishlist.some((item) => item.id === product.id);
+    const newWishlist = exists 
+      ? wishlist.filter((item) => item.id !== product.id)
+      : [...wishlist, product];
+      
+    setWishlist(newWishlist);
+
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, "users", auth.currentUser.uid), { wishlist: newWishlist }, { merge: true });
+      } catch (err) {
+        console.error("Error saving wishlist to Firebase:", err);
+      }
+    }
+  };
+
   const openProductPreview = (product: Product) => {
     navigate(`/products/${product.slug}`);
-    window.scrollTo({ top: 0 });
   };
 
   return (
@@ -91,8 +143,8 @@ export default function App() {
       )}
 
       {/* 2. Interactive Main Canvas */}
-      <main className="flex-1">
-        <Routes>
+      <main className="flex-1 overflow-x-hidden">
+        <Routes location={location}>
           <Route path="/" element={
             <>
               {/* Full visual viewport showcase */}
@@ -110,6 +162,8 @@ export default function App() {
                 openProductPreview={openProductPreview}
                 activeCategory={activeCategory}
                 setActiveCategory={setActiveCategory}
+                wishlist={wishlist}
+                toggleWishlist={toggleWishlist}
               />
 
               {/* Search accordion FAQ cards */}
@@ -121,16 +175,22 @@ export default function App() {
             <ProductRouteWrapper
               cart={cart}
               addToCart={addToCart}
+              wishlist={wishlist}
+              toggleWishlist={toggleWishlist}
             />
           } />
 
           <Route path="/portal" element={
-            <AccountPortal
-              onLoginStateChange={(loggedIn, email) => {
-                setIsLoggedIn(loggedIn);
-                setUserEmail(email);
-              }}
-            />
+            <div className="w-full">
+              <AccountPortal
+                onLoginStateChange={(loggedIn, email) => {
+                  setIsLoggedIn(loggedIn);
+                  setUserEmail(email);
+                }}
+                wishlist={wishlist}
+                toggleWishlist={toggleWishlist}
+              />
+            </div>
           } />
 
           {/* Catch-all route to redirect back to main storefront */}
@@ -153,10 +213,14 @@ export default function App() {
 // Dynamic routing wrapper for product detail pages
 function ProductRouteWrapper({
   cart,
-  addToCart
+  addToCart,
+  wishlist,
+  toggleWishlist
 }: {
   cart: Product[];
   addToCart: (product: Product) => void;
+  wishlist: Product[];
+  toggleWishlist: (product: Product) => void;
 }) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -210,7 +274,6 @@ function ProductRouteWrapper({
         <button
           onClick={() => {
             navigate("/");
-            window.scrollTo({ top: 0 });
           }}
           className="px-6 py-2.5 bg-brand-primary hover:bg-brand-accent text-white rounded-xl font-bold font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer select-none"
         >
@@ -227,10 +290,11 @@ function ProductRouteWrapper({
       product={currentProduct}
       onBack={() => {
         navigate("/");
-        window.scrollTo({ top: 0 });
       }}
       addToCart={addToCart}
       inCart={inCart}
+      wishlist={wishlist}
+      toggleWishlist={toggleWishlist}
     />
   );
 }

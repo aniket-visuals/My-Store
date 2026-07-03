@@ -55,7 +55,7 @@ export default function Hero({ onExploreClick }: HeroProps) {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="font-display font-bold text-4xl sm:text-5xl md:text-6xl text-black tracking-tight leading-[1.08]"
           >
             Create Better <br />
@@ -69,7 +69,7 @@ export default function Hero({ onExploreClick }: HeroProps) {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
             className="text-black/60 font-sans text-base sm:text-lg leading-relaxed max-w-xl"
           >
             Professional editing assets, templates, presets, sound effects, and creative resources designed for modern creators. Take full control of your sequence timeline.
@@ -79,7 +79,7 @@ export default function Hero({ onExploreClick }: HeroProps) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
             className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto"
           >
             <button
@@ -100,9 +100,9 @@ export default function Hero({ onExploreClick }: HeroProps) {
           
           {/* Main Simulated NLE Workspace Canvas */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.92, rotateY: 10 }}
+            initial={{ opacity: 0, scale: 0.95, rotateY: 5 }}
             animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
             className="w-[90%] h-[90%] bg-white rounded-3xl border border-black/5 shadow-2xl relative overflow-hidden backdrop-blur-3xl flex flex-col p-4"
           >
             {/* Window bar controls */}

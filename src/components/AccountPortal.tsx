@@ -64,12 +64,16 @@ interface AccountPortalProps {
   isOpen?: boolean;
   onClose?: () => void;
   onLoginStateChange?: (isLoggedIn: boolean, email: string) => void;
+  wishlist?: any[];
+  toggleWishlist?: (product: any) => void;
 }
 
 export default function AccountPortal({
   isOpen,
   onClose,
-  onLoginStateChange
+  onLoginStateChange,
+  wishlist = [],
+  toggleWishlist
 }: AccountPortalProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"signin" | "signup" | "forgot">("signin");
@@ -85,6 +89,11 @@ export default function AccountPortal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Profile setup states
+  const [isSettingUpProfile, setIsSettingUpProfile] = useState(false);
+  const [setupLocation, setSetupLocation] = useState("");
+  const [setupBio, setSetupBio] = useState("");
 
   // Sheets variables
   const [spreadsheetId, setSpreadsheetId] = useState<string>(() => {
@@ -170,7 +179,7 @@ export default function AccountPortal({
   const [notifyWeeklySummary, setNotifyWeeklySummary] = useState(false);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileTab, setProfileTab] = useState<"gallery" | "activity">("gallery");
+  const [profileTab, setProfileTab] = useState<"gallery" | "activity" | "wishlist">("gallery");
   const [isFollowing, setIsFollowing] = useState(false);
   const [bellActive, setBellActive] = useState(false);
 
@@ -259,18 +268,31 @@ export default function AccountPortal({
     }
   };
 
-  const handleEmailSignUp = async (e: React.FormEvent) => {
+  const handleEmailSignUpStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setErrorMsg("Please enter your name");
       return;
     }
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters.");
+      return;
+    }
+    setErrorMsg(null);
+    setIsSettingUpProfile(true);
+  };
+
+  const handleEmailSignUpFinal = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
+      localStorage.setItem("profile_location", setupLocation);
+      localStorage.setItem("profile_bio_text", setupBio);
       await emailSignUp(email, password, name);
       setUnverifiedEmail(email);
+      setIsSettingUpProfile(false);
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to register account.");
     } finally {
@@ -414,6 +436,8 @@ export default function AccountPortal({
         refreshSignups={refreshSignups}
         onClose={onClose}
         sendForgotPasswordEmail={sendForgotPasswordEmail}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
       />
     );
   }
@@ -803,6 +827,14 @@ export default function AccountPortal({
               >
                 <span>Activity & Workspace</span>
               </button>
+              <button
+                onClick={() => setProfileTab("wishlist")}
+                className={`pb-4 text-xs font-bold uppercase tracking-wider relative transition-colors cursor-pointer ${
+                  profileTab === "wishlist" ? "text-black border-b-[3px] border-black" : "text-black/40 hover:text-black/70"
+                }`}
+              >
+                <span>Wishlist</span>
+              </button>
             </div>
           </div>
 
@@ -1153,144 +1185,8 @@ export default function AccountPortal({
       <motion.div
         initial={{ scale: 0.98, y: 15, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
-        className="relative w-full max-w-4xl bg-white/80 backdrop-blur-xl rounded-[28px] shadow-[0_32px_80px_rgba(110,138,181,0.25)] border border-white/80 overflow-hidden z-10 flex flex-col md:flex-row min-h-[580px]"
+        className="relative w-full max-w-md bg-white/80 backdrop-blur-xl rounded-[28px] shadow-[0_32px_80px_rgba(110,138,181,0.25)] border border-white/80 overflow-hidden z-10 flex flex-col min-h-[580px]"
       >
-        {/* LEFT SIDE: Stunning warm-vibrant sunset gradient panel representing high-end workspace */}
-        <div className="w-full md:w-[45%] text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden bg-gradient-to-br from-[#ff8155] via-[#ee4e7e] to-[#9931bf] border-b md:border-b-0 md:border-r border-white/10 shrink-0">
-          {/* Internal gradient mesh ambient pulses */}
-          <div className="absolute -top-16 -left-16 w-52 h-52 rounded-full bg-yellow-300/30 blur-2xl animate-pulse" />
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 rounded-full bg-pink-400/25 blur-3xl animate-pulse" />
-
-          {/* Logo / Brand Header */}
-          <div className="flex items-center space-x-2 text-white/95 z-10">
-            <Sparkles className="w-5 h-5 text-yellow-300 shrink-0" />
-            <span className="text-xs uppercase tracking-[0.25em] font-mono font-bold">
-              Editors Hub Sync
-            </span>
-          </div>
-
-          {/* Dynamic Core Information Panel */}
-          <div className="space-y-6 my-auto py-10 z-10">
-            <div className="space-y-3">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-white/10 px-3 py-1 rounded-full border border-white/10 inline-block">
-                Workspace Bridge
-              </span>
-              <h3 className="font-sans font-black text-3xl md:text-4xl leading-tight tracking-tight text-white">
-                {user ? "Sheets Manager" : "EXPLORE. LEARN. SYNC."}
-              </h3>
-              <p className="text-xs text-white/80 leading-relaxed font-sans font-medium">
-                {user 
-                  ? "Directly bridge your storefront's registration conversions and customer database with Google Sheets instantly."
-                  : "Create your free designer account to claim premium resources, browse modern UI templates, and manage data."}
-              </p>
-            </div>
-
-            {/* Sheets Linkage Status & Configurations (Persistent state when logged in) */}
-            {user && (
-              <div className="bg-black/25 backdrop-blur-md border border-white/10 rounded-2xl p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-white/60 tracking-wider">Sheets API Link:</span>
-                  <span className={`text-[9px] uppercase px-2 py-0.5 rounded-full font-mono font-bold tracking-wider ${
-                    accessToken ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                  }`}>
-                    {accessToken ? "Authorized" : "Unauthorized"}
-                  </span>
-                </div>
-
-                {!accessToken && (
-                  <div className="space-y-3">
-                    <p className="text-[11px] text-white/70 leading-relaxed">
-                      Authorize access to sync all database registrations directly to a live Google Sheet.
-                    </p>
-                    <button
-                      onClick={handleGoogleSignIn}
-                      disabled={isLoading}
-                      className="w-full flex items-center justify-center space-x-2 bg-white/15 hover:bg-white/25 text-white font-semibold text-xs py-2.5 px-4 rounded-xl border border-white/15 transition-all cursor-pointer"
-                    >
-                      <svg className="w-4 h-4 mr-1 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                        <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18A11.99 11.99 0 0 0 1.32 12c0 1.8.4 3.51 1.1 5l3.42-2.9z" />
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                      </svg>
-                      <span>Connect Sheets API</span>
-                    </button>
-                  </div>
-                )}
-
-                {accessToken && (
-                  <div className="space-y-3">
-                    {spreadsheetId ? (
-                      <div className="space-y-2">
-                        <div className="bg-black/30 rounded-xl p-3 border border-white/10">
-                          <p className="text-[9px] text-white/50 uppercase font-mono tracking-wider">Connected Spreadsheet</p>
-                          <p className="text-[11px] font-mono truncate text-white/90 font-medium">{spreadsheetId}</p>
-                        </div>
-                        <a 
-                          href={spreadsheetUrl} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="w-full text-center bg-white text-black hover:bg-white/95 rounded-xl py-2 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md"
-                        >
-                          <span>Open Live Sheet</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 pt-1">
-                        <button
-                          onClick={handleCreateNewSheet}
-                          disabled={isCreatingSheet}
-                          className="w-full bg-white text-black hover:bg-white/90 rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
-                        >
-                          <PlusCircle className="w-4 h-4 text-black shrink-0" />
-                          <span>{isCreatingSheet ? "Creating sheet..." : "Create Spreadsheet"}</span>
-                        </button>
-                        <p className="text-[10px] text-white/50 text-center font-sans">
-                          Generates a synced signup spreadsheet in your drive
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* User profile footer / Branding credit */}
-          <div className="pt-6 border-t border-white/10 flex items-center justify-between z-10 font-sans">
-            {user ? (
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center space-x-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white font-bold text-xs uppercase border border-white/15">
-                    {user.displayName ? user.displayName.slice(0, 2) : (user.email ? user.email.slice(0, 2) : "CR")}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-white truncate max-w-[120px]">
-                      {user.displayName || "Active Creator"}
-                    </p>
-                    <p className="text-[10px] text-white/60 truncate max-w-[120px] font-mono">
-                      {user.email}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleSignout}
-                  disabled={isLoading}
-                  className="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-white hover:text-red-300 transition-colors border border-white/5 cursor-pointer"
-                  title="Sign Out Account"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <span className="text-[10px] text-white/50 font-sans tracking-wide">
-                Get access to your personal workspace hub.
-              </span>
-            )}
-          </div>
-        </div>
-
         {/* RIGHT SIDE: AUTHENTICATION FLOW OR DATABASE SIGNUPS DISPLAY */}
         <div className="flex-1 p-8 md:p-12 flex flex-col justify-center overflow-y-auto relative bg-white">
           <button
@@ -1395,7 +1291,7 @@ export default function AccountPortal({
                       <input
                         type="email"
                         required
-                        placeholder="natalia.brak@knmstudio.com"
+                        placeholder="alexmercer@gmail.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"
@@ -1429,6 +1325,73 @@ export default function AccountPortal({
                   </p>
                 </div>
               </div>
+            ) : isSettingUpProfile ? (
+              <div className="space-y-6">
+                {/* Header Icon + Greeting */}
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-black/[0.03] rounded-2xl flex items-center justify-center text-black mb-3">
+                    <User className="w-5 h-5 text-black animate-pulse" />
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-black text-black font-sans tracking-tight uppercase">
+                    Profile Details
+                  </h2>
+                  <p className="text-xs text-black/40 mt-2 max-w-xs leading-relaxed font-sans font-medium">
+                    Tell us a little bit about yourself to complete your profile.
+                  </p>
+                </div>
+
+                <form onSubmit={handleEmailSignUpFinal} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
+                      Select Country
+                    </label>
+                    <div className="relative">
+                      <MapPin className="w-4 h-4 text-black/30 absolute left-4 top-1/2 -translate-y-1/2 z-10" />
+                      <select
+                        value={setupLocation}
+                        onChange={(e) => setSetupLocation(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans appearance-none"
+                        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(0,0,0,0.3)\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
+                      >
+                        <option value="" disabled>Select your country</option>
+                        <option value="United States">United States</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Canada">Canada</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Germany">Germany</option>
+                        <option value="France">France</option>
+                        <option value="Japan">Japan</option>
+                        <option value="India">India</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
+                      Short Bio
+                    </label>
+                    <div className="relative">
+                      <FileText className="w-4 h-4 text-black/30 absolute left-4 top-4" />
+                      <textarea
+                        rows={3}
+                        maxLength={65}
+                        placeholder="Tell us about your work..."
+                        value={setupBio}
+                        onChange={(e) => setSetupBio(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-black hover:bg-black/90 active:scale-[0.99] text-white py-3 rounded-xl font-bold font-sans uppercase tracking-wider text-xs transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md"
+                  >
+                    <span>{isLoading ? "Creating Account..." : "Complete Sign Up"}</span>
+                  </button>
+                </form>
+              </div>
             ) : (
               <div className="space-y-6">
                 {/* Header Icon + Greeting */}
@@ -1448,7 +1411,7 @@ export default function AccountPortal({
 
                 {/* FORM FIELDS */}
                 <form 
-                  onSubmit={activeTab === "signin" ? handleEmailSignIn : handleEmailSignUp} 
+                  onSubmit={activeTab === "signin" ? handleEmailSignIn : handleEmailSignUpStep1} 
                   className="space-y-4"
                 >
                   {activeTab === "signup" && (
@@ -1479,7 +1442,7 @@ export default function AccountPortal({
                       <input
                         type="email"
                         required
-                        placeholder="natalia.brak@knmstudio.com"
+                        placeholder="alexmercer@gmail.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"

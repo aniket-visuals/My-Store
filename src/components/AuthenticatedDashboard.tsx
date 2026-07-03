@@ -132,7 +132,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
 
   // Local profile state variables with localStorage persistence
   const [profileName, setProfileName] = useState(() => {
-    return localStorage.getItem("profile_name") || "Ronald Richards";
+    return localStorage.getItem("profile_name") || user?.displayName || user?.email?.split("@")[0] || "Ronald Richards";
   });
   const [profileHandle, setProfileHandle] = useState(() => {
     return localStorage.getItem("profile_handle") || "ronaldrichards";
@@ -281,6 +281,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
     localStorage.setItem("profile_handle", tempProfileHandle);
     localStorage.setItem("profile_location", tempProfileLocation);
     localStorage.setItem("profile_bio_text", tempProfileBioText);
+    window.dispatchEvent(new Event("profileUpdated"));
     setIsEditingProfileDetails(false);
     setSuccessMsg("Profile details updated successfully!");
     setTimeout(() => setSuccessMsg(null), 3000);
@@ -289,6 +290,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
   const handleSelectAvatar = (key: string) => {
     setSelectedAvatar(key);
     localStorage.setItem("profile_selected_avatar", key);
+    window.dispatchEvent(new Event("profileUpdated"));
     setIsAvatarSelectorOpen(false);
     triggerSuccess("Avatar photo updated!");
   };
@@ -301,7 +303,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
   const sidebarItems = [
     {
       id: "edit-profile",
-      label: "Edit Profile",
+      label: "Manage Profile",
       icon: User,
       category: "Profile",
     },
@@ -428,9 +430,11 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
           </button>
         </div>
         <div className="flex items-center space-x-3">
-          {user?.photoURL ? (
+          {(() => {
+            const avatarSrc = getUserAvatarUrl(selectedAvatar) || user?.photoURL;
+            return avatarSrc ? (
             <img
-              src={user.photoURL}
+              src={avatarSrc}
               alt="Avatar"
               referrerPolicy="no-referrer"
               className="w-7 h-7 rounded-full object-cover border border-black/10 cursor-pointer"
@@ -441,9 +445,9 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
               onClick={() => setActiveSidebarTab("edit-profile")}
               className="w-7 h-7 rounded-full flex items-center justify-center bg-gradient-to-br from-brand-primary to-indigo-600 text-white font-sans font-black text-[10px] border border-black/10 cursor-pointer select-none"
             >
-              {user?.email ? user.email.charAt(0).toUpperCase() : "U"}
+              {profileName ? profileName.charAt(0).toUpperCase() : "U"}
             </div>
-          )}
+          );})()}
           <button
             onClick={onClose}
             className="text-[10px] font-bold uppercase tracking-wider text-brand-muted bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-full"
@@ -562,7 +566,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
             {/* Active Tab Heading Title */}
             <div className="text-left mb-6">
               <h1 className="text-2xl sm:text-3xl font-black text-brand-dark tracking-tight">
-                {activeSidebarTab === "edit-profile" && "Edit Profile"}
+                {activeSidebarTab === "edit-profile" && "Manage Profile"}
                 {activeSidebarTab === "settings" && "Settings"}
                 {activeSidebarTab === "support" && "Support"}
                 {activeSidebarTab === "wishlist" && "Wishlist"}
@@ -579,16 +583,18 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
               </p>
             </div>
 
-            {/* EDIT PROFILE TAB CONTENT */}
+            {/* MANAGE PROFILE TAB CONTENT */}
             {activeSidebarTab === "edit-profile" && (
               <div className="bg-white rounded-2xl border border-black/5 p-6 space-y-8 shadow-sm text-left">
                 {/* PART 1: PHOTO / AVATAR ROW */}
                 <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-black/5">
                   <div className="shrink-0">
-                    {user?.photoURL ? (
+                    {(() => {
+                    const avatarSrc = getUserAvatarUrl(selectedAvatar) || user?.photoURL;
+                    return avatarSrc ? (
                       <div className="w-28 h-28 rounded-full shadow-md flex items-center justify-center overflow-hidden border-2 border-white bg-black/[0.02]">
                         <img
-                          src={user.photoURL}
+                          src={avatarSrc}
                           alt={profileName}
                           referrerPolicy="no-referrer"
                           className="w-full h-full object-cover"
@@ -596,9 +602,9 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                       </div>
                     ) : (
                       <div className="w-28 h-28 rounded-full shadow-md flex items-center justify-center overflow-hidden border-2 border-white bg-gradient-to-br from-brand-primary to-indigo-600 text-white font-sans font-black text-4xl">
-                        {user?.email ? user.email.charAt(0).toUpperCase() : "U"}
+                        {profileName ? profileName.charAt(0).toUpperCase() : "U"}
                       </div>
-                    )}
+                    );})()}
                   </div>
 
                   <div className="text-center sm:text-left flex-1 space-y-1">

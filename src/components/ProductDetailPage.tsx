@@ -12,7 +12,7 @@ import { Product } from "../types";
 import { collection, query, where, getDocs, getDoc, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import { db, auth, OperationType, handleFirestoreError } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { formatDescription } from "../utils";
+import { formatDescription, getProfileAvatarUrl } from "../utils";
 
 interface ProductDetailPageProps {
   product: Product;
@@ -102,6 +102,17 @@ export default function ProductDetailPage({
   const [cardCvc, setCardCvc] = useState("");
 
   const [reviews, setReviews] = useState<{ id?: string; userId?: string; email?: string; author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
+  const [profileUpdates, setProfileUpdates] = useState(0);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      setProfileUpdates(prev => prev + 1);
+    };
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+    };
+  }, []);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [newRate, setNewRate] = useState(5);
@@ -308,7 +319,7 @@ export default function ProductDetailPage({
       return;
     }
 
-        const cleanAuthor = currentUser.displayName || currentUser.email?.split('@')[0] || "Anonymous";
+        const cleanAuthor = localStorage.getItem("profile_name") || currentUser.displayName || currentUser.email?.split("@")[0] || "Anonymous";
     let formattedHandle = "@" + cleanAuthor.toLowerCase().replace(/[^a-z0-9_]/g, "");
     
     try {
@@ -326,7 +337,13 @@ export default function ProductDetailPage({
       console.error("Failed to fetch user handle", e);
     }
 
+    
+    const selectedAvatarKey = localStorage.getItem("profile_selected_avatar");
+    const localAvatarUrl = getProfileAvatarUrl(selectedAvatarKey);
+    const finalAvatar = localAvatarUrl || currentUser.photoURL || "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png";
+
     const newReviewItem = {
+
       productId: currentProduct.id,
       userId: currentUser.uid,
       email: currentUser.email || "",
@@ -335,7 +352,7 @@ export default function ProductDetailPage({
       rate: newRate,
       date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       review: newReview.trim(),
-      avatar: currentUser.photoURL || "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png",
+      avatar: finalAvatar,
       createdAt: serverTimestamp()
     };
 
@@ -718,7 +735,7 @@ export default function ProductDetailPage({
                       <form onSubmit={handleAddReview} className="space-y-4 text-left">
                         <div className="flex items-center space-x-2.5 bg-emerald-500/[0.04] border border-emerald-500/15 p-3 rounded-xl text-[10px] font-mono uppercase tracking-wider font-bold text-emerald-800">
                           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>Posting as {currentUser.displayName || currentUser.email}</span>
+                          <span>Posting as {localStorage.getItem("profile_name") || currentUser.displayName || currentUser.email}</span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -815,19 +832,40 @@ export default function ProductDetailPage({
                     </div>
                   </div>
                 ) : (
-                  getActiveReviews().map((rev, idx) => (
+                  getActiveReviews().map((rev, idx) => {
+                  const isCurrentUserReview = currentUser && rev.userId === currentUser.uid;
+                  const displayAuthor = isCurrentUserReview ? (localStorage.getItem("profile_name") || rev.author) : rev.author;
+                  let displayHandle = rev.handle;
+                  if (isCurrentUserReview) {
+                      const localHandle = localStorage.getItem("profile_handle");
+                      displayHandle = localHandle ? "@" + localHandle.replace(/^@/, '') : rev.handle;
+                  }
+                  const hasGenericAvatar = rev.avatar === "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png";
+                  
+                  const selectedAvatarKey = localStorage.getItem("profile_selected_avatar");
+                  const localAvatarUrl = isCurrentUserReview ? getProfileAvatarUrl(selectedAvatarKey) : null;
+                  const displayAvatar = isCurrentUserReview ? (localAvatarUrl || currentUser.photoURL) : (hasGenericAvatar ? null : rev.avatar);
+
+
+                  return (
                     <div key={idx} className="p-5 bg-brand-dark/[0.015] border border-brand-dark/5 rounded-xl space-y-3 relative group">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <img 
-                            src="https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png" 
-                            alt={rev.author} 
-                            referrerPolicy="no-referrer"
-                            className="w-10 h-10 rounded-full border border-brand-dark/10 object-cover"
-                          />
+                          {displayAvatar ? (
+                            <img 
+                              src={displayAvatar} 
+                              alt={displayAuthor} 
+                              referrerPolicy="no-referrer"
+                              className="w-10 h-10 rounded-full border border-brand-dark/10 object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-brand-primary to-indigo-600 text-white font-sans font-black text-sm border border-brand-dark/10 shrink-0">
+                              {displayAuthor ? displayAuthor.charAt(0).toUpperCase() : "U"}
+                            </div>
+                          )}
                           <div className="text-left leading-tight">
-                            <p className="text-xs font-bold text-brand-dark">{rev.author}</p>
-                            <p className="text-[10px] font-mono text-brand-dark/40 mt-0.5">{rev.handle}</p>
+                            <p className="text-xs font-bold text-brand-dark">{displayAuthor}</p>
+                            <p className="text-[10px] font-mono text-brand-dark/40 mt-0.5">{displayHandle}</p>
                           </div>
                         </div>
 
@@ -864,7 +902,8 @@ export default function ProductDetailPage({
                         )}
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 )}
               </div>
             </div>

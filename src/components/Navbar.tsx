@@ -23,6 +23,7 @@ import { PRODUCTS_DATA } from "../data";
 import { logout as firebaseLogout } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
+import { getProfileAvatarUrl } from "../utils";
 
 interface NavbarProps {
   cart: Product[];
@@ -64,6 +65,17 @@ export default function Navbar({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedKit, setCopiedKit] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileUpdates, setProfileUpdates] = useState(0);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      setProfileUpdates(prev => prev + 1);
+    };
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+    };
+  }, []);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -82,8 +94,9 @@ export default function Navbar({
   }, [isProfileOpen]);
 
   const getUserAvatarUrl = () => {
-    if (auth.currentUser?.photoURL) return auth.currentUser.photoURL;
-    return null;
+    const selectedAvatarKey = localStorage.getItem("profile_selected_avatar");
+    const localAvatarUrl = getProfileAvatarUrl(selectedAvatarKey);
+    return localAvatarUrl || auth.currentUser?.photoURL || null;
   };
 
   const getInitials = () => {
@@ -214,14 +227,12 @@ export default function Navbar({
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-[10px] font-bold">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-primary to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">
                     {getInitials()}
                   </div>
                 )}
                 <span className="max-w-[120px] truncate">
-                  {auth.currentUser?.displayName ||
-                    auth.currentUser?.email?.split("@")[0] ||
-                    "My Account"}
+                  {localStorage.getItem("profile_name") || auth.currentUser?.displayName || auth.currentUser?.email?.split("@")[0] || "My Account"}
                 </span>
                 <span
                   className="text-[9px] text-black/40 transition-transform duration-200"
@@ -253,7 +264,7 @@ export default function Navbar({
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-brand-primary text-white flex items-center justify-center text-xl font-bold border border-black/10 shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-primary to-indigo-600 text-white flex items-center justify-center text-xl font-bold border border-black/10 shrink-0">
                             {getInitials()}
                           </div>
                         )}
@@ -281,7 +292,7 @@ export default function Navbar({
                           }}
                           className="w-full text-center border border-black/15 hover:bg-black/[0.02] active:bg-black/[0.04] text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
                         >
-                          <span>Edit Profile</span>
+                          <span>Manage Profile</span>
                         </button>
                         <button
                           onClick={() => {

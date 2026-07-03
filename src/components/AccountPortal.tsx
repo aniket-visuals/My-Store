@@ -683,7 +683,7 @@ export default function AccountPortal({
                   className="px-4 py-2 rounded-full border border-black/15 hover:bg-black/[0.02] text-black text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>{isEditingProfile ? "Close Edit" : "Edit Profile"}</span>
+                  <span>{isEditingProfile ? "Close Edit" : "Manage Profile"}</span>
                 </button>
               </div>
             </div>

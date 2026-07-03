@@ -266,6 +266,8 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
           username: tempProfileHandle.toLowerCase(),
           displayName: tempProfileName,
           email: user.email || "",
+          bio: tempProfileBioText,
+          location: tempProfileLocation,
           updatedAt: new Date()
         }, { merge: true });
       }

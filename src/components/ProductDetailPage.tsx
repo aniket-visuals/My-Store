@@ -103,6 +103,17 @@ export default function ProductDetailPage({
 
   const [reviews, setReviews] = useState<{ id?: string; userId?: string; email?: string; author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
   const [profileUpdates, setProfileUpdates] = useState(0);
+  const [selectedProfile, setSelectedProfile] = useState<{
+    isOpen: boolean;
+    userId?: string;
+    author?: string;
+    handle?: string;
+    avatar?: string | null;
+    bio?: string;
+    isLoadingBio?: boolean;
+  } | null>(null);
+
+
 
   useEffect(() => {
     const handleProfileUpdate = () => {
@@ -115,6 +126,33 @@ export default function ProductDetailPage({
   }, []);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (selectedProfile?.isOpen && selectedProfile.userId && selectedProfile.isLoadingBio) {
+      const fetchBio = async () => {
+        try {
+          const docRef = doc(db, "users", selectedProfile.userId!);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setSelectedProfile(prev => prev ? { ...prev, bio: data.bio || "No bio available.", isLoadingBio: false } : null);
+          } else {
+            setSelectedProfile(prev => prev ? { ...prev, bio: "No bio available.", isLoadingBio: false } : null);
+          }
+        } catch (e) {
+          console.error("Failed to fetch bio", e);
+          setSelectedProfile(prev => prev ? { ...prev, bio: "No bio available.", isLoadingBio: false } : null);
+        }
+      };
+      
+      if (currentUser && currentUser.uid === selectedProfile.userId) {
+          const localBio = localStorage.getItem("profile_bio_text");
+          setSelectedProfile(prev => prev ? { ...prev, bio: localBio || "No bio available.", isLoadingBio: false } : null);
+      } else {
+          fetchBio();
+      }
+    }
+  }, [selectedProfile?.isOpen, selectedProfile?.userId, selectedProfile?.isLoadingBio, currentUser]);
   const [newRate, setNewRate] = useState(5);
   const [newReview, setNewReview] = useState("");
   const [reviewError, setReviewError] = useState("");
@@ -846,7 +884,7 @@ export default function ProductDetailPage({
                   return (
                     <div key={idx} className="p-5 bg-brand-dark/[0.015] border border-brand-dark/5 rounded-xl space-y-3 relative group">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedProfile({ isOpen: true, userId: rev.userId, author: displayAuthor, handle: displayHandle, avatar: displayAvatar, isLoadingBio: true })}>
                           {displayAvatar ? (
                             <img 
                               src={displayAvatar} 
@@ -1005,6 +1043,68 @@ export default function ProductDetailPage({
 
 
       </div>
+
+      <AnimatePresence>
+        {selectedProfile?.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSelectedProfile(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+              
+              <button
+                onClick={() => setSelectedProfile(null)}
+                className="absolute top-4 right-4 text-brand-dark/40 hover:text-brand-dark hover:bg-black/5 p-2 rounded-full transition-colors z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex flex-col items-center text-center space-y-4 relative z-10">
+                <div className="relative">
+                  {selectedProfile.avatar ? (
+                    <img 
+                      src={selectedProfile.avatar} 
+                      alt={selectedProfile.author} 
+                      className="w-24 h-24 rounded-full object-cover shadow-lg border-4 border-white"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full shadow-lg border-4 border-white flex items-center justify-center bg-gradient-to-br from-brand-primary to-indigo-600 text-white font-sans font-black text-3xl">
+                      {selectedProfile.author ? selectedProfile.author.charAt(0).toUpperCase() : "U"}
+                    </div>
+                  )}
+                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center" title="Verified Author">
+                    <ShieldCheck className="w-3 h-3 text-white" />
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <h3 className="font-black text-xl text-brand-dark tracking-tight">{selectedProfile.author}</h3>
+                  <p className="font-mono text-xs font-bold text-brand-primary">{selectedProfile.handle}</p>
+                </div>
+                
+                <div className="pt-4 border-t border-black/5 w-full space-y-3 text-left">
+                   <div className="bg-brand-dark/[0.02] p-4 rounded-xl border border-black/5 space-y-1">
+                     <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-brand-dark/40">Bio</span>
+                     <p className="text-xs font-medium text-brand-dark/80">{selectedProfile.isLoadingBio ? "Loading bio..." : (selectedProfile.bio || "No bio available.")}</p>
+                   </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -135,19 +135,19 @@ export default function ProductDetailPage({
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const data = docSnap.data();
-            setSelectedProfile(prev => prev ? { ...prev, bio: data.bio || "No bio available.", isLoadingBio: false } : null);
+            setSelectedProfile(prev => prev ? { ...prev, bio: data.bio || "Freelance creative professional always looking for high-quality assets to level up my projects.", isLoadingBio: false } : null);
           } else {
-            setSelectedProfile(prev => prev ? { ...prev, bio: "No bio available.", isLoadingBio: false } : null);
+            setSelectedProfile(prev => prev ? { ...prev, bio: "Freelance creative professional always looking for high-quality assets to level up my projects.", isLoadingBio: false } : null);
           }
         } catch (e) {
           console.error("Failed to fetch bio", e);
-          setSelectedProfile(prev => prev ? { ...prev, bio: "No bio available.", isLoadingBio: false } : null);
+          setSelectedProfile(prev => prev ? { ...prev, bio: "Freelance creative professional always looking for high-quality assets to level up my projects.", isLoadingBio: false } : null);
         }
       };
       
       if (currentUser && currentUser.uid === selectedProfile.userId) {
           const localBio = localStorage.getItem("profile_bio_text");
-          setSelectedProfile(prev => prev ? { ...prev, bio: localBio || "No bio available.", isLoadingBio: false } : null);
+          setSelectedProfile(prev => prev ? { ...prev, bio: localBio || "Freelance creative professional always looking for high-quality assets to level up my projects.", isLoadingBio: false } : null);
       } else {
           fetchBio();
       }
@@ -1097,7 +1097,7 @@ export default function ProductDetailPage({
                 <div className="pt-4 border-t border-black/5 w-full space-y-3 text-left">
                    <div className="bg-brand-dark/[0.02] p-4 rounded-xl border border-black/5 space-y-1">
                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-brand-dark/40">Bio</span>
-                     <p className="text-xs font-medium text-brand-dark/80">{selectedProfile.isLoadingBio ? "Loading bio..." : (selectedProfile.bio || "No bio available.")}</p>
+                     <p className="text-xs font-medium text-brand-dark/80">{selectedProfile.isLoadingBio ? "Loading bio..." : (selectedProfile.bio || "Freelance creative professional always looking for high-quality assets to level up my projects.")}</p>
                    </div>
                 </div>
               </div>

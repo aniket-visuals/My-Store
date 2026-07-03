@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { checkUsernameAvailability } from "../services/authService";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { db } from "../firebase";
 import {
   User,
   Languages,
@@ -245,9 +247,32 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
 
   const handleSaveProfileDetails = async () => {
     if (usernameStatus === "taken" || usernameStatus === "invalid") {
-      triggerSuccess("Please choose a valid and available username");
+      setSuccessMsg("Please choose a valid and available username");
       return;
     }
+    
+    // Save to Firestore
+    try {
+      if (user && user.uid) {
+        if (profileHandle && profileHandle !== tempProfileHandle) {
+          await deleteDoc(doc(db, "usernames", profileHandle.toLowerCase())).catch(() => {});
+        }
+        await setDoc(doc(db, "usernames", tempProfileHandle.toLowerCase()), {
+          email: user.email || "",
+          uid: user.uid,
+          createdAt: new Date()
+        });
+        await setDoc(doc(db, "users", user.uid), {
+          username: tempProfileHandle.toLowerCase(),
+          displayName: tempProfileName,
+          email: user.email || "",
+          updatedAt: new Date()
+        }, { merge: true });
+      }
+    } catch (e) {
+      console.error("Failed to save to firestore", e);
+    }
+
     setProfileName(tempProfileName);
     setProfileHandle(tempProfileHandle);
     setProfileLocation(tempProfileLocation);
@@ -257,7 +282,8 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
     localStorage.setItem("profile_location", tempProfileLocation);
     localStorage.setItem("profile_bio_text", tempProfileBioText);
     setIsEditingProfileDetails(false);
-    triggerSuccess("Profile details updated successfully!");
+    setSuccessMsg("Profile details updated successfully!");
+    setTimeout(() => setSuccessMsg(null), 3000);
   };
 
   const handleSelectAvatar = (key: string) => {

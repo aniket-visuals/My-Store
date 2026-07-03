@@ -9,7 +9,7 @@ import {
   Trash2, X, ExternalLink, Heart
 } from "lucide-react";
 import { Product } from "../types";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, getDoc, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 import { db, auth, OperationType, handleFirestoreError } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { formatDescription } from "../utils";

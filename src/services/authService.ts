@@ -100,6 +100,13 @@ export const checkUsernameAvailability = async (username: string): Promise<boole
 
 export const emailSignUp = async (email: string, password: string, displayName: string, username: string = ""): Promise<User> => {
   try {
+    if (username) {
+      const isAvailable = await checkUsernameAvailability(username);
+      if (!isAvailable) {
+        throw new Error("Username is already taken");
+      }
+    }
+
     const isDummyEmail = email.endsWith("@editorshub.local");
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;

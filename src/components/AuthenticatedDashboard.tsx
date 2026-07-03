@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
+import { checkUsernameAvailability } from "../services/authService";
 import {
   User,
   Languages,
@@ -135,6 +136,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
     return localStorage.getItem("profile_handle") || "ronaldrichards";
   });
   const [tempProfileHandle, setTempProfileHandle] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "loading" | "available" | "taken" | "invalid">("idle");
 
   const [profilePhone, setProfilePhone] = useState(() => {
     return localStorage.getItem("profile_phone") || "(219) 555-0114";
@@ -175,6 +177,28 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
 
   // Card edit modes
   const [isEditingProfileDetails, setIsEditingProfileDetails] = useState(false);
+
+  
+  useEffect(() => {
+    if (isEditingProfileDetails && tempProfileHandle.trim() && tempProfileHandle.trim() !== profileHandle) {
+      if (!/^[a-zA-Z0-9_]+$/.test(tempProfileHandle.trim())) {
+        setUsernameStatus("invalid");
+        return;
+      }
+      setUsernameStatus("loading");
+      const delayFn = setTimeout(async () => {
+        try {
+          const isAvailable = await checkUsernameAvailability(tempProfileHandle.trim());
+          setUsernameStatus(isAvailable ? "available" : "taken");
+        } catch (e) {
+          setUsernameStatus("idle");
+        }
+      }, 500);
+      return () => clearTimeout(delayFn);
+    } else {
+      setUsernameStatus("idle");
+    }
+  }, [tempProfileHandle, isEditingProfileDetails, profileHandle]);
 
   // Draft/Temporary values for form fields
   const [tempProfileName, setTempProfileName] = useState(profileName);
@@ -219,7 +243,11 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
     }
   };
 
-  const handleSaveProfileDetails = () => {
+  const handleSaveProfileDetails = async () => {
+    if (usernameStatus === "taken" || usernameStatus === "invalid") {
+      triggerSuccess("Please choose a valid and available username");
+      return;
+    }
     setProfileName(tempProfileName);
     setProfileHandle(tempProfileHandle);
     setProfileLocation(tempProfileLocation);
@@ -665,16 +693,22 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
-                          Username
-                        </label>
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
+                            Username
+                          </label>
+                          {usernameStatus === 'loading' && <span className="text-[10px] text-brand-primary font-bold">Checking...</span>}
+                          {usernameStatus === 'available' && <span className="text-[10px] text-emerald-500 font-bold">Available!</span>}
+                          {usernameStatus === 'taken' && <span className="text-[10px] text-red-500 font-bold">Username taken</span>}
+                          {usernameStatus === 'invalid' && <span className="text-[10px] text-red-500 font-bold">Letters, numbers, underscores only</span>}
+                        </div>
                         <div className="relative">
                           <span className="text-black/30 absolute left-4 top-1/2 -translate-y-1/2 font-mono text-sm font-bold">@</span>
                           <input
                             type="text"
                             value={tempProfileHandle}
                             onChange={(e) => setTempProfileHandle(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-black/10 bg-black/[0.02] hover:bg-black/[0.03] focus:bg-white outline-none text-xs text-brand-dark focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all font-semibold"
+                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-black/[0.02] hover:bg-black/[0.03] focus:bg-white outline-none text-xs text-brand-dark focus:ring-1 transition-all font-semibold ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : usernameStatus === 'available' ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20' : 'border-black/10 focus:border-brand-primary focus:ring-brand-primary/20'}`}
                             placeholder="ronaldrichards"
                           />
                         </div>

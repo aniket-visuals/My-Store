@@ -85,6 +85,7 @@ export default function AccountPortal({
   // Form fields
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "loading" | "available" | "taken" | "invalid">("idle");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -210,6 +211,28 @@ export default function AccountPortal({
   };
 
   // Track authentication status
+  
+  useEffect(() => {
+    if (activeTab === "signup" && username.trim()) {
+      if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+        setUsernameStatus("invalid");
+        return;
+      }
+      setUsernameStatus("loading");
+      const delayFn = setTimeout(async () => {
+        try {
+          const isAvailable = await checkUsernameAvailability(username.trim());
+          setUsernameStatus(isAvailable ? "available" : "taken");
+        } catch (e) {
+          setUsernameStatus("idle");
+        }
+      }, 500);
+      return () => clearTimeout(delayFn);
+    } else {
+      setUsernameStatus("idle");
+    }
+  }, [username, activeTab]);
+
   useEffect(() => {
     const unsubscribe = initAuth(
       async (currentUser, token) => {
@@ -1473,10 +1496,16 @@ export default function AccountPortal({
                       </div>
                     </div>
                     
-                    <div className="mt-4">
-                      <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
-                        Username
-                      </label>
+                                        <div className="mt-4">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest font-bold">
+                          Username
+                        </label>
+                        {usernameStatus === 'loading' && <span className="text-[10px] text-brand-primary font-bold">Checking...</span>}
+                        {usernameStatus === 'available' && <span className="text-[10px] text-emerald-500 font-bold">Available!</span>}
+                        {usernameStatus === 'taken' && <span className="text-[10px] text-red-500 font-bold">Username taken</span>}
+                        {usernameStatus === 'invalid' && <span className="text-[10px] text-red-500 font-bold">Letters, numbers, underscores only</span>}
+                      </div>
                       <div className="relative">
                         <span className="text-black/30 absolute left-4 top-1/2 -translate-y-1/2 font-mono text-sm font-bold">@</span>
                         <input
@@ -1485,7 +1514,7 @@ export default function AccountPortal({
                           placeholder="alexmercer"
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:ring-1 transition-all font-medium font-sans ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : usernameStatus === 'available' ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20' : 'border-black/10 focus:border-black/35 focus:ring-black/5'}`}
                         />
                       </div>
                     </div>

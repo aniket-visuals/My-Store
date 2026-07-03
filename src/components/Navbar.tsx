@@ -16,6 +16,7 @@ import {
   FileText,
   Briefcase,
   LogOut,
+  Heart,
 } from "lucide-react";
 import { Product } from "../types";
 import { PRODUCTS_DATA } from "../data";
@@ -35,6 +36,7 @@ interface NavbarProps {
   setIsLoggedIn: (loggedIn: boolean) => void;
   userEmail: string;
   setUserEmail: (email: string) => void;
+  wishlist?: Product[];
 }
 
 export default function Navbar({
@@ -49,6 +51,7 @@ export default function Navbar({
   setIsLoggedIn,
   userEmail,
   setUserEmail,
+  wishlist = [],
 }: NavbarProps) {
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -131,7 +134,8 @@ export default function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-brand-bg/80 backdrop-blur-md border-b border-black/5">
+    <>
+      <header className="sticky top-0 z-40 bg-brand-bg/80 backdrop-blur-md border-b border-black/5">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         {/* Brand Logo */}
         <button
@@ -289,6 +293,16 @@ export default function Navbar({
                           <span>Settings</span>
                         </button>
                       </div>
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          navigate("/portal", { state: { tab: "wishlist" } });
+                        }}
+                        className="w-full mt-2 text-center bg-black/5 hover:bg-black/10 text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center space-x-2"
+                      >
+                        <Heart className="w-3.5 h-3.5" />
+                        <span>My Wishlist</span>
+                      </button>
                     </div>
 
                     {/* Sign Out Section */}
@@ -327,13 +341,14 @@ export default function Navbar({
           </button>
         </div>
       </div>
+      </header>
 
       {/* --- MODALS & DRAWER REVIEWS --- */}
 
       {/* SEARCH SPOTLIGHT OVERLAY */}
       <AnimatePresence>
         {isSearchOpen && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4">
+          <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -433,7 +448,7 @@ export default function Navbar({
       {/* SHOPPING CART DRAWER */}
       <AnimatePresence>
         {isCartOpen && (
-          <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="fixed inset-0 z-[100] flex justify-end">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -560,7 +575,7 @@ export default function Navbar({
       {/* MOBILE EXPANDED MENU DRAWER */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden flex justify-end">
+          <div className="fixed inset-0 z-[100] md:hidden flex justify-end">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -682,7 +697,7 @@ export default function Navbar({
       {/* GET STARTED OVERLAY MODAL */}
       <AnimatePresence>
         {isGetStartedOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -762,6 +777,6 @@ export default function Navbar({
           </div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

@@ -35,13 +35,15 @@ let isSigningIn = false;
 let cachedAccessToken: string | null = null;
 
 // Initialize auth state listener. Call this on app load.
+
 export const initAuth = (
   onAuthSuccess?: (user: User, token: string | null) => void,
   onAuthFailure?: () => void
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
-      if (!user.emailVerified) {
+      const isDummyEmail = user.email?.endsWith("@editorshub.local");
+      if (!isDummyEmail && !user.emailVerified) {
         await signOut(auth);
         cachedAccessToken = null;
         if (onAuthFailure) onAuthFailure();
@@ -57,6 +59,8 @@ export const initAuth = (
   });
 };
 
+
+
 /**
  * Perform Google Sign-In and fetch access token for Google Sheets API
  */
@@ -68,21 +72,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     if (!credential?.accessToken) {
       console.warn("No Google Sheets access token returned; checking if already authenticated or fallback.");
     }
-
     cachedAccessToken = credential?.accessToken || null;
-
-    // Log user registration to Firestore - Disabled as per requirements
-    /*
-    if (result.user) {
-      await registerSignupInFirestore(
-        result.user.uid,
-        result.user.displayName || "Google Creator",
-        result.user.email || "",
-        "Google OAuth"
-      );
-    }
-    */
-
     return { user: result.user, accessToken: cachedAccessToken || "" };
   } catch (error: any) {
     console.error("Google Sign in error:", error);
@@ -92,21 +82,49 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
   }
 };
 
+export const checkUsernameAvailability = async (username: string): Promise<boolean> => {
+  if (!username) return false;
+  try {
+    const docRef = doc(db, "usernames", username.toLowerCase());
+    const docSnap = await getDoc(docRef);
+    return !docSnap.exists();
+  } catch (error) {
+    console.error("Error checking username:", error);
+    return false;
+  }
+};
+
 /**
  * Standard Email/Password Sign Up
  */
-export const emailSignUp = async (email: string, password: string, displayName: string): Promise<User> => {
+
+export const emailSignUp = async (email: string, password: string, displayName: string, username: string = ""): Promise<User> => {
   try {
+    const isDummyEmail = email.endsWith("@editorshub.local");
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    // Update display name
     await updateProfile(user, { displayName });
 
-    // Send verification email
-    await sendEmailVerification(user);
+    if (username) {
+      await setDoc(doc(db, "usernames", username.toLowerCase()), {
+        email,
+        uid: user.uid,
+        createdAt: serverTimestamp()
+      });
+      
+      await setDoc(doc(db, "users", user.uid), {
+        username: username.toLowerCase(),
+        displayName,
+        email,
+        createdAt: serverTimestamp()
+      });
+    }
 
-    // Sign out immediately so they are not signed in automatically
+    if (!isDummyEmail) {
+      await sendEmailVerification(user);
+    }
+    
     await signOut(auth);
 
     return user;
@@ -119,15 +137,31 @@ export const emailSignUp = async (email: string, password: string, displayName: 
   }
 };
 
+
 /**
  * Standard Email/Password Sign In
  */
-export const emailSignIn = async (email: string, password: string): Promise<User> => {
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
 
-    if (!user.emailVerified) {
+export const emailSignIn = async (emailOrUsername: string, password: string): Promise<User> => {
+  try {
+    let loginEmail = emailOrUsername;
+    
+    if (!emailOrUsername.includes("@")) {
+      const docRef = doc(db, "usernames", emailOrUsername.toLowerCase());
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        loginEmail = docSnap.data().email;
+      } else {
+        loginEmail = `${emailOrUsername.toLowerCase()}@editorshub.local`;
+      }
+    }
+
+    const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+    const user = userCredential.user;
+    
+    const isDummyEmail = loginEmail.endsWith("@editorshub.local");
+    
+    if (!isDummyEmail && !user.emailVerified) {
       await signOut(auth);
       throw new Error("EMAIL_NOT_VERIFIED");
     }
@@ -144,11 +178,12 @@ export const emailSignIn = async (email: string, password: string): Promise<User
       error.code === "auth/wrong-password" ||
       error.code === "auth/invalid-email"
     ) {
-      throw new Error("Email or password is incorrect");
+      throw new Error("Email/Username or password is incorrect");
     }
-    throw new Error("Email or password is incorrect");
+    throw new Error("Email/Username or password is incorrect");
   }
 };
+
 
 /**
  * Send password reset email

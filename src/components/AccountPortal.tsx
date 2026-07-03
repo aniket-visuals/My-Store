@@ -41,9 +41,10 @@ import {
   Menu
 } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
-import { 
-  googleSignIn, 
-  emailSignIn, 
+import {
+  checkUsernameAvailability,
+  googleSignIn,
+  emailSignIn,
   emailSignUp, 
   logout, 
   initAuth, 
@@ -83,6 +84,7 @@ export default function AccountPortal({
   
   // Form fields
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -268,20 +270,44 @@ export default function AccountPortal({
     }
   };
 
-  const handleEmailSignUpStep1 = (e: React.FormEvent) => {
+  
+  const handleEmailSignUpStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setErrorMsg("Please enter your name");
+      return;
+    }
+    if (!username.trim()) {
+      setErrorMsg("Please enter a username");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+      setErrorMsg("Username can only contain letters, numbers, and underscores");
       return;
     }
     if (password.length < 6) {
       setErrorMsg("Password must be at least 6 characters.");
       return;
     }
+    
+    setIsLoading(true);
     setErrorMsg(null);
-    setIsSettingUpProfile(true);
+    try {
+      const isAvailable = await checkUsernameAvailability(username.trim());
+      if (!isAvailable) {
+        setErrorMsg("Username is already taken");
+        setIsLoading(false);
+        return;
+      }
+      setIsSettingUpProfile(true);
+    } catch (error) {
+      setErrorMsg("Failed to check username availability");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  
   const handleEmailSignUpFinal = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -290,9 +316,23 @@ export default function AccountPortal({
     try {
       localStorage.setItem("profile_location", setupLocation);
       localStorage.setItem("profile_bio_text", setupBio);
-      await emailSignUp(email, password, name);
-      setUnverifiedEmail(email);
-      setIsSettingUpProfile(false);
+      localStorage.setItem("profile_name", name);
+      localStorage.setItem("profile_handle", username.trim());
+      
+      const signupEmail = email.trim() || `${username.trim()}@editorshub.local`;
+      
+      await emailSignUp(signupEmail, password, name, username.trim());
+      
+      if (!signupEmail.endsWith("@editorshub.local")) {
+        setUnverifiedEmail(signupEmail);
+      } else {
+        setSuccessMsg("Account created successfully! Please sign in.");
+        setTimeout(() => {
+          setActiveTab("signin");
+          setIsSettingUpProfile(false);
+          setSuccessMsg(null);
+        }, 1500);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to register account.");
     } finally {
@@ -1284,14 +1324,14 @@ export default function AccountPortal({
                 <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
                   <div>
                     <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
-                      Email Address
+                      {activeTab === "signin" ? "Email or Username" : "Email Address (Optional)"}
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-black/30 absolute left-4 top-1/2 -translate-y-1/2" />
                       <input
-                        type="email"
-                        required
-                        placeholder="alexmercer@gmail.com"
+                        type={activeTab === "signin" ? "text" : "email"}
+                        required={activeTab === "signin"}
+                        placeholder={activeTab === "signin" ? "alexmercer@gmail.com or username" : "alexmercer@gmail.com"}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"
@@ -1415,6 +1455,7 @@ export default function AccountPortal({
                   className="space-y-4"
                 >
                   {activeTab === "signup" && (
+                    <>
                     <div>
                       <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
                         Your Full Name
@@ -1431,18 +1472,36 @@ export default function AccountPortal({
                         />
                       </div>
                     </div>
+                    
+                    <div className="mt-4">
+                      <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
+                        Username
+                      </label>
+                      <div className="relative">
+                        <span className="text-black/30 absolute left-4 top-1/2 -translate-y-1/2 font-mono text-sm font-bold">@</span>
+                        <input
+                          type="text"
+                          required
+                          placeholder="alexmercer"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"
+                        />
+                      </div>
+                    </div>
+                    </>
                   )}
 
                   <div>
                     <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
-                      Email Address
+                      {activeTab === "signin" ? "Email or Username" : "Email Address (Optional)"}
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-black/30 absolute left-4 top-1/2 -translate-y-1/2" />
                       <input
-                        type="email"
-                        required
-                        placeholder="alexmercer@gmail.com"
+                        type={activeTab === "signin" ? "text" : "email"}
+                        required={activeTab === "signin"}
+                        placeholder={activeTab === "signin" ? "alexmercer@gmail.com or username" : "alexmercer@gmail.com"}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"

@@ -139,6 +139,7 @@ export default function App() {
           setIsLoggedIn={setIsLoggedIn}
           userEmail={userEmail}
           setUserEmail={setUserEmail}
+          wishlist={wishlist}
         />
       )}
 

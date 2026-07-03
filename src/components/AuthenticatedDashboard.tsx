@@ -131,6 +131,11 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
   const [profileName, setProfileName] = useState(() => {
     return localStorage.getItem("profile_name") || "Ronald Richards";
   });
+  const [profileHandle, setProfileHandle] = useState(() => {
+    return localStorage.getItem("profile_handle") || "ronaldrichards";
+  });
+  const [tempProfileHandle, setTempProfileHandle] = useState("");
+
   const [profilePhone, setProfilePhone] = useState(() => {
     return localStorage.getItem("profile_phone") || "(219) 555-0114";
   });
@@ -216,9 +221,11 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
 
   const handleSaveProfileDetails = () => {
     setProfileName(tempProfileName);
+    setProfileHandle(tempProfileHandle);
     setProfileLocation(tempProfileLocation);
     setProfileBioText(tempProfileBioText);
     localStorage.setItem("profile_name", tempProfileName);
+    localStorage.setItem("profile_handle", tempProfileHandle);
     localStorage.setItem("profile_location", tempProfileLocation);
     localStorage.setItem("profile_bio_text", tempProfileBioText);
     setIsEditingProfileDetails(false);
@@ -330,11 +337,11 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
         <div className="space-y-1.5 pt-4 border-t border-black/5">
           {/* Back home */}
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate(-1)}
             className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-black/40 hover:text-brand-dark hover:bg-black/[0.02] transition-colors"
           >
             <ChevronRight className="w-4 h-4 rotate-180 text-black/20" />
-            <span>Back to Storefront</span>
+            <span>Go Back</span>
           </button>
         </div>
       </aside>
@@ -479,12 +486,12 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                 <button
                   onClick={() => {
                     setIsMobileSidebarOpen(false);
-                    navigate("/");
+                    navigate(-1);
                   }}
                   className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-brand-muted hover:text-brand-dark hover:bg-black/[0.02]"
                 >
                   <ChevronRight className="w-4 h-4 rotate-180 text-black/40" />
-                  <span>Back to Storefront</span>
+                  <span>Go Back</span>
                 </button>
               </div>
             </motion.aside>
@@ -564,6 +571,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                       <button
                         onClick={() => {
                           setTempProfileName(profileName);
+                          setTempProfileHandle(profileHandle);
                           setTempProfileLocation(profileLocation);
                           setTempProfileBioText(profileBioText);
                           setIsEditingProfileDetails(true);
@@ -603,7 +611,16 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                             {profileName}
                           </p>
                         </div>
+                        
                         <div className="space-y-1">
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
+                            Username
+                          </p>
+                          <p className="text-xs font-medium text-black/80 truncate">
+                            @{profileHandle}
+                          </p>
+                        </div>
+<div className="space-y-1">
                           <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
                             Email
                           </p>
@@ -647,7 +664,23 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                         />
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
+                          Username
+                        </label>
+                        <div className="relative">
+                          <span className="text-black/30 absolute left-4 top-1/2 -translate-y-1/2 font-mono text-sm font-bold">@</span>
+                          <input
+                            type="text"
+                            value={tempProfileHandle}
+                            onChange={(e) => setTempProfileHandle(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-black/10 bg-black/[0.02] hover:bg-black/[0.03] focus:bg-white outline-none text-xs text-brand-dark focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all font-semibold"
+                            placeholder="ronaldrichards"
+                          />
+                        </div>
+                      </div>
+
+<div className="space-y-2">
                         <label className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
                           Location / Country
                         </label>

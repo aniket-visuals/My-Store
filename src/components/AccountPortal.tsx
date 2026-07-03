@@ -344,7 +344,7 @@ export default function AccountPortal({
       
       const signupEmail = email.trim() || `${username.trim()}@editorshub.local`;
       
-      await emailSignUp(signupEmail, password, name, username.trim());
+      await emailSignUp(signupEmail, password, name, username.trim(), setupBio);
       
       if (!signupEmail.endsWith("@editorshub.local")) {
         setUnverifiedEmail(signupEmail);

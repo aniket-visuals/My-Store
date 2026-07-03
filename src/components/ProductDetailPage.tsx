@@ -110,6 +110,7 @@ export default function ProductDetailPage({
     handle?: string;
     avatar?: string | null;
     bio?: string;
+    location?: string;
     isLoadingBio?: boolean;
   } | null>(null);
 
@@ -135,9 +136,9 @@ export default function ProductDetailPage({
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const data = docSnap.data();
-            setSelectedProfile(prev => prev ? { ...prev, bio: data.bio || "No bio available.", isLoadingBio: false } : null);
+            setSelectedProfile(prev => prev ? { ...prev, bio: data.bio || "No bio available.", location: data.location || "Unknown", isLoadingBio: false } : null);
           } else {
-            setSelectedProfile(prev => prev ? { ...prev, bio: "No bio available.", isLoadingBio: false } : null);
+            setSelectedProfile(prev => prev ? { ...prev, bio: "No bio available.", location: "Unknown", isLoadingBio: false } : null);
           }
         } catch (e: any) {
           console.error("Failed to fetch bio", e);
@@ -145,13 +146,14 @@ export default function ProductDetailPage({
           if (e && e.code === "permission-denied") {
             errorMsg = "Bio hidden (Permission denied).";
           }
-          setSelectedProfile(prev => prev ? { ...prev, bio: errorMsg, isLoadingBio: false } : null);
+          setSelectedProfile(prev => prev ? { ...prev, bio: errorMsg, location: "Unknown", isLoadingBio: false } : null);
         }
       };
       
       if (currentUser && currentUser.uid === selectedProfile.userId) {
           const localBio = localStorage.getItem("profile_bio_text");
-          setSelectedProfile(prev => prev ? { ...prev, bio: localBio || "No bio available.", isLoadingBio: false } : null);
+          const localLoc = localStorage.getItem("profile_location");
+          setSelectedProfile(prev => prev ? { ...prev, bio: localBio || "No bio available.", location: localLoc || "Unknown", isLoadingBio: false } : null);
       } else {
           fetchBio();
       }
@@ -1102,6 +1104,10 @@ export default function ProductDetailPage({
                    <div className="bg-brand-dark/[0.02] p-4 rounded-xl border border-black/5 space-y-1">
                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-brand-dark/40">Bio</span>
                      <p className="text-xs font-medium text-brand-dark/80">{selectedProfile.isLoadingBio ? "Loading bio..." : (selectedProfile.bio || "No bio available.")}</p>
+                   </div>
+                   <div className="bg-brand-dark/[0.02] p-4 rounded-xl border border-black/5 space-y-1">
+                     <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-brand-dark/40">Location</span>
+                     <p className="text-xs font-medium text-brand-dark/80">{selectedProfile.isLoadingBio ? "Loading location..." : (selectedProfile.location || "Unknown")}</p>
                    </div>
                 </div>
               </div>

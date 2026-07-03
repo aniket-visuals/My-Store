@@ -98,7 +98,7 @@ export const checkUsernameAvailability = async (username: string): Promise<boole
  * Standard Email/Password Sign Up
  */
 
-export const emailSignUp = async (email: string, password: string, displayName: string, username: string = ""): Promise<User> => {
+export const emailSignUp = async (email: string, password: string, displayName: string, username: string = "", bio: string = ""): Promise<User> => {
   try {
     if (username) {
       const isAvailable = await checkUsernameAvailability(username);
@@ -124,6 +124,7 @@ export const emailSignUp = async (email: string, password: string, displayName: 
         username: username.toLowerCase(),
         displayName,
         email,
+        bio: bio || "No bio available.",
         createdAt: serverTimestamp()
       });
     }

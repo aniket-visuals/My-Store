@@ -993,15 +993,15 @@ export default function ProductDetailPage({
                 {/* Checkout Gateway Trigger */}
                 <div className="pt-4 border-t border-brand-dark/5">
                   <div className="flex gap-2">
-                    <a
-                      href="https://forms.gle/24c73JM3HF6hErDdA"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => {
+                        addToCart(currentProduct);
+                        navigate('/checkout');
+                      }}
                       className="flex-1 bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
                     >
-                      <ExternalLink className="w-4 h-4 shrink-0" />
                       <span>Buy Now — ${getTierPrice()} USD</span>
-                    </a>
+                    </button>
                     <button
                       onClick={() => toggleWishlist?.(currentProduct)}
                       className={`w-14 shrink-0 border border-brand-dark/10 bg-brand-dark/[0.02] hover:bg-brand-dark/[0.05] rounded-xl flex items-center justify-center transition-all cursor-pointer hover:-translate-y-0.5 ${

@@ -11,6 +11,9 @@ import FaqSection from "./components/FaqSection";
 import Footer from "./components/Footer";
 import ProductDetailPage from "./components/ProductDetailPage";
 import AccountPortal from "./components/AccountPortal";
+import CheckoutPage from "./components/CheckoutPage";
+import ThankYouPage from "./components/ThankYouPage";
+import AdminDashboard from "./components/AdminDashboard";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
@@ -195,6 +198,9 @@ export default function App() {
           } />
 
           {/* Catch-all route to redirect back to main storefront */}
+          <Route path="/checkout" element={<CheckoutPage cart={cart} clearCart={clearCart} />} />
+          <Route path="/thank-you" element={<ThankYouPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

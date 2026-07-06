@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [authLoading, setAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
   
   // Modals state
@@ -35,23 +36,21 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
+      if (user && user.email) {
+        setIsAuthenticated(true);
+        // Hardcoded admin email for security
+        const adminEmails = ["aniketrajcargal123@gmail.com"];
+        setIsAdmin(adminEmails.includes(user.email));
+      } else {
+        setIsAuthenticated(false);
+        setIsAdmin(false);
+      }
       setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/portal" replace />;
-  }
 
   useEffect(() => {
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
@@ -70,6 +69,18 @@ export default function AdminDashboard() {
 
     return () => unsubscribe();
   }, []);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });

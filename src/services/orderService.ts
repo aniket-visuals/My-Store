@@ -1,8 +1,11 @@
 import { collection, doc, serverTimestamp, runTransaction } from "firebase/firestore";
 import { db } from "../firebase";
-import { CLOUDINARY_UPLOAD_URL, CLOUDINARY_UPLOAD_PRESET } from "../lib/cloudinary";
+import { CLOUDINARY_UPLOAD_URL, CLOUDINARY_UPLOAD_PRESET, CLOUDINARY_CLOUD_NAME } from "../lib/cloudinary";
 
 export const uploadScreenshot = async (file: File): Promise<string> => {
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+    throw new Error("Cloudinary configuration is missing. Please set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in the environment.");
+  }
   console.log("Uploading to Cloudinary...");
   console.log("URL:", CLOUDINARY_UPLOAD_URL);
   console.log("Preset:", CLOUDINARY_UPLOAD_PRESET);

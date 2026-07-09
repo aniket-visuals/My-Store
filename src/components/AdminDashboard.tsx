@@ -95,6 +95,7 @@ export default function AdminDashboard() {
       
       if (newStatus === "Approved") {
         showToast("Sending approval email...", "success");
+        alert("Preparing to send email to " + order.email);
         const emailSent = await sendApprovalEmail({
           to_email: order.email,
           to_name: order.customerName,
@@ -103,6 +104,8 @@ export default function AdminDashboard() {
           // Generate a mockup download link
           download_link: `https://editorshub.store/download/${order.productId}?order=${order.orderId}`
         });
+
+        alert("Email sending completed. Success: " + emailSent);
 
         if (emailSent) {
           showToast(`Approval email sent to ${order.email}`, "success");

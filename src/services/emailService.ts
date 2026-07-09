@@ -10,36 +10,49 @@ interface EmailParams {
 
 export const sendApprovalEmail = async (params: EmailParams): Promise<boolean> => {
   try {
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+    // FORCE hardcode the working keys provided by the user in case their AI Studio Settings has old keys
+    const serviceId = 'default_service';
+    const templateId = 'template_gmucd5s';
+    const publicKey = 'LyR7uPNP80yEgPXCC';
 
-    if (!serviceId || !templateId || !publicKey) {
-      console.error("EmailJS credentials are not configured in environment variables.");
-      return false; // Return false so the UI shows an error toast
-    }
-
+    // Strictly match the fields from the working HTML form
     const templateParams = {
-      to_email: params.to_email,
       to_name: params.to_name,
       order_id: params.order_id,
       product_name: params.product_name,
       download_link: params.download_link,
-      reply_to: "support@editorshub.store",
-      email: params.to_email, // Added to match {{email}} in your template
-      name: "Editors Hub Store" // Added to match {{name}} in your template
+      email: params.to_email, // Mapped to the user's email address
+      name: "Editors Hub Store" // Sender name
     };
+
+    console.log("Sending email with params:", templateParams);
+    
+    // Add alert to debug
+    alert(`Attempting to send email to ${params.to_email} via ${serviceId}/${templateId}...`);
+
+    // Try initializing it globally like in the HTML script
+    emailjs.init({
+      publicKey: publicKey,
+    });
 
     const response = await emailjs.send(
       serviceId,
       templateId,
-      templateParams,
-      publicKey
+      templateParams
     );
 
+    console.log("EmailJS response:", response);
+    
+    if (response.status === 200) {
+      alert("Email sent successfully!");
+    } else {
+      alert("Email sent, but status was: " + response.status);
+    }
+    
     return response.status === 200;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to send email:", error);
+    alert("Error sending email: " + (error.message || JSON.stringify(error)));
     return false;
   }
 };

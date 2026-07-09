@@ -33,6 +33,15 @@ export default function App() {
         setIsLoggedIn(true);
         setUserEmail(user.email || "");
         
+        // Auto-bootstrap original admin
+        if (user.email === 'aniketrajcargal123@gmail.com') {
+          try {
+            await setDoc(doc(db, "admins", user.uid), { email: user.email, role: 'admin' }, { merge: true });
+          } catch (e) {
+            console.error("Failed to bootstrap admin:", e);
+          }
+        }
+        
         try {
           const docRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(docRef);

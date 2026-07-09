@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import React, { ErrorInfo, ReactNode } from "react";
 import { logError } from "../lib/logger";
 
 interface Props {
@@ -10,7 +10,7 @@ interface State {
   errorMsg: string;
 }
 
-export default class ErrorBoundary extends Component<Props, State> {
+export default class ErrorBoundary extends React.Component<Props, State> {
   public state: State = {
     hasError: false,
     errorMsg: ''
@@ -42,6 +42,6 @@ export default class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return (this as any).props.children;
   }
 }

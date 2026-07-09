@@ -41,13 +41,17 @@ export default function AdminDashboard() {
         setIsAuthenticated(true);
         // Check admins collection
         getDoc(doc(db, "admins", user.uid)).then(adminDoc => {
-          setIsAdmin(adminDoc.exists());
-        }).catch(() => setIsAdmin(false));
+          setIsAdmin(adminDoc.exists() || user.email === 'aniketrajcargal123@gmail.com');
+          setAuthLoading(false);
+        }).catch(() => {
+          setIsAdmin(user.email === 'aniketrajcargal123@gmail.com');
+          setAuthLoading(false);
+        });
       } else {
         setIsAuthenticated(false);
         setIsAdmin(false);
+        setAuthLoading(false);
       }
-      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);

@@ -124,14 +124,18 @@ export default function AdminDashboard() {
       (order.email || "").toLowerCase().includes(searchLower) ||
       (order.customerName || "").toLowerCase().includes(searchLower);
     
-    const matchesFilter = statusFilter === "All" || (order.status || "").toLowerCase() === statusFilter.toLowerCase();
+    let s = (order.status || "").toLowerCase();
+    if (s === "approve") s = "approved";
+    if (s === "reject") s = "rejected";
+    const matchesFilter = statusFilter === "All" || s === statusFilter.toLowerCase();
 
     return matchesSearch && matchesFilter;
   });
 
   const getStatusColor = (status: string) => {
     switch ((status || "").toLowerCase()) {
-      case "approved": return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "approved": 
+      case "approve": return "bg-emerald-100 text-emerald-700 border-emerald-200";
       case "rejected": return "bg-red-100 text-red-700 border-red-200";
       default: return "bg-amber-100 text-amber-700 border-amber-200";
     }
@@ -188,7 +192,7 @@ export default function AdminDashboard() {
                 Cancel
               </button>
               <button 
-                onClick={() => handleStatusUpdate(confirmModal.order, confirmModal.action)}
+                onClick={() => handleStatusUpdate(confirmModal.order, confirmModal.action === "Approve" ? "Approved" : "Rejected")}
                 className={`flex-1 px-4 py-2.5 rounded-xl text-white font-bold tracking-wider text-sm transition-colors
                   ${confirmModal.action === "Approve" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}`}
               >

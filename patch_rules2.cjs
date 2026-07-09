@@ -1,4 +1,5 @@
-rules_version = '2';
+const fs = require('fs');
+const newRules = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
@@ -14,7 +15,7 @@ service cloud.firestore {
       allow create: if request.auth != null 
                     && request.resource.data.keys().hasAll(['customerName', 'email', 'productId', 'amount', 'paymentScreenshotUrl', 'userId'])
                     && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.paymentScreenshotUrl.matches('^https://res\\.cloudinary\\.com/.*');
+                    && request.resource.data.paymentScreenshotUrl.matches('^https://res\\\\.cloudinary\\\\.com/.*');
       
       // Only authenticated admins can read, update, or delete orders
       allow read, update, delete: if isAdmin();
@@ -69,8 +70,10 @@ service cloud.firestore {
     // Reviews
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
+`;
+fs.writeFileSync('firestore.rules', newRules);

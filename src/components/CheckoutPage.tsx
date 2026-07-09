@@ -6,9 +6,19 @@ import { Product } from "../types";
 type PaymentMethod = "upi" | "wise" | "paypal";
 
 import { uploadScreenshot, createOrder } from "../services/orderService";
+import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; clearCart: () => void }) {
   const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form State
@@ -134,9 +144,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
         
         {/* Breadcrumb / Back Navigation */}
         <div className="mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center space-x-2 text-xs font-mono font-bold text-brand-dark/40 hover:text-brand-primary uppercase tracking-widest transition-colors cursor-pointer"
+          <button aria-label="Go back" onClick={() => navigate(-1)} className="flex items-center space-x-2 text-xs font-mono font-bold text-brand-dark/40 hover:text-brand-primary uppercase tracking-widest transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
@@ -327,6 +335,16 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                   <p>{errorMsg}</p>
                 </div>
               )}
+              {!isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => navigate("/portal")}
+                  className="w-full font-bold font-mono text-sm uppercase tracking-widest py-5 rounded-xl shadow-lg flex items-center justify-center gap-3 transition-all bg-brand-primary hover:bg-brand-accent text-white hover:shadow-xl hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <Shield className="w-5 h-5" />
+                  Please Login to Place Order
+                </button>
+              ) : (
               <button 
                 onClick={handleOrderSubmit}
                 disabled={!isFormValid || isSubmitting} 
@@ -339,6 +357,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                 <Shield className="w-5 h-5" />
                 {isSubmitting ? "Processing..." : "Submit Order"}
               </button>
+              )}
               
               {/* Verification Notice */}
               <div className="flex items-start justify-center gap-2 text-xs font-medium text-brand-dark/50 px-4 text-center">

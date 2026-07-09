@@ -1053,7 +1053,7 @@ export default function AccountPortal({
                         <a 
                           href={spreadsheetUrl} 
                           target="_blank" 
-                          rel="noreferrer"
+                          rel="noopener noreferrer"
                           className="w-full text-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
                         >
                           <span>Open Live Sheet</span>
@@ -1276,7 +1276,7 @@ export default function AccountPortal({
                     By default, new Firebase projects only have <strong>Google Login</strong> enabled. To use Email & Password, configure it in your console:
                   </p>
                   <ol className="list-decimal list-inside space-y-1 pl-1 text-red-700 font-sans leading-relaxed">
-                    <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="underline font-bold hover:text-red-900">Firebase Console ↗</a></li>
+                    <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-red-900">Firebase Console ↗</a></li>
                     <li>Go to <strong>Authentication &gt; Sign-in method</strong></li>
                     <li>Add <strong>Email/Password</strong> and click Enable</li>
                   </ol>

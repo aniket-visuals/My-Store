@@ -1,5 +1,5 @@
 import { collection, doc, serverTimestamp, runTransaction } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import { CLOUDINARY_UPLOAD_URL, CLOUDINARY_UPLOAD_PRESET, CLOUDINARY_CLOUD_NAME } from "../lib/cloudinary";
 
 export const uploadScreenshot = async (file: File): Promise<string> => {
@@ -67,6 +67,7 @@ export const createOrder = async (orderData: OrderData): Promise<string> => {
     transaction.set(newOrderRef, {
       ...orderData,
       orderId: newOrderId,
+      userId: auth.currentUser?.uid || "anonymous",
       status: "Pending",
       createdAt: serverTimestamp()
     });

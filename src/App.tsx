@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Product } from "./types";
@@ -9,11 +9,11 @@ import FeaturedProducts from "./components/FeaturedProducts";
 import WhyChooseUs from "./components/WhyChooseUs";
 import FaqSection from "./components/FaqSection";
 import Footer from "./components/Footer";
-import ProductDetailPage from "./components/ProductDetailPage";
-import AccountPortal from "./components/AccountPortal";
-import CheckoutPage from "./components/CheckoutPage";
-import ThankYouPage from "./components/ThankYouPage";
-import AdminDashboard from "./components/AdminDashboard";
+const ProductDetailPage = lazy(() => import("./components/ProductDetailPage"));
+const AccountPortal = lazy(() => import("./components/AccountPortal"));
+const CheckoutPage = lazy(() => import("./components/CheckoutPage"));
+const ThankYouPage = lazy(() => import("./components/ThankYouPage"));
+const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
@@ -148,6 +148,11 @@ export default function App() {
 
       {/* 2. Interactive Main Canvas */}
       <main className="flex-1 overflow-x-hidden">
+        <Suspense fallback={
+          <div className="min-h-[50vh] flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        }>
         <Routes location={location}>
           <Route path="/" element={
             <>
@@ -203,6 +208,7 @@ export default function App() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </main>
 
       {/* 3. Multi-column detailed footer */}

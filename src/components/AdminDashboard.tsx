@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { 
   Search, Filter, CheckCircle, XCircle, Eye, 
   Clock, ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
-  SearchX
+  SearchX, Download
 } from "lucide-react";
 import { OrderData } from "../services/orderService";
 import { sendApprovalEmail } from "../services/emailService";
@@ -39,9 +39,10 @@ export default function AdminDashboard() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && user.email) {
         setIsAuthenticated(true);
-        // Hardcoded admin email for security
-        const adminEmails = ["aniketrajcargal123@gmail.com"];
-        setIsAdmin(adminEmails.includes(user.email));
+        // Check admins collection
+        getDoc(doc(db, "admins", user.uid)).then(adminDoc => {
+          setIsAdmin(adminDoc.exists());
+        }).catch(() => setIsAdmin(false));
       } else {
         setIsAuthenticated(false);
         setIsAdmin(false);
@@ -117,6 +118,39 @@ export default function AdminDashboard() {
     }
   };
 
+  const exportOrders = () => {
+    if (filteredOrders.length === 0) {
+      showToast("No orders to export", "error");
+      return;
+    }
+    const headers = ["Order ID", "Customer Name", "Email", "Country", "Social Username", "Product", "Payment Method", "Amount", "Status", "Date"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredOrders.map(order => [
+        order.orderId || "",
+        `"${(order.customerName || "").replace(/"/g, '""')}"`,
+        order.email || "",
+        order.country || "",
+        `"${(order.discordOrTelegramUsername || "").replace(/"/g, '""')}"`,
+        `"${(order.productName || "").replace(/"/g, '""')}"`,
+        order.paymentMethod || "",
+        order.amount || 0,
+        order.status || "",
+        order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleString() : ""
+      ].join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filteredOrders = orders.filter(order => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -166,7 +200,7 @@ export default function AdminDashboard() {
       {screenshotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setScreenshotModal(null)}>
           <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setScreenshotModal(null)} className="absolute -top-12 right-0 text-white hover:text-brand-primary p-2">
+            <button aria-label="Close screenshot modal" onClick={() => setScreenshotModal(null)} className="absolute -top-12 right-0 text-white hover:text-brand-primary p-2">
               <XCircle className="w-8 h-8" />
             </button>
             <img src={screenshotModal} alt="Payment Screenshot" className="w-full h-full object-contain rounded-xl" />
@@ -207,7 +241,7 @@ export default function AdminDashboard() {
       <header className="bg-white border-b border-brand-dark/5 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate("/")} className="p-2 -ml-2 rounded-lg hover:bg-brand-dark/5 text-brand-dark/60 transition-colors">
+            <button aria-label="Go back" onClick={() => navigate("/")} className="p-2 -ml-2 rounded-lg hover:bg-brand-dark/5 text-brand-dark/60 transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>

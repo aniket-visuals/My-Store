@@ -46,7 +46,7 @@ export default function Footer({
             <a
               href="https://x.com/Ankitxed"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="hover:text-black transition-colors"
               title="X Profile"
             >
@@ -61,7 +61,7 @@ export default function Footer({
             <a
               href="https://www.instagram.com/aniket_visuals/"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="hover:text-black transition-colors"
               title="Instagram Handle"
             >
@@ -70,7 +70,7 @@ export default function Footer({
             <a
               href="https://youtube.com/@aniket_visuals?si=wC2Z8R1CwMmjPLPV"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="hover:text-black transition-colors"
               title="YouTube Channel"
             >
@@ -79,7 +79,7 @@ export default function Footer({
             <a
               href="https://www.linkedin.com/in/aniketvisuals/"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="hover:text-black transition-colors"
               title="LinkedIn Profile"
             >
@@ -98,7 +98,7 @@ export default function Footer({
               <a
                 href="https://discord.gg/sxGeT4SCBD"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-black/65 hover:text-brand-primary transition-colors"
               >
                 Discord
@@ -108,7 +108,7 @@ export default function Footer({
               <a
                 href="https://t.me/aniketvisuals"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-black/65 hover:text-brand-primary transition-colors"
               >
                 Telegram

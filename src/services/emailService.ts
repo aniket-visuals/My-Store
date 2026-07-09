@@ -26,9 +26,6 @@ export const sendApprovalEmail = async (params: EmailParams): Promise<boolean> =
     };
 
     console.log("Sending email with params:", templateParams);
-    
-    // Add alert to debug
-    alert(`Attempting to send email to ${params.to_email} via ${serviceId}/${templateId}...`);
 
     // Try initializing it globally like in the HTML script
     emailjs.init({
@@ -43,16 +40,9 @@ export const sendApprovalEmail = async (params: EmailParams): Promise<boolean> =
 
     console.log("EmailJS response:", response);
     
-    if (response.status === 200) {
-      alert("Email sent successfully!");
-    } else {
-      alert("Email sent, but status was: " + response.status);
-    }
-    
     return response.status === 200;
   } catch (error: any) {
     console.error("Failed to send email:", error);
-    alert("Error sending email: " + (error.message || JSON.stringify(error)));
     return false;
   }
 };

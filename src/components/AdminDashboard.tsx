@@ -89,13 +89,13 @@ export default function AdminDashboard() {
   };
 
   const handleStatusUpdate = async (order: Order, newStatus: "Approved" | "Rejected") => {
+    setConfirmModal(null);
     try {
       await updateDoc(doc(db, "orders", order.id), { status: newStatus });
       showToast(`Order successfully ${newStatus.toLowerCase()}`, "success");
       
       if (newStatus === "Approved") {
         showToast("Sending approval email...", "success");
-        alert("Preparing to send email to " + order.email);
         const emailSent = await sendApprovalEmail({
           to_email: order.email,
           to_name: order.customerName,
@@ -104,8 +104,6 @@ export default function AdminDashboard() {
           // Generate a mockup download link
           download_link: `https://editorshub.store/download/${order.productId}?order=${order.orderId}`
         });
-
-        alert("Email sending completed. Success: " + emailSent);
 
         if (emailSent) {
           showToast(`Approval email sent to ${order.email}`, "success");
@@ -117,7 +115,6 @@ export default function AdminDashboard() {
       console.error("Error updating order:", error);
       showToast(`Failed to ${newStatus.toLowerCase()} order`, "error");
     }
-    setConfirmModal(null);
   };
 
   const filteredOrders = orders.filter(order => {

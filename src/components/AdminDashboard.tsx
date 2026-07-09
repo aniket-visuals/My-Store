@@ -9,6 +9,7 @@ import {
   SearchX
 } from "lucide-react";
 import { OrderData } from "../services/orderService";
+import { sendApprovalEmail } from "../services/emailService";
 
 interface Order extends OrderData {
   id: string;
@@ -87,10 +88,28 @@ export default function AdminDashboard() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleStatusUpdate = async (orderId: string, newStatus: "Approved" | "Rejected") => {
+  const handleStatusUpdate = async (order: Order, newStatus: "Approved" | "Rejected") => {
     try {
-      await updateDoc(doc(db, "orders", orderId), { status: newStatus });
+      await updateDoc(doc(db, "orders", order.id), { status: newStatus });
       showToast(`Order successfully ${newStatus.toLowerCase()}`, "success");
+      
+      if (newStatus === "Approved") {
+        showToast("Sending approval email...", "success");
+        const emailSent = await sendApprovalEmail({
+          to_email: order.email,
+          to_name: order.customerName,
+          order_id: order.orderId,
+          product_name: order.productName,
+          // Generate a mockup download link
+          download_link: `https://editorshub.store/download/${order.productId}?order=${order.orderId}`
+        });
+
+        if (emailSent) {
+          showToast(`Approval email sent to ${order.email}`, "success");
+        } else {
+          showToast(`Failed to send email to ${order.email}`, "error");
+        }
+      }
     } catch (error) {
       console.error("Error updating order:", error);
       showToast(`Failed to ${newStatus.toLowerCase()} order`, "error");
@@ -168,7 +187,7 @@ export default function AdminDashboard() {
                 Cancel
               </button>
               <button 
-                onClick={() => handleStatusUpdate(confirmModal.order.id, confirmModal.action)}
+                onClick={() => handleStatusUpdate(confirmModal.order, confirmModal.action)}
                 className={`flex-1 px-4 py-2.5 rounded-xl text-white font-bold tracking-wider text-sm transition-colors
                   ${confirmModal.action === "Approve" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}`}
               >

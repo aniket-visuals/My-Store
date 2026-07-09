@@ -118,20 +118,21 @@ export default function AdminDashboard() {
   };
 
   const filteredOrders = orders.filter(order => {
+    const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
-      order.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
+      (order.orderId || "").toLowerCase().includes(searchLower) ||
+      (order.email || "").toLowerCase().includes(searchLower) ||
+      (order.customerName || "").toLowerCase().includes(searchLower);
     
-    const matchesFilter = statusFilter === "All" || order.status === statusFilter;
+    const matchesFilter = statusFilter === "All" || (order.status || "").toLowerCase() === statusFilter.toLowerCase();
 
     return matchesSearch && matchesFilter;
   });
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Approved": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "Rejected": return "bg-red-100 text-red-700 border-red-200";
+    switch ((status || "").toLowerCase()) {
+      case "approved": return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "rejected": return "bg-red-100 text-red-700 border-red-200";
       default: return "bg-amber-100 text-amber-700 border-amber-200";
     }
   };

@@ -15,8 +15,8 @@ export const sendApprovalEmail = async (params: EmailParams): Promise<boolean> =
     const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
     if (!serviceId || !templateId || !publicKey) {
-      console.warn("EmailJS credentials are not configured in environment variables. Simulating email send for now.");
-      return true; // Simulate success if no keys are provided
+      console.error("EmailJS credentials are not configured in environment variables.");
+      return false; // Return false so the UI shows an error toast
     }
 
     const templateParams = {

@@ -29,7 +29,7 @@ export default function Footer({
               />
             </div>
             <span className="font-display font-bold text-base text-black tracking-tight">
-              Editors Hub
+              Editors Hub Store
             </span>
           </button>
           

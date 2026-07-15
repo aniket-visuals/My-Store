@@ -162,7 +162,7 @@ export default function Navbar({
           </div>
           <div className="flex flex-col items-start translate-y-[1px]">
             <span className="font-display font-bold tracking-tight text-lg text-black leading-none">
-              Editors Hub
+              Editors Hub Store
             </span>
             <span className="text-[10px] uppercase tracking-widest font-mono text-black/40 mt-1">
               Creative Assets

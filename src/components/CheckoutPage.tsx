@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { updateMetaTags } from "../utils/seo";
 import { ArrowLeft, Check, Shield, Upload, Copy, Info, Clock, Download, Image as ImageIcon, X } from "lucide-react";
 import { Product } from "../types";
 
@@ -10,6 +11,15 @@ import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; clearCart: () => void }) {
+  
+  React.useEffect(() => {
+    updateMetaTags({
+      title: "Checkout — Editors Hub Store",
+      description: "Complete your purchase at Editors Hub Store.",
+      url: "https://www.editorshubstore.in/checkout"
+    });
+  }, []);
+
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   
@@ -376,6 +386,13 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
               </div>
               
               <div className="p-6 space-y-6">
+                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
+                  <Shield className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-bold text-emerald-900 m-0">Secure Checkout Notice</p>
+                    <p className="text-emerald-800 m-0 text-xs mt-1 leading-relaxed">Your payment information is encrypted and securely processed. We do not store any sensitive financial data.</p>
+                  </div>
+                </div>
                 {product ? (
                   <div className="space-y-6">
                     {/* Product Image & Title */}

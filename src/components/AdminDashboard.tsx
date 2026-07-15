@@ -8,6 +8,7 @@ import {
   Clock, ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
   SearchX, Download
 } from "lucide-react";
+import { updateMetaTags } from "../utils/seo";
 import { OrderData } from "../services/orderService";
 import { sendApprovalEmail } from "../services/emailService";
 
@@ -19,6 +20,14 @@ interface Order extends OrderData {
 }
 
 export default function AdminDashboard() {
+  useEffect(() => {
+    updateMetaTags({
+      title: "Admin Dashboard — Editors Hub Store",
+      description: "Admin dashboard for Editors Hub Store.",
+      url: "https://www.editorshubstore.in/admin"
+    });
+  }, []);
+
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +116,7 @@ export default function AdminDashboard() {
           order_id: order.orderId,
           product_name: order.productName,
           // Generate a mockup download link
-          download_link: `https://editorshub.store/download/${order.productId}?order=${order.orderId}`
+          download_link: `https://www.editorshubstore.in/download/${order.productId}?order=${order.orderId}`
         });
 
         if (emailSent) {

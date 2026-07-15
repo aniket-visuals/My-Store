@@ -26,7 +26,7 @@ import { auth, db } from "../firebase";
 
 // Instantiating the Google Auth Provider with sheets scope
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope("https://www.googleapis.com/auth/spreadsheets");
+
 
 // Flag to indicate if we are in the middle of a sign-in flow.
 let isSigningIn = false;

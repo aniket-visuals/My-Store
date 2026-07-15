@@ -14,9 +14,47 @@ const AccountPortal = lazy(() => import("./components/AccountPortal"));
 const CheckoutPage = lazy(() => import("./components/CheckoutPage"));
 const ThankYouPage = lazy(() => import("./components/ThankYouPage"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
+const PrivacyPolicy = lazy(() => import("./components/PrivacyPolicy"));
+const TermsConditions = lazy(() => import("./components/TermsConditions"));
+const RefundPolicy = lazy(() => import("./components/RefundPolicy"));
+const AboutPage = lazy(() => import("./components/AboutPage"));
+const ContactPage = lazy(() => import("./components/ContactPage"));
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { updateMetaTags } from "./utils/seo";
+
+
+// Cookie Notice Component
+function CookieNotice() {
+  const [show, setShow] = useState(false);
+  
+  useEffect(() => {
+    const consent = localStorage.getItem('cookie-consent');
+    if (!consent) {
+      setShow(true);
+    }
+  }, []);
+  
+  const accept = () => {
+    localStorage.setItem('cookie-consent', 'true');
+    setShow(false);
+  };
+  
+  if (!show) return null;
+  
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-black/10 p-4 md:p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 font-sans text-brand-dark">
+      <div className="text-sm">
+        <p className="font-semibold mb-1">We use cookies</p>
+        <p className="opacity-70">This website uses cookies to ensure you get the best experience on our website. <a href="/privacy" className="underline">Learn more</a></p>
+      </div>
+      <button onClick={accept} className="bg-brand-dark text-white px-6 py-2 rounded-lg text-sm font-bold shrink-0 hover:bg-black transition-colors w-full md:w-auto">
+        Accept
+      </button>
+    </div>
+  );
+}
 
 export default function App() {
   const [cart, setCart] = useState<Product[]>([]);
@@ -65,15 +103,13 @@ export default function App() {
 
   // Reset standard titles and meta description when returning to home page
   useEffect(() => {
-    // Scroll to top on path change
     window.scrollTo({ top: 0, behavior: "instant" as any });
-
     if (location.pathname === "/") {
-      document.title = "Editors Hub Store — Professional Creative Assets for Editors & Designers";
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) {
-        metaDesc.setAttribute('content', "Premium digital marketplace for video editors, motion designers, and content creators.");
-      }
+      updateMetaTags({
+        title: "Editors Hub Store — Professional Creative Assets for Editors & Designers",
+        description: "Premium digital marketplace for video editors, motion designers, and content creators. High-quality assets, plugins, and sound effects to elevate your productions.",
+        url: "https://www.editorshubstore.in/"
+      });
     }
   }, [location.pathname]);
 
@@ -215,6 +251,11 @@ export default function App() {
           <Route path="/checkout" element={<CheckoutPage cart={cart} clearCart={clearCart} />} />
           <Route path="/thank-you" element={<ThankYouPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsConditions />} />
+              <Route path="/refund" element={<RefundPolicy />} />
+              <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
@@ -255,33 +296,12 @@ function ProductRouteWrapper({
   // Synchronize document titles and meta fields to be highly SEO-friendly
   useEffect(() => {
     if (currentProduct) {
-      document.title = `${currentProduct.name} — Editors Hub Store`;
-
-      let metaDesc = document.querySelector('meta[name="description"]');
-      if (!metaDesc) {
-        metaDesc = document.createElement('meta');
-        metaDesc.setAttribute('name', 'description');
-        document.head.appendChild(metaDesc);
-      }
-      metaDesc.setAttribute('content', currentProduct.description.replace(/\*\*/g, ''));
-
-      // Open Graph Metadata properties
-      const ogProperties = [
-        { property: "og:title", content: `${currentProduct.name} — Editors Hub Store` },
-        { property: "og:description", content: currentProduct.description.replace(/\*\*/g, '') },
-        { property: "og:image", content: currentProduct.image },
-        { property: "og:type", content: "product" },
-        { property: "og:url", content: window.location.href }
-      ];
-
-      ogProperties.forEach(({ property, content }) => {
-        let metaTag = document.querySelector(`meta[property="${property}"]`);
-        if (!metaTag) {
-          metaTag = document.createElement("meta");
-          metaTag.setAttribute("property", property);
-          document.head.appendChild(metaTag);
-        }
-        metaTag.setAttribute("content", content);
+      updateMetaTags({
+        title: `${currentProduct.name} — Editors Hub Store`,
+        description: currentProduct.description.replace(/\*\*/g, ''),
+        url: `https://www.editorshubstore.in/products/${currentProduct.slug}`,
+        image: currentProduct.image,
+        type: "product"
       });
     }
   }, [currentProduct]);

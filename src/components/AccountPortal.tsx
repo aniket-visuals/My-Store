@@ -59,6 +59,7 @@ import {
 } from "../services/sheetsService";
 
 import { useNavigate } from "react-router-dom";
+import { updateMetaTags } from "../utils/seo";
 import { AuthenticatedDashboard } from "./AuthenticatedDashboard";
 
 interface AccountPortalProps {
@@ -76,6 +77,15 @@ export default function AccountPortal({
   wishlist = [],
   toggleWishlist
 }: AccountPortalProps) {
+  
+  React.useEffect(() => {
+    updateMetaTags({
+      title: "Account Portal — Editors Hub Store",
+      description: "Manage your Editors Hub Store account, purchases, and settings.",
+      url: "https://www.editorshubstore.in/portal"
+    });
+  }, []);
+
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"signin" | "signup" | "forgot">("signin");
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -1017,62 +1027,6 @@ export default function AccountPortal({
               <div className="max-w-6xl mx-auto px-6 sm:px-12 space-y-8">
               {/* Database sync counts */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Sheets Connection Status */}
-                <div className="bg-white border border-black/5 rounded-2xl p-5 space-y-4 shadow-sm flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h5 className="text-[10px] font-mono uppercase tracking-widest text-black/40">Sheets API Link</h5>
-                      <span className={`text-[9px] uppercase px-2 py-0.5 rounded-full font-mono font-bold tracking-wider ${
-                        accessToken ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                      }`}>
-                        {accessToken ? "Authorized" : "Unauthorized"}
-                      </span>
-                    </div>
-                    <p className="text-xs text-black/60 leading-relaxed font-sans font-medium">
-                      Synchronize all custom user registrants to your Google Sheets automatically.
-                    </p>
-                  </div>
-
-                  <div className="pt-2">
-                    {!accessToken ? (
-                      <button
-                        onClick={handleGoogleSignIn}
-                        disabled={isLoading}
-                        className="w-full flex items-center justify-center space-x-2 bg-black hover:bg-black/90 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all cursor-pointer"
-                      >
-                        <svg className="w-4 h-4 mr-1 shrink-0" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18A11.99 11.99 0 0 0 1.32 12c0 1.8.4 3.51 1.1 5l3.42-2.9z" />
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                        </svg>
-                        <span>Connect Sheets API</span>
-                      </button>
-                    ) : spreadsheetId ? (
-                      <div className="space-y-2">
-                        <a 
-                          href={spreadsheetUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="w-full text-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
-                        >
-                          <span>Open Live Sheet</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleCreateNewSheet}
-                        disabled={isCreatingSheet}
-                        className="w-full bg-black hover:bg-black/90 text-white rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <PlusCircle className="w-4 h-4 text-white shrink-0" />
-                        <span>{isCreatingSheet ? "Creating sheet..." : "Generate Synced Sheet"}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
                 {/* Database sync counts */}
                 <div className="bg-white border border-black/5 rounded-2xl p-5 space-y-4 shadow-sm flex flex-col justify-between">
                   <div className="space-y-2">
@@ -1088,18 +1042,7 @@ export default function AccountPortal({
                   </div>
 
                   <div className="pt-2">
-                    <button
-                      onClick={handleSyncToSheet}
-                      disabled={isSyncing || !accessToken || !spreadsheetId}
-                      className={`w-full font-bold text-xs py-2.5 px-4 rounded-xl transition-all duration-150 flex items-center justify-center space-x-2 ${
-                        !accessToken || !spreadsheetId
-                          ? "bg-black/[0.04] text-black/30 border border-black/5 cursor-not-allowed"
-                          : "bg-black hover:bg-black/90 text-white shadow-sm cursor-pointer"
-                      }`}
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-                      <span>{isSyncing ? "Syncing to Sheets..." : "Sync Database to Sheets"}</span>
-                    </button>
+                    <div className="w-full text-center text-[10px] text-black/40 font-mono">Sync disabled by Admin</div>
                   </div>
                 </div>
 
@@ -1156,7 +1099,7 @@ export default function AccountPortal({
                   <div>
                     <h5 className="text-xs font-bold text-black uppercase tracking-wider">Authentication Shield Status</h5>
                     <p className="text-[11px] text-black/60 leading-relaxed mt-1">
-                      Your session is protected by Firebase Authentication. Database integrations are active. All sync metrics can be published securely to Google Sheets.
+                      Your session is protected by Firebase Authentication. Database integrations are active. Metrics are updated in real-time.
                     </p>
                   </div>
                 </div>
@@ -1167,7 +1110,7 @@ export default function AccountPortal({
                 <div className="p-5 border-b border-black/5 flex items-center justify-between">
                   <div>
                     <h5 className="font-sans font-black text-sm text-black uppercase tracking-tight">User Registrations Table</h5>
-                    <p className="text-[11px] text-black/40">View other creator database registrations that will synchronize with Google Sheets.</p>
+                    <p className="text-[11px] text-black/40">View database registrations and manage users.</p>
                   </div>
                   <button
                     onClick={refreshSignups}
@@ -1281,7 +1224,7 @@ export default function AccountPortal({
                     <li>Add <strong>Email/Password</strong> and click Enable</li>
                   </ol>
                   <p className="text-red-700/80 pt-1 font-sans">
-                    💡 <em>Tip: You can use the standard Google Sheets auth below to log in instantly!</em>
+                    💡 <em>Tip: You can use the standard Google login to access your account instantly!</em>
                   </p>
                 </div>
               ) : (
@@ -1630,6 +1573,10 @@ export default function AccountPortal({
                   </svg>
                   <span>Sign in with Google</span>
                 </button>
+                
+                <p className="text-[10px] text-center text-black/40 mt-4 font-sans font-medium px-4 leading-relaxed">
+                  By continuing, you agree to our <a href="/terms" className="underline hover:text-black">Terms of Service</a> and <a href="/privacy" className="underline hover:text-black">Privacy Policy</a>.
+                </p>
 
                 {/* Sign in switcher footer */}
                 <div className="text-center pt-2">

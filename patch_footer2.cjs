@@ -1,4 +1,5 @@
-import React from "react";
+const fs = require('fs');
+const code = `import React from "react";
 import { Instagram, Linkedin, Youtube } from "lucide-react";
 
 interface FooterProps {
@@ -104,22 +105,6 @@ export default function Footer({
             </li>
             <li>
               <a
-                href="/about"
-                className="text-black/65 hover:text-brand-primary transition-colors block"
-              >
-                About Us
-              </a>
-            </li>
-            <li>
-              <a
-                href="/refund"
-                className="text-black/65 hover:text-brand-primary transition-colors block"
-              >
-                Refund Policy
-              </a>
-            </li>
-            <li>
-              <a
                 href="/terms"
                 className="text-black/65 hover:text-brand-primary transition-colors block"
               >
@@ -128,7 +113,7 @@ export default function Footer({
             </li>
             <li>
               <a
-                href="/contact"
+                href="mailto:aniketrajcargal123@gmail.com"
                 className="text-black/65 hover:text-brand-primary transition-colors block"
               >
                 Contact
@@ -189,3 +174,5 @@ export default function Footer({
     </footer>
   );
 }
+`;
+fs.writeFileSync('src/components/Footer.tsx', code);

@@ -1,7 +1,11 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+const fs = require('fs');
+let code = fs.readFileSync('index.html', 'utf8');
+
+code = code.replace(
+  `<meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Editors Hub Store</title>`,
+  `<meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Primary Meta Tags -->
     <title>Editors Hub Store — Professional Creative Assets for Editors & Designers</title>
@@ -38,21 +42,7 @@
       "priceRange": "$",
       "description": "Premium digital marketplace for video editors, motion designers, and content creators. High-quality assets, plugins, and sound effects to elevate your productions."
     }
-    </script>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script>
-      window.addEventListener("unhandledrejection", function(event) { document.body.innerHTML += "<pre style=\"color:red; z-index:9999; position:absolute; top:50px; left:0; background:white; padding:20px;\">" + event.reason + "</pre>"; });
-      window.onerror = function(msg, url, line, col, error) {
-        document.body.innerHTML += "<pre style=\"color:red; z-index:9999; position:absolute; top:0; left:0; background:white; padding:20px;\">" + msg + "\n" + error?.stack + "</pre>";
-      };
-    </script>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+    </script>`
+);
 
+fs.writeFileSync('index.html', code);

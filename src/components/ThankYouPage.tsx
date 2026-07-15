@@ -1,8 +1,17 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate, Navigate } from "react-router-dom";
 import { CheckCircle, ArrowLeft, Clock, Mail } from "lucide-react";
+import { updateMetaTags } from "../utils/seo";
 
 export default function ThankYouPage() {
+  useEffect(() => {
+    updateMetaTags({
+      title: "Thank You — Editors Hub Store",
+      description: "Thank you for your purchase at Editors Hub Store.",
+      url: "https://www.editorshubstore.in/thank-you"
+    });
+  }, []);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { orderId, email } = location.state || {};

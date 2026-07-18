@@ -176,22 +176,9 @@ export default function AdminDashboard() {
         const parsedSubject = replaceVariables(rawSubject);
         const parsedBody = replaceVariables(rawBody);
 
-        const emailResult = await sendApprovalEmail({
-          to_email: order.email,
-          to_name: order.customerName,
-          order_id: order.orderId,
-          product_name: order.productName,
-          download_link: parsedBody,
-          subject: parsedSubject,
-          body: parsedBody
-        });
-        if (emailResult.success) {
-          showToast(`Approval email sent to ${order.email}`, "success");
-        } else {
-          showToast(`Automated email failed. Opening your default mail app instead...`, "error");
-          const mailtoLink = `mailto:${order.email}?subject=${encodeURIComponent(parsedSubject)}&body=${encodeURIComponent(parsedBody)}`;
-          window.location.href = mailtoLink;
-        }
+        showToast(`Opening your default mail app to send approval...`, "success");
+        const mailtoLink = `mailto:${order.email}?subject=${encodeURIComponent(parsedSubject)}&body=${encodeURIComponent(parsedBody)}`;
+        window.location.href = mailtoLink;
       }
     } catch (error) {
       console.error("Error updating order:", error);

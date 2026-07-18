@@ -336,7 +336,7 @@ export default function Navbar({
               className="hidden md:flex items-center space-x-2 border border-black/10 text-black/80 hover:bg-black/5 text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer"
             >
               <User className="w-4 h-4 text-black/60" />
-              <span>Sign In</span>
+              <span>Login</span>
             </button>
           )}
 
@@ -652,8 +652,8 @@ export default function Navbar({
                 <hr className="border-black/5 my-4" />
 
                 {isLoggedIn ? (
-                  <div className="space-y-3">
-                    <p className="text-xs text-black/50 font-mono">
+                  <div className="space-y-3 mt-auto">
+                    <p className="text-xs text-black/50 font-mono text-center">
                       Logged in as {userEmail}
                     </p>
                     <button
@@ -661,16 +661,16 @@ export default function Navbar({
                         setIsMobileMenuOpen(false);
                         navigate("/portal");
                       }}
-                      className="w-full text-center border border-black/10 py-2.5 rounded-full text-xs font-semibold"
+                      className="w-full text-center bg-brand-primary text-white py-3 rounded-full text-xs font-semibold hover:bg-brand-accent"
                     >
-                      Account & Sheet Sync
+                      My Account
                     </button>
                     <button
                       onClick={() => {
                         handleSignout();
                         setIsMobileMenuOpen(false);
                       }}
-                      className="w-full text-center border border-brand-accent text-brand-accent py-2.5 rounded-full text-xs font-semibold"
+                      className="w-full text-center border border-brand-accent text-brand-accent py-3 rounded-full text-xs font-semibold"
                     >
                       Sign Out
                     </button>
@@ -681,21 +681,12 @@ export default function Navbar({
                       setIsMobileMenuOpen(false);
                       navigate("/portal");
                     }}
-                    className="w-full text-center border border-black/10 py-2.5 rounded-full text-xs font-semibold"
+                    className="w-full text-center bg-brand-primary text-white py-3 rounded-full text-xs font-semibold hover:bg-brand-accent mt-auto flex items-center justify-center space-x-2"
                   >
-                    Partner Login
+                    <User className="w-4 h-4" />
+                    <span>Login</span>
                   </button>
                 )}
-
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    setIsGetStartedOpen(true);
-                  }}
-                  className="w-full text-center bg-brand-primary text-white py-3 rounded-full text-xs font-semibold hover:bg-brand-accent mt-auto"
-                >
-                  Get Creator Starter Kit
-                </button>
               </div>
             </motion.div>
           </div>

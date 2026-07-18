@@ -9,6 +9,7 @@ import {
   signOut, 
   sendEmailVerification,
   sendPasswordResetEmail,
+  fetchSignInMethodsForEmail,
   User, 
   Auth
 } from "firebase/auth";
@@ -258,3 +259,12 @@ export async function getAllSignupsFromFirestore(): Promise<SignupRecord[]> {
   // Disabled as per requirements (Do NOT use Firestore or Storage yet)
   return [];
 }
+
+export const checkEmailExists = async (email: string): Promise<boolean> => {
+  try {
+    const methods = await fetchSignInMethodsForEmail(auth, email);
+    return methods.length > 0;
+  } catch (error) {
+    return false;
+  }
+};

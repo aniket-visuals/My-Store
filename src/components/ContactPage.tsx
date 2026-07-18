@@ -57,13 +57,13 @@ export default function ContactPage() {
               <h2 className="font-display font-bold text-xl text-brand-dark">Direct Contact</h2>
               
               <div className="space-y-4">
-                <a href="mailto:aniketrajcargal123@gmail.com" className="flex items-start gap-4 p-4 rounded-2xl bg-brand-bg hover:bg-brand-primary/5 transition-colors group">
+                <a href="mailto:support@editorshubstore.in" className="flex items-start gap-4 p-4 rounded-2xl bg-brand-bg hover:bg-brand-primary/5 transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm text-brand-primary group-hover:scale-110 transition-transform">
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-bold text-sm text-brand-dark mb-1">Email Support</h3>
-                    <p className="text-xs text-brand-dark/60 break-all">aniketrajcargal123@gmail.com</p>
+                    <p className="text-xs text-brand-dark/60 break-all">support@editorshubstore.in</p>
                   </div>
                 </a>
 
@@ -94,7 +94,7 @@ export default function ContactPage() {
               <p className="text-white/70 text-sm mb-6 leading-relaxed">
                 Interested in sponsorships, partnerships, or custom editing work? Let's collaborate.
               </p>
-              <a href="mailto:aniketrajcargal123@gmail.com?subject=Business%20Inquiry" className="inline-flex items-center gap-2 text-sm font-bold bg-white text-brand-dark px-6 py-3 rounded-xl hover:bg-brand-primary hover:text-white transition-colors w-full justify-center">
+              <a href="mailto:support@editorshubstore.in?subject=Business%20Inquiry" className="inline-flex items-center gap-2 text-sm font-bold bg-white text-brand-dark px-6 py-3 rounded-xl hover:bg-brand-primary hover:text-white transition-colors w-full justify-center">
                 <span>Partner with us</span>
                 <ExternalLink className="w-4 h-4" />
               </a>

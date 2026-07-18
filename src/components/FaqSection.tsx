@@ -79,7 +79,7 @@ export default function FaqSection() {
           <p className="text-xs text-black/40 font-mono font-medium">
             STILL HAVE UNRESOLVED TIMELINE CONSTRAINTS?{" "}
             <a
-              href="https://mail.google.com/mail/?view=cm&fs=1&to=aniketrajcargal123@gmail.com"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=support@editorshubstore.in"
               target="_blank"
               rel="noopener noreferrer"
               className="text-black inline-flex items-center hover:underline hover:text-brand-primary font-bold ml-1.5"

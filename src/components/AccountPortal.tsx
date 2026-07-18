@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import {
-  checkUsernameAvailability,
+  checkUsernameAvailability, checkEmailExists,
   googleSignIn,
   emailSignIn,
   emailSignUp, 
@@ -290,7 +290,7 @@ export default function AccountPortal({
       setSuccessMsg("Welcome back!");
       setTimeout(() => {
         setSuccessMsg(null);
-        navigate("/");
+        navigate(-1);
       }, 1500);
     } catch (err: any) {
       if (err.message === "EMAIL_NOT_VERIFIED") {
@@ -326,6 +326,14 @@ export default function AccountPortal({
     setIsLoading(true);
     setErrorMsg(null);
     try {
+      const signupEmail = email.trim() || `${username.trim()}@editorshub.local`;
+      const emailExists = await checkEmailExists(signupEmail);
+      if (emailExists) {
+        setErrorMsg("User already exists. Please sign in");
+        setIsLoading(false);
+        return;
+      }
+      
       const isAvailable = await checkUsernameAvailability(username.trim());
       if (!isAvailable) {
         setErrorMsg("Username is already taken");
@@ -367,6 +375,9 @@ export default function AccountPortal({
         }, 1500);
       }
     } catch (err: any) {
+      if (err.message && (err.message.includes("User already exists") || err.message.includes("email-already-in-use"))) {
+        setIsSettingUpProfile(false);
+      }
       setErrorMsg(err.message || "Failed to register account.");
     } finally {
       setIsLoading(false);
@@ -403,7 +414,7 @@ export default function AccountPortal({
         await refreshSignups();
         setTimeout(() => {
           setSuccessMsg(null);
-          navigate("/");
+          navigate(-1);
         }, 1500);
       }
     } catch (err: any) {
@@ -557,7 +568,7 @@ export default function AccountPortal({
               <button
                 onClick={() => {
                   if (onClose) onClose();
-                  else navigate("/");
+                  else navigate(-1);
                 }}
                 className="absolute top-4 left-6 sm:top-6 sm:left-12 inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-bold text-xs backdrop-blur-md border border-white/20 transition-all cursor-pointer z-20 shadow-sm"
               >
@@ -573,7 +584,7 @@ export default function AccountPortal({
                   className="bg-transparent text-white placeholder-white/80 text-xs outline-none w-full font-sans font-semibold border-none focus:ring-0 p-0"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      navigate("/");
+                      navigate(-1);
                     }
                   }}
                 />
@@ -1178,9 +1189,9 @@ export default function AccountPortal({
       <div className="w-full max-w-4xl mb-4 flex items-center justify-between px-2 z-10">
         <button
           onClick={() => {
-            if (onClose) onClose();
-            else navigate("/");
-          }}
+                  if (onClose) onClose();
+                  else navigate(-1);
+                }}
           className="inline-flex items-center space-x-2 text-xs font-bold text-black/60 hover:text-black transition-colors"
         >
           <span>← Back to Storefront</span>
@@ -1197,9 +1208,9 @@ export default function AccountPortal({
         <div className="flex-1 p-8 md:p-12 flex flex-col justify-center overflow-y-auto relative bg-white">
           <button
             onClick={() => {
-              if (onClose) onClose();
-              else navigate("/");
-            }}
+                  if (onClose) onClose();
+                  else navigate(-1);
+                }}
             className="absolute top-6 right-6 w-9 h-9 rounded-full bg-black/[0.03] flex items-center justify-center hover:bg-black/5 text-black/40 hover:text-black z-20 transition-all cursor-pointer"
             title="Close portal"
           >

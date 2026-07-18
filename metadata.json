@@ -1,6 +1,6 @@
 {
   "name": "Editors Hub",
-  "description": "Premium digital marketplace for video editors, motion designers, and content creators.",
+  "description": "Premium Assets for Creators.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

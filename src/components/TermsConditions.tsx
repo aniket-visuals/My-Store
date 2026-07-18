@@ -105,7 +105,7 @@ export default function TermsConditions() {
             <section>
               <h2 className="text-lg font-bold text-brand-dark mb-3">10. Contact Information</h2>
               <p>
-                If you have any questions or concerns regarding these Terms & Conditions, please contact us at <strong>aniketrajcargal123@gmail.com</strong>.
+                If you have any questions or concerns regarding these Terms & Conditions, please contact us at <strong>support@editorshubstore.in</strong>.
               </p>
             </section>
           </div>

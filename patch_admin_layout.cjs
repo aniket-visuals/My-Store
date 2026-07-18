@@ -1,254 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
-import { db, auth } from "../firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { Navigate, useNavigate } from "react-router-dom";
-import { 
-  Search, Filter, CheckCircle, XCircle, Eye, 
-  Clock, ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
-  SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2
-} from "lucide-react";
-import { updateMetaTags } from "../utils/seo";
-import { OrderData } from "../services/orderService";
-import { sendApprovalEmail } from "../services/emailService";
-import { PRODUCTS_DATA } from "../data";
+const fs = require('fs');
+let code = fs.readFileSync('src/components/AdminDashboard.tsx', 'utf8');
 
-interface Order extends OrderData {
-  id: string;
-  orderId: string;
-  status: "Pending" | "Approved" | "Rejected";
-  createdAt: any;
-}
-
-export default function AdminDashboard() {
-  useEffect(() => {
-    updateMetaTags({
-      title: "Admin Dashboard — Editors Hub Store",
-      description: "Admin dashboard for Editors Hub Store.",
-      url: "https://www.editorshubstore.in/admin"
-    });
-  }, []);
-
-  const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [authLoading, setAuthLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
-  const [currentPage, setCurrentPage] = useState<"orders" | "products">("orders");
-  const [products, setProducts] = useState<any[]>([]);
-  const [productsLoading, setProductsLoading] = useState(true);
-  const [productSearchTerm, setProductSearchTerm] = useState("");
-  const [productStatusFilter, setProductStatusFilter] = useState<"All" | "Published" | "Draft">("All");
-  
-  // Modals state
-  const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
-  const [confirmModal, setConfirmModal] = useState<{ action: "Approve" | "Reject", order: Order } | null>(null);
-  
-  // Toasts
-  const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.email) {
-        setIsAuthenticated(true);
-        // Check admins collection
-        getDoc(doc(db, "admins", user.uid)).then(adminDoc => {
-          setIsAdmin(adminDoc.exists() || user.email === 'aniketrajcargal123@gmail.com');
-          setAuthLoading(false);
-        }).catch(() => {
-          setIsAdmin(user.email === 'aniketrajcargal123@gmail.com');
-          setAuthLoading(false);
-        });
-      } else {
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-        setAuthLoading(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        // Fallback to static data for now if empty
-        const mockProducts = PRODUCTS_DATA.map(p => ({
-          ...p,
-          status: "Published",
-          priceInr: p.price * 83,
-          updatedAt: new Date(p.releaseDate || Date.now())
-        }));
-        setProducts(mockProducts);
-        setProductsLoading(false);
-      } else {
-        const productsData: any[] = [];
-        snapshot.forEach((doc) => {
-          productsData.push({ id: doc.id, ...doc.data() });
-        });
-        setProducts(productsData);
-        setProductsLoading(false);
-      }
-    }, (error) => {
-      console.error("Error fetching products:", error);
-      const mockProducts = PRODUCTS_DATA.map(p => ({
-        ...p,
-        status: "Published",
-        priceInr: p.price * 83,
-        updatedAt: new Date(p.releaseDate || Date.now())
-      }));
-      setProducts(mockProducts);
-      setProductsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-
-
-  useEffect(() => {
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ordersData: Order[] = [];
-      snapshot.forEach((doc) => {
-        ordersData.push({ id: doc.id, ...doc.data() } as Order);
-      });
-      setOrders(ordersData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching orders:", error);
-      showToast("Failed to fetch orders", "error");
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const handleStatusUpdate = async (order: Order, newStatus: "Approved" | "Rejected") => {
-    setConfirmModal(null);
-    try {
-      await updateDoc(doc(db, "orders", order.id), { status: newStatus });
-      showToast(`Order successfully ${newStatus.toLowerCase()}`, "success");
-      
-      if (newStatus === "Approved") {
-        showToast("Sending approval email...", "success");
-        const emailSent = await sendApprovalEmail({
-          to_email: order.email,
-          to_name: order.customerName,
-          order_id: order.orderId,
-          product_name: order.productName,
-          // Generate a mockup download link
-          download_link: `https://www.editorshubstore.in/download/${order.productId}?order=${order.orderId}`
-        });
-
-        if (emailSent) {
-          showToast(`Approval email sent to ${order.email}`, "success");
-        } else {
-          showToast(`Failed to send email to ${order.email}`, "error");
-        }
-      }
-    } catch (error) {
-      console.error("Error updating order:", error);
-      showToast(`Failed to ${newStatus.toLowerCase()} order`, "error");
-    }
-  };
-
-  const exportOrders = () => {
-    if (filteredOrders.length === 0) {
-      showToast("No orders to export", "error");
-      return;
-    }
-    const headers = ["Order ID", "Customer Name", "Email", "Country", "Social Username", "Product", "Payment Method", "Amount", "Status", "Date"];
-    const csvContent = [
-      headers.join(","),
-      ...filteredOrders.map(order => [
-        order.orderId || "",
-        `"${(order.customerName || "").replace(/"/g, '""')}"`,
-        order.email || "",
-        order.country || "",
-        `"${(order.discordOrTelegramUsername || "").replace(/"/g, '""')}"`,
-        `"${(order.productName || "").replace(/"/g, '""')}"`,
-        order.paymentMethod || "",
-        order.amount || 0,
-        order.status || "",
-        order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleString() : ""
-      ].join(","))
-    ].join("\n");
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const filteredProducts = products.filter(product => {
-    const searchLower = productSearchTerm.toLowerCase();
-    const matchesSearch = 
-      (product.name || "").toLowerCase().includes(searchLower) ||
-      (product.id || "").toLowerCase().includes(searchLower);
-      
-    const matchesFilter = productStatusFilter === "All" || product.status === productStatusFilter;
-    return matchesSearch && matchesFilter;
-  });
-
-  const filteredOrders = orders.filter(order => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
-      (order.orderId || "").toLowerCase().includes(searchLower) ||
-      (order.email || "").toLowerCase().includes(searchLower) ||
-      (order.customerName || "").toLowerCase().includes(searchLower);
-    
-    let s = (order.status || "").toLowerCase();
-    if (s === "approve") s = "approved";
-    if (s === "reject") s = "rejected";
-    const matchesFilter = statusFilter === "All" || s === statusFilter.toLowerCase();
-
-    return matchesSearch && matchesFilter;
-  });
-
-  const getStatusColor = (status: string) => {
-    switch ((status || "").toLowerCase()) {
-      case "approved": 
-      case "approve": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "rejected": return "bg-red-100 text-red-700 border-red-200";
-      default: return "bg-amber-100 text-amber-700 border-amber-200";
-    }
-  };
-
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return "N/A";
-    const date = timestamp.toDate();
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    }).format(date);
-  };
-
-  
+const replacement = `
   const renderOrders = () => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Controls */}
@@ -269,11 +22,11 @@ export default function AdminDashboard() {
               <button
                 key={status}
                 onClick={() => setStatusFilter(status as any)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                className={\`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all \${
                   statusFilter === status 
                     ? "bg-brand-dark text-white shadow-md" 
                     : "text-brand-dark/60 hover:bg-brand-dark/5"
-                }`}
+                }\`}
               >
                 {status}
               </button>
@@ -338,7 +91,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="p-4">
                       <div className="text-sm font-medium text-brand-dark max-w-[200px] truncate">{order.productName}</div>
-                      <div className="text-xs text-brand-dark/60 font-mono">${order.amount}</div>
+                      <div className="text-xs text-brand-dark/60 font-mono">$\\{order.amount}</div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
@@ -357,7 +110,7 @@ export default function AdminDashboard() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
+                      <span className={\`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border \${getStatusColor(order.status)}\`}>
                         {order.status}
                       </span>
                     </td>
@@ -409,11 +162,11 @@ export default function AdminDashboard() {
               <button
                 key={status}
                 onClick={() => setProductStatusFilter(status as any)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                className={\`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all \${
                   productStatusFilter === status 
                     ? "bg-brand-dark text-white shadow-md" 
                     : "text-brand-dark/60 hover:bg-brand-dark/5"
-                }`}
+                }\`}
               >
                 {status}
               </button>
@@ -480,15 +233,15 @@ export default function AdminDashboard() {
                       <div className="text-xs text-brand-dark/50">{product.category}</div>
                     </td>
                     <td className="p-4">
-                      <span className="text-sm font-mono text-brand-dark/80">${product.price?.toFixed(2) || "0.00"}</span>
+                      <span className="text-sm font-mono text-brand-dark/80">$\\{product.price?.toFixed(2) || "0.00"}</span>
                     </td>
                     <td className="p-4">
-                      <span className="text-sm font-mono text-brand-dark/80">₹{product.priceInr?.toFixed(2) || "0.00"}</span>
+                      <span className="text-sm font-mono text-brand-dark/80">₹\\{product.priceInr?.toFixed(2) || "0.00"}</span>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                      <span className={\`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border \${
                          product.status === "Published" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"
-                      }`}>
+                      }\`}>
                         {product.status || "Draft"}
                       </span>
                     </td>
@@ -527,8 +280,8 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-brand-bg font-sans flex">
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg border animate-fade-in flex items-center gap-2
-          ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-200 text-red-800"}`}
+        <div className={\`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg border animate-fade-in flex items-center gap-2
+          \${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-200 text-red-800"}\`}
         >
           {toast.type === "success" ? <CheckCircle className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
           <p className="font-medium text-sm">{toast.message}</p>
@@ -566,8 +319,8 @@ export default function AdminDashboard() {
               </button>
               <button 
                 onClick={() => handleStatusUpdate(confirmModal.order, confirmModal.action === "Approve" ? "Approved" : "Rejected")}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-white font-bold tracking-wider text-sm transition-colors
-                  ${confirmModal.action === "Approve" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}`}
+                className={\`flex-1 px-4 py-2.5 rounded-xl text-white font-bold tracking-wider text-sm transition-colors
+                  \${confirmModal.action === "Approve" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}\`}
               >
                 Yes, {confirmModal.action}
               </button>
@@ -588,18 +341,18 @@ export default function AdminDashboard() {
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-1">
           <button 
             onClick={() => setCurrentPage("orders")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+            className={\`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors \${
               currentPage === "orders" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
-            }`}
+            }\`}
           >
             <ShoppingCart className="w-5 h-5" />
             Orders
           </button>
           <button 
             onClick={() => setCurrentPage("products")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+            className={\`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors \${
               currentPage === "products" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
-            }`}
+            }\`}
           >
             <Package className="w-5 h-5" />
             Products
@@ -633,4 +386,10 @@ export default function AdminDashboard() {
     </div>
   );
 }
+`;
 
+const regex = /return \(\s*<div className="min-h-screen bg-brand-bg font-sans">[\s\S]*?\n\}/;
+code = code.replace(regex, replacement);
+
+// Also fix the export default function line to export default function AdminDashboard
+fs.writeFileSync('src/components/AdminDashboard.tsx', code);

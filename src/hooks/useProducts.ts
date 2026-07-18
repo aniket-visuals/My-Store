@@ -23,7 +23,7 @@ export const useProducts = () => {
             category: data.category,
             rating: 5.0,
             reviewsCount: 0,
-            downloadCount: 0,
+            downloadCount: data.downloadCount || 0,
             description: data.shortDescription || data.fullDescription || "",
             fullDescription: data.fullDescription,
             features: [],

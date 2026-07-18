@@ -54,6 +54,7 @@ export interface AdminProduct {
   faqs?: FaqItem[];
   createdAt?: any;
   updatedAt?: any;
+  downloadCount?: number;
 }
 
 export interface Category {

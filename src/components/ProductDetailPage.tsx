@@ -270,7 +270,12 @@ export default function ProductDetailPage({
     return currentProduct.originalPrice || Math.round(currentProduct.price * 1.6);
   };
 
-  const getActiveFaqs = () => COMMON_FAQS;
+  const getActiveFaqs = () => {
+    if (currentProduct.faqs && currentProduct.faqs.length > 0) {
+      return currentProduct.faqs.map(f => ({ q: f.question, a: f.answer }));
+    }
+    return COMMON_FAQS;
+  };
 
   const getActiveReviews = () => {
     return reviews;

@@ -13,21 +13,20 @@ interface EmailParams {
 export const sendApprovalEmail = async (params: EmailParams): Promise<{ success: boolean; error?: string }> => {
   try {
     // FORCE hardcode the working keys provided by the user in case their AI Studio Settings has old keys
-    const serviceId = 'default_service';
-    const templateId = 'template_gmucd5s';
-    const publicKey = 'LyR7uPNP80yEgPXCC';
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'default_service';
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_gmucd5s';
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'LyR7uPNP80yEgPXCC';
 
-    // Strictly match the fields from the working HTML form
+    // Strictly match the fields from the working HTML form and the user's screenshot
     const templateParams = {
       to_name: params.to_name,
       order_id: params.order_id,
       product_name: params.product_name,
       download_link: params.download_link,
-      email: params.to_email,
-      to_email: params.to_email,
-      name: "Editors Hub Store", // Sender name
+      email: params.to_email, // Mapped to {{email}} in the template (To Email and Reply To)
+      name: "Editors Hub Store", // Mapped to {{name}} in the template (From Name)
       subject: params.subject,
-      body: params.body
+      message: params.body // EmailJS usually uses 'message' instead of 'body'
     };
 
     console.log("Sending email with params:", templateParams);

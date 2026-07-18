@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Heart, Sparkles, AlertCircle, Calendar } from "lucide-react";
 import { Product } from "../types";
-import { PRODUCTS_DATA, CATEGORIES_DATA } from "../data";
+import { CATEGORIES_DATA } from "../data";
+import { useProducts } from "../hooks/useProducts";
 import { formatDescription } from "../utils";
 
 interface FeaturedProductsProps {
@@ -24,6 +25,7 @@ export default function FeaturedProducts({
   wishlist,
   toggleWishlist
 }: FeaturedProductsProps) {
+  const { products: PRODUCTS_DATA } = useProducts();
   
   // Filter products by selected category slug
   const filteredProducts = activeCategory === "all"

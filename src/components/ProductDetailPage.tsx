@@ -15,6 +15,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { formatDescription } from "../utils";
 
 interface ProductDetailPageProps {
+  allProducts?: Product[];
   product: Product;
   onBack: () => void;
   addToCart: (product: Product) => void;
@@ -24,38 +25,6 @@ interface ProductDetailPageProps {
 }
 
 // Simulated High-Fidelity products database to populate related products beautifully
-const MOCK_RELATED_PRODUCTS: Product[] = [
-  {
-    id: "p1",
-    name: "MotionFX",
-    slug: "motionfx",
-    price: 10,
-    originalPrice: 19,
-    category: "sound-effects",
-    rating: 4.9,
-    reviewsCount: 148,
-    downloadCount: 1240,
-    description: "A meticulously recorded collection of sub-heavy impacts, analog synth sweeps, foley textures, and atmospheric whooshes. Perfect for cinematic videos and visual essays.",
-    features: ["Professional-quality sound effects", "Made for Video Editors & Motion Designers", "Organized & Easy to Use", "Lifetime Updates"],
-    compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, CapCut, etc.)",
-    fileSize: "70 MB",
-    fileType: "WAV",
-    image: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
-    audioPreview: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    isPopular: true,
-    releaseDate: "June 2, 2026"
-  }
-];
-
-const DYNAMIC_FAQS: Record<string, { q: string; a: string }[]> = {
-  p1: [
-    { q: "Do these sound effects work on mobile video editing apps?", a: "Yes! Since they are saved in industry-standard premium 24-bit WAV format, you can import and play them perfectly inside CapCut, LumaFusion, Premiere Rush, or any other mobile timeline." },
-    { q: "Is attribution or a visual credit required?", a: "No attribution is required. You can use these royalty-free files completely anonymously in commercials, YouTube videos, and client assets without paying royalties or tagging are store." },
-    { q: "Will I receive notifications for newly added files?", a: "Yes! Whenever we expand our catalog or add bonus tracks to the pack, a direct link and email notification will automatically reach your inbox free of charge." }
-  ]
-};
-
-
 
 const COMMON_FAQS = [
   { q: "Is payment absolutely safe?", a: "Yes, our processing systems utilize AES SSL 256-bit encryption pipelines ensuring complete tokenization and safe clearance." },
@@ -64,22 +33,14 @@ const COMMON_FAQS = [
 ];
 
 const getGalleryImages = (prod: Product): string[] => {
-  const fallbackGalleries: Record<string, string[]> = {
-    p1: [
-      "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
-      "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825428/Untitled_design_7_snbmyb.png",
-      "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825500/Untitled_design_8_mvtkil.png"
-    ]
-  };
-  
-  return fallbackGalleries[prod.id] || [
-    prod.image,
-    "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
-  ];
+  if (prod.galleryImages && prod.galleryImages.length > 0) {
+    return [prod.image, ...prod.galleryImages];
+  }
+  return [prod.image];
 };
 
 export default function ProductDetailPage({
+  allProducts = [],
   product,
   onBack,
   addToCart,
@@ -309,26 +270,7 @@ export default function ProductDetailPage({
     return currentProduct.originalPrice || Math.round(currentProduct.price * 1.6);
   };
 
-  const getActiveFaqs = () => {
-    return [
-      {
-        q: "Do these sound effects work on mobile video editing apps?",
-        a: "Yes! They work with CapCut, VN, Alight Motion, and any app that supports audio imports."
-      },
-      {
-        q: "Will I receive lifetime updates?",
-        a: "Absolutely! Purchase once and get all future updates for free."
-      },
-      {
-        q: "Can I use these sound effects for commercial projects?",
-        a: "Yes, you can use them in both personal and commercial video projects."
-      },
-      {
-        q: "Where will I get future SFX pack updates?",
-        a: "All future updates will be available through our Discord server. Simply join the community to access the latest files and download every new release."
-      }
-    ];
-  };
+  const getActiveFaqs = () => COMMON_FAQS;
 
   const getActiveReviews = () => {
     return reviews;
@@ -447,7 +389,7 @@ export default function ProductDetailPage({
     }
   };
 
-  const otherProducts = MOCK_RELATED_PRODUCTS.filter(p => p.id !== currentProduct.id);
+  const otherProducts = allProducts.filter(p => p.id !== currentProduct.id);
 
   return (
     <div id="gumroad-detail-root" className="min-h-screen bg-brand-bg text-brand-dark pt-24 pb-32">
@@ -599,27 +541,9 @@ export default function ProductDetailPage({
                 <span>Product Description</span>
               </h2>
 
-              <div className="space-y-4 font-sans text-sm text-brand-dark/80 leading-relaxed font-normal">
-                <p>
-                  Upgrade your edits with a premium collection of high-quality sound effects made for video editors and motion designers. From smooth transitions and whooshes to cinematic impacts and UI sounds, everything is organized and ready to use.
-                </p>
-                <p>
-                  Designed to speed up your workflow and enhance every project, this pack also includes <b> lifetime updates </b> , giving you access to new sounds and improvements at no extra cost.
-                </p>
-                <p className="font-semibold text-brand-dark">
-                  What You'll Get:
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-                  {currentProduct.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-start space-x-2 px-3.5 py-3 bg-brand-dark/[0.015] border border-brand-dark/5 rounded-xl">
-                      <Check className="w-4 h-4 text-brand-primary shrink-0 mt-0.5" />
-                      <span className="text-xs text-brand-dark font-medium">{feat}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-4 font-sans text-sm text-brand-dark/80 leading-relaxed font-normal whitespace-pre-wrap">
+                {currentProduct.fullDescription || currentProduct.description}
               </div>
-
-
             </div>
 
             {/* Software Compatibility Detail Block */}

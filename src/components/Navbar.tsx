@@ -19,7 +19,7 @@ import {
   Heart,
 } from "lucide-react";
 import { Product } from "../types";
-import { PRODUCTS_DATA } from "../data";
+import { useProducts } from "../hooks/useProducts";
 import { logout as firebaseLogout } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
@@ -39,8 +39,7 @@ interface NavbarProps {
   wishlist?: Product[];
 }
 
-export default function Navbar({
-  cart,
+export default function Navbar({ cart,
   removeFromCart,
   clearCart,
   openProductPreview,
@@ -53,6 +52,7 @@ export default function Navbar({
   setUserEmail,
   wishlist = [],
 }: NavbarProps) {
+  const { products: PRODUCTS_DATA } = useProducts();
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

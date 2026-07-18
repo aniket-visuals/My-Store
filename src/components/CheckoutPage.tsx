@@ -48,8 +48,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
   const totalPrice = cart.reduce((acc, item) => acc + item.price, 0);
 
   // Computed values
-  const inrConversionRate = 93;
-  const priceINR = totalPrice * inrConversionRate;
+  const priceINR = cart.reduce((acc, item) => acc + (item.priceInr || item.price * 83), 0);
   
   const paymentDetails = {
     upi: {

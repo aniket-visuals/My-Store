@@ -2,8 +2,8 @@ const fs = require('fs');
 let code = fs.readFileSync('src/components/ProductDetailPage.tsx', 'utf8');
 
 code = code.replace(
-  /<\/div>\n          <\/div>\n\n            \{\/\* Software Compatibility Detail Block \*\/\}/,
-  `</div>\n\n            {/* Software Compatibility Detail Block */}`
+  /const getActiveFaqs = \(\) => \{[\s\S]*?\};\n/,
+  `const getActiveFaqs = () => COMMON_FAQS;\n`
 );
 
 fs.writeFileSync('src/components/ProductDetailPage.tsx', code);

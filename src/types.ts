@@ -3,21 +3,51 @@ export interface Product {
   name: string;
   slug: string;
   price: number;
+  priceInr?: number;
   originalPrice?: number;
   category: string;
   rating: number;
   reviewsCount: number;
   downloadCount: number;
   description: string;
+  fullDescription?: string;
   features: string[];
   compatibility: string;
   fileSize: string;
   fileType: string;
   image: string;
+  galleryImages?: string[];
   videoPreview?: string;
   audioPreview?: string;
+  downloadLink?: string;
+  tutorialLink?: string;
+  metaTitle?: string;
+  metaDescription?: string;
   isPopular?: boolean;
   releaseDate?: string;
+}
+
+export interface AdminProduct {
+  id: string;
+  name: string;
+  slug: string;
+  shortDescription: string;
+  fullDescription: string;
+  category: string;
+  thumbnail: string;
+  galleryImages: string[];
+  previewVideo?: string;
+  status: "Published" | "Draft";
+  priceUsd: number;
+  priceInr: number;
+  downloadLink: string;
+  tutorialLink?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  emailSubject?: string;
+  emailBody?: string;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface Category {

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { 
   Search, Filter, CheckCircle, XCircle, Eye, 
   Clock, ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
-  SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2
+  SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save
 } from "lucide-react";
 import { updateMetaTags } from "../utils/seo";
 import { OrderData } from "../services/orderService";
 import { sendApprovalEmail } from "../services/emailService";
-import { PRODUCTS_DATA } from "../data";
+import { AdminProduct } from "../types";
 
 interface Order extends OrderData {
   id: string;
@@ -37,15 +37,20 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
-  const [currentPage, setCurrentPage] = useState<"orders" | "products">("orders");
-  const [products, setProducts] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "edit-product">("orders");
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [productStatusFilter, setProductStatusFilter] = useState<"All" | "Published" | "Draft">("All");
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
   
   // Modals state
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ action: "Approve" | "Reject", order: Order } | null>(null);
+  const [deleteProductModal, setDeleteProductModal] = useState<AdminProduct | null>(null);
+  const [approvalMessageType, setApprovalMessageType] = useState<"default" | "custom">("default");
+  const [customEmailSubject, setCustomEmailSubject] = useState("");
+  const [customEmailBody, setCustomEmailBody] = useState("");
   
   // Toasts
   const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
@@ -75,32 +80,19 @@ export default function AdminDashboard() {
     const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
-        // Fallback to static data for now if empty
-        const mockProducts = PRODUCTS_DATA.map(p => ({
-          ...p,
-          status: "Published",
-          priceInr: p.price * 83,
-          updatedAt: new Date(p.releaseDate || Date.now())
-        }));
-        setProducts(mockProducts);
+        setProducts([]);
         setProductsLoading(false);
       } else {
-        const productsData: any[] = [];
+        const productsData: AdminProduct[] = [];
         snapshot.forEach((doc) => {
-          productsData.push({ id: doc.id, ...doc.data() });
+          productsData.push({ id: doc.id, ...doc.data() } as AdminProduct);
         });
         setProducts(productsData);
         setProductsLoading(false);
       }
     }, (error) => {
       console.error("Error fetching products:", error);
-      const mockProducts = PRODUCTS_DATA.map(p => ({
-        ...p,
-        status: "Published",
-        priceInr: p.price * 83,
-        updatedAt: new Date(p.releaseDate || Date.now())
-      }));
-      setProducts(mockProducts);
+      setProducts([]);
       setProductsLoading(false);
     });
     return () => unsubscribe();
@@ -143,7 +135,11 @@ export default function AdminDashboard() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleStatusUpdate = async (order: Order, newStatus: "Approved" | "Rejected") => {
+    const handleStatusUpdate = async (order: Order, newStatus: "Approved" | "Rejected") => {
+    const currentMsgType = approvalMessageType;
+    const customSub = customEmailSubject;
+    const customBod = customEmailBody;
+
     setConfirmModal(null);
     try {
       await updateDoc(doc(db, "orders", order.id), { status: newStatus });
@@ -151,13 +147,43 @@ export default function AdminDashboard() {
       
       if (newStatus === "Approved") {
         showToast("Sending approval email...", "success");
+        
+        const activeProductForOrder = products.find(p => p.id === order.productId);
+        
+        const replaceVariables = (text: string) => {
+          if (!text) return "";
+          return text
+            .replace(/\{\{customer_name\}\}/g, order.customerName || "")
+            .replace(/\{\{customer_email\}\}/g, order.email || "")
+            .replace(/\{\{product_name\}\}/g, activeProductForOrder?.name || order.productName || "")
+            .replace(/\{\{order_id\}\}/g, order.orderId || "")
+            .replace(/\{\{payment_method\}\}/g, order.paymentMethod || "")
+            .replace(/\{\{price\}\}/g, order.amount?.toString() || "");
+        };
+
+        let rawSubject = "";
+        let rawBody = "";
+
+        if (currentMsgType === "custom") {
+          rawSubject = customSub;
+          rawBody = customBod;
+        } else {
+          rawSubject = activeProductForOrder?.emailSubject || `Thanks for purchasing ${activeProductForOrder?.name || order.productName}`;
+          const productBody = activeProductForOrder?.emailBody || `Download:\n${activeProductForOrder?.downloadLink || "No link"}${activeProductForOrder?.tutorialLink ? `\n\nTutorial:\n${activeProductForOrder.tutorialLink}` : ""}`;
+          rawBody = `Hi {{customer_name}},\n\n${productBody}\n\nThank you,\nEditors Hub Store`;
+        }
+        
+        const parsedSubject = replaceVariables(rawSubject);
+        const parsedBody = replaceVariables(rawBody);
+
         const emailSent = await sendApprovalEmail({
           to_email: order.email,
           to_name: order.customerName,
           order_id: order.orderId,
           product_name: order.productName,
-          // Generate a mockup download link
-          download_link: `https://www.editorshubstore.in/download/${order.productId}?order=${order.orderId}`
+          download_link: parsedBody,
+          subject: parsedSubject,
+          body: parsedBody
         });
 
         if (emailSent) {
@@ -422,7 +448,27 @@ export default function AdminDashboard() {
         </div>
         
         <button 
-          onClick={() => showToast("Add Product flow is coming soon", "success")}
+          onClick={() => {
+          setEditingProduct({
+            id: "",
+            name: "",
+            slug: "",
+            shortDescription: "",
+            fullDescription: "",
+            category: "sound-effects",
+            thumbnail: "",
+            galleryImages: [],
+            previewVideo: "",
+            status: "Draft",
+            priceUsd: 0,
+            priceInr: 0,
+            downloadLink: "",
+            tutorialLink: "",
+            metaTitle: "",
+            metaDescription: ""
+          });
+          setCurrentPage("edit-product");
+        }}
           className="flex items-center gap-2 px-4 py-2.5 bg-brand-primary text-white rounded-xl font-medium text-sm hover:bg-brand-accent transition-colors shrink-0 whitespace-nowrap shadow-sm"
         >
           <Plus className="w-4 h-4" />
@@ -468,8 +514,8 @@ export default function AdminDashboard() {
                   <tr key={product.id} className="hover:bg-brand-dark/[0.01] transition-colors">
                     <td className="p-4">
                       <div className="w-10 h-10 rounded-lg overflow-hidden border border-brand-dark/10 bg-brand-dark/5">
-                        {product.image ? (
-                           <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        {product.thumbnail ? (
+                           <img src={product.thumbnail} alt={product.name} className="w-full h-full object-cover" />
                         ) : (
                            <ImageIcon className="w-5 h-5 m-2.5 text-brand-dark/40" />
                         )}
@@ -480,7 +526,7 @@ export default function AdminDashboard() {
                       <div className="text-xs text-brand-dark/50">{product.category}</div>
                     </td>
                     <td className="p-4">
-                      <span className="text-sm font-mono text-brand-dark/80">${product.price?.toFixed(2) || "0.00"}</span>
+                      <span className="text-sm font-mono text-brand-dark/80">${product.priceUsd?.toFixed(2) || "0.00"}</span>
                     </td>
                     <td className="p-4">
                       <span className="text-sm font-mono text-brand-dark/80">₹{product.priceInr?.toFixed(2) || "0.00"}</span>
@@ -499,14 +545,17 @@ export default function AdminDashboard() {
                     </td>
                     <td className="p-4 text-right space-x-2">
                       <button
-                        onClick={() => showToast("Edit flow is coming soon", "success")}
+                        onClick={() => {
+                          setEditingProduct(product);
+                          setCurrentPage("edit-product");
+                        }}
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-dark/5 text-brand-dark hover:bg-brand-dark/10 rounded-lg text-xs font-bold transition-colors"
                       >
                         <Edit className="w-3.5 h-3.5" />
                         Edit
                       </button>
                       <button
-                        onClick={() => showToast("Delete flow is coming soon", "error")}
+                        onClick={() => setDeleteProductModal(product)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -522,6 +571,322 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
+
+
+  const handleDeleteProduct = async (product: AdminProduct) => {
+    setLoading(true);
+    try {
+      await deleteDoc(doc(db, "products", product.id));
+      showToast("Product deleted successfully", "success");
+      setDeleteProductModal(null);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      showToast("Failed to delete product", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    
+    setLoading(true);
+    try {
+      const isNew = !editingProduct.id;
+      const productId = isNew ? editingProduct.slug || Date.now().toString() : editingProduct.id;
+      const productRef = doc(db, "products", productId);
+      
+      const productDataToSave = {
+        ...editingProduct,
+        id: productId,
+        updatedAt: new Date()
+      };
+      
+      if (isNew) {
+        productDataToSave.createdAt = new Date();
+      }
+      
+      await setDoc(productRef, productDataToSave, { merge: true });
+      showToast("Product saved successfully!", "success");
+      setCurrentPage("products");
+      setEditingProduct(null);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      showToast("Failed to save product", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderEditProduct = () => {
+    if (!editingProduct) return null;
+    
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <form onSubmit={handleSaveProduct} className="bg-white rounded-2xl shadow-xl shadow-brand-dark/5 border border-brand-dark/5 overflow-hidden">
+          <div className="p-6 border-b border-brand-dark/5 flex justify-between items-center bg-brand-dark/[0.02]">
+            <h3 className="font-display font-bold text-xl text-brand-dark">
+              {editingProduct.id ? "Edit Product" : "Add New Product"}
+            </h3>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentPage("products");
+                  setEditingProduct(null);
+                }}
+                className="px-4 py-2 rounded-xl border border-brand-dark/10 text-brand-dark font-medium hover:bg-brand-dark/5 transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-xl font-medium text-sm hover:bg-brand-accent transition-colors disabled:opacity-50 shadow-sm"
+              >
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save Product
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6 space-y-8">
+            {/* General */}
+            <section>
+              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">General</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Product Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProduct.name}
+                    onChange={e => setEditingProduct({...editingProduct, name: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Slug</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProduct.slug}
+                    onChange={e => setEditingProduct({...editingProduct, slug: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Category</label>
+                  <select
+                    value={editingProduct.category}
+                    onChange={e => setEditingProduct({...editingProduct, category: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  >
+                    <option value="sound-effects">Sound Effects</option>
+                    <option value="video-assets">Video Assets</option>
+                    <option value="presets">Presets</option>
+                    <option value="templates">Templates</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Status</label>
+                  <select
+                    value={editingProduct.status}
+                    onChange={e => setEditingProduct({...editingProduct, status: e.target.value as any})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  >
+                    <option value="Published">Published</option>
+                    <option value="Draft">Draft</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+            
+            {/* Pricing */}
+            <section>
+              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">Pricing</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Price (USD)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-dark/40 font-medium">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={editingProduct.priceUsd}
+                      onChange={e => setEditingProduct({...editingProduct, priceUsd: parseFloat(e.target.value) || 0})}
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm font-mono"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Price (INR)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-dark/40 font-medium">₹</span>
+                    <input
+                      type="number"
+                      step="1"
+                      required
+                      value={editingProduct.priceInr}
+                      onChange={e => setEditingProduct({...editingProduct, priceInr: parseInt(e.target.value) || 0})}
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+            
+            {/* Descriptions */}
+            <section>
+              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">Descriptions</h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Short Description</label>
+                  <textarea
+                    rows={2}
+                    value={editingProduct.shortDescription}
+                    onChange={e => setEditingProduct({...editingProduct, shortDescription: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm resize-none"
+                  ></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Full Description (Markdown supported)</label>
+                  <textarea
+                    rows={6}
+                    value={editingProduct.fullDescription}
+                    onChange={e => setEditingProduct({...editingProduct, fullDescription: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm resize-none"
+                  ></textarea>
+                </div>
+              </div>
+            </section>
+            
+            {/* Media */}
+            <section>
+              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">Media</h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Thumbnail URL</label>
+                  <input
+                    type="url"
+                    value={editingProduct.thumbnail}
+                    onChange={e => setEditingProduct({...editingProduct, thumbnail: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  />
+                  {editingProduct.thumbnail && (
+                    <img src={editingProduct.thumbnail} alt="Preview" className="mt-2 h-20 rounded-lg object-cover border border-brand-dark/10" />
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Gallery Images (Comma separated URLs)</label>
+                  <input
+                    type="text"
+                    value={editingProduct.galleryImages.join(', ')}
+                    onChange={e => setEditingProduct({...editingProduct, galleryImages: e.target.value.split(',').map(url => url.trim()).filter(url => url)})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Preview Video URL</label>
+                  <input
+                    type="url"
+                    value={editingProduct.previewVideo || ""}
+                    onChange={e => setEditingProduct({...editingProduct, previewVideo: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  />
+                </div>
+              </div>
+            </section>
+            
+            {/* Files & Links */}
+            <section>
+              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">Files</h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Download Link</label>
+                  <input
+                    type="url"
+                    required
+                    value={editingProduct.downloadLink}
+                    onChange={e => setEditingProduct({...editingProduct, downloadLink: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Tutorial Link (Optional)</label>
+                  <input
+                    type="url"
+                    value={editingProduct.tutorialLink || ""}
+                    onChange={e => setEditingProduct({...editingProduct, tutorialLink: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  />
+                </div>
+              </div>
+            </section>
+            
+            
+            {/* Approval Email */}
+            <section>
+              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">Approval Email</h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Email Subject (Default)</label>
+                  <input
+                    type="text"
+                    value={editingProduct.emailSubject || ""}
+                    onChange={(e) => setEditingProduct({...editingProduct, emailSubject: e.target.value})}
+                    placeholder="Thanks for purchasing {{product_name}}"
+                    className="w-full px-4 py-2 rounded-xl border border-brand-dark/10 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Email Body</label>
+                  <textarea
+                    value={editingProduct.emailBody || ""}
+                    onChange={(e) => setEditingProduct({...editingProduct, emailBody: e.target.value})}
+                    rows={6}
+                    placeholder="Download:\nhttps://....\n\nTutorial:\nhttps://....\n\nDiscord:\nhttps://...."
+                    className="w-full px-4 py-2 rounded-xl border border-brand-dark/10 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none resize-y"
+                  ></textarea>
+                </div>
+              </div>
+            </section>
+
+            {/* SEO */}
+            <section>
+              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">SEO</h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Meta Title</label>
+                  <input
+                    type="text"
+                    value={editingProduct.metaTitle || ""}
+                    onChange={e => setEditingProduct({...editingProduct, metaTitle: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Meta Description</label>
+                  <textarea
+                    rows={2}
+                    value={editingProduct.metaDescription || ""}
+                    onChange={e => setEditingProduct({...editingProduct, metaDescription: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm resize-none"
+                  ></textarea>
+                </div>
+              </div>
+            </section>
+          </div>
+        </form>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-brand-bg font-sans flex">
@@ -547,29 +912,173 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      
+      
       {/* Confirmation Modal */}
-      {confirmModal && (
+      {confirmModal && (() => {
+        const activeProductForOrder = products.find(p => p.id === confirmModal.order.productId);
+        
+        const replaceVars = (text: string) => {
+          if (!text) return "";
+          return text
+            .replace(/\{\{customer_name\}\}/g, confirmModal.order.customerName || "")
+            .replace(/\{\{customer_email\}\}/g, confirmModal.order.email || "")
+            .replace(/\{\{product_name\}\}/g, activeProductForOrder?.name || confirmModal.order.productName || "")
+            .replace(/\{\{order_id\}\}/g, confirmModal.order.orderId || "")
+            .replace(/\{\{payment_method\}\}/g, confirmModal.order.paymentMethod || "")
+            .replace(/\{\{price\}\}/g, confirmModal.order.amount?.toString() || "");
+        };
+
+        const rawSubject = activeProductForOrder?.emailSubject || `Thanks for purchasing ${activeProductForOrder?.name || confirmModal.order.productName}`;
+        const productBody = activeProductForOrder?.emailBody || `Download:\n${activeProductForOrder?.downloadLink || "No link"}${activeProductForOrder?.tutorialLink ? `\n\nTutorial:\n${activeProductForOrder.tutorialLink}` : ""}`;
+        const rawBody = `Hi {{customer_name}},\n\n${productBody}\n\nThank you,\nEditors Hub Store`;
+
+        const defaultSubject = replaceVars(rawSubject);
+        const defaultBody = replaceVars(rawBody);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-dark/10 max-h-[90vh] overflow-y-auto">
+              <h3 className="font-display font-bold text-xl mb-2 text-brand-dark">
+                Confirm Action
+              </h3>
+              <p className="text-brand-dark/70 text-sm mb-6">
+                Are you sure you want to <strong className={confirmModal.action === "Approve" ? "text-emerald-600" : "text-red-600"}>{confirmModal.action.toLowerCase()}</strong> order {confirmModal.order.orderId}? This action cannot be easily undone.
+              </p>
+              
+              {confirmModal.action === "Approve" && (
+                <div className="mb-6 space-y-4 text-left">
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2">
+                      <input 
+                        type="radio" 
+                        name="messageType" 
+                        value="default"
+                        checked={approvalMessageType === "default"}
+                        onChange={() => setApprovalMessageType("default")}
+                        className="text-brand-primary focus:ring-brand-primary"
+                      />
+                      <span className="text-sm font-medium text-brand-dark">Use Product Default</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input 
+                        type="radio" 
+                        name="messageType" 
+                        value="custom"
+                        checked={approvalMessageType === "custom"}
+                        onChange={() => setApprovalMessageType("custom")}
+                        className="text-brand-primary focus:ring-brand-primary"
+                      />
+                      <span className="text-sm font-medium text-brand-dark">Use Custom Message</span>
+                    </label>
+                  </div>
+                  
+                  {approvalMessageType === "default" && (
+                    <div className="space-y-3 bg-brand-dark/[0.02] p-4 rounded-xl border border-brand-dark/5 opacity-80 pointer-events-none">
+                      <div>
+                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Product Subject</label>
+                        <input
+                          type="text"
+                          value={defaultSubject}
+                          readOnly
+                          className="w-full px-3 py-2 rounded-lg border border-brand-dark/10 bg-brand-dark/[0.03] outline-none text-sm text-brand-dark"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Product Body</label>
+                        <textarea
+                          value={defaultBody}
+                          readOnly
+                          rows={4}
+                          className="w-full px-3 py-2 rounded-lg border border-brand-dark/10 bg-brand-dark/[0.03] outline-none text-sm text-brand-dark resize-y"
+                        ></textarea>
+                      </div>
+                    </div>
+                  )}
+
+                  {approvalMessageType === "custom" && (
+                    <div className="space-y-3 bg-brand-dark/[0.02] p-4 rounded-xl border border-brand-dark/5">
+                      <div>
+                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Custom Subject</label>
+                        <input
+                          type="text"
+                          value={customEmailSubject}
+                          onChange={(e) => setCustomEmailSubject(e.target.value)}
+                          placeholder="Custom Subject..."
+                          className="w-full px-3 py-2 rounded-lg border border-brand-dark/10 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Custom Body</label>
+                        <textarea
+                          value={customEmailBody}
+                          onChange={(e) => setCustomEmailBody(e.target.value)}
+                          rows={4}
+                          placeholder="Custom message body..."
+                          className="w-full px-3 py-2 rounded-lg border border-brand-dark/10 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none text-sm resize-y"
+                        ></textarea>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setConfirmModal(null);
+                    setApprovalMessageType("default");
+                    setCustomEmailSubject("");
+                    setCustomEmailBody("");
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-brand-dark/10 text-brand-dark font-medium hover:bg-brand-dark/5 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => handleStatusUpdate(confirmModal.order, confirmModal.action === "Approve" ? "Approved" : "Rejected")}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-white font-bold tracking-wider text-sm transition-colors
+                    ${confirmModal.action === "Approve" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}`}
+                >
+                  Yes, {confirmModal.action}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+
+
+      
+      {/* Delete Product Modal */}
+      {deleteProductModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-dark/10">
             <h3 className="font-display font-bold text-xl mb-2 text-brand-dark">
-              Confirm Action
+              Delete Product
             </h3>
             <p className="text-brand-dark/70 text-sm mb-6">
-              Are you sure you want to <strong className={confirmModal.action === "Approve" ? "text-emerald-600" : "text-red-600"}>{confirmModal.action.toLowerCase()}</strong> order {confirmModal.order.orderId}? This action cannot be easily undone.
+              Are you sure you want to delete <strong className="text-brand-dark">{deleteProductModal.name}</strong>? This action cannot be undone.
             </p>
             <div className="flex gap-3">
               <button 
-                onClick={() => setConfirmModal(null)}
+                onClick={() => setDeleteProductModal(null)}
+                disabled={loading}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-brand-dark/10 text-brand-dark font-medium hover:bg-brand-dark/5 transition-colors text-sm"
               >
                 Cancel
               </button>
               <button 
-                onClick={() => handleStatusUpdate(confirmModal.order, confirmModal.action === "Approve" ? "Approved" : "Rejected")}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-white font-bold tracking-wider text-sm transition-colors
-                  ${confirmModal.action === "Approve" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}`}
+                onClick={() => handleDeleteProduct(deleteProductModal)}
+                disabled={loading}
+                className="flex-1 px-4 py-2.5 rounded-xl text-white font-bold tracking-wider text-sm transition-colors bg-red-500 hover:bg-red-600 flex justify-center items-center"
               >
-                Yes, {confirmModal.action}
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  "Yes, Delete"
+                )}
               </button>
             </div>
           </div>
@@ -622,12 +1131,12 @@ export default function AdminDashboard() {
         {/* Header */}
         <header className="bg-white border-b border-brand-dark/5 sticky top-0 z-30 h-16 flex items-center px-8">
            <h2 className="font-display font-bold text-xl text-brand-dark">
-             {currentPage === "orders" ? "Orders" : "Products"}
+             {currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : "Products"}
            </h2>
         </header>
         
         <main className="flex-1 bg-brand-bg">
-           {currentPage === "orders" ? renderOrders() : renderProducts()}
+           {currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : renderProducts()}
         </main>
       </div>
     </div>

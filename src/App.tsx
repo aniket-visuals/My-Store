@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from "react";
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Product } from "./types";
-import { PRODUCTS_DATA } from "./data";
+import { useProducts } from "./hooks/useProducts";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import FeaturedProducts from "./components/FeaturedProducts";
@@ -57,6 +57,7 @@ function CookieNotice() {
 }
 
 export default function App() {
+  const { products } = useProducts();
   const [cart, setCart] = useState<Product[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -227,6 +228,7 @@ export default function App() {
 
           <Route path="/products/:slug" element={
             <ProductRouteWrapper
+                  products={products}
               cart={cart}
               addToCart={addToCart}
               wishlist={wishlist}
@@ -275,21 +277,24 @@ export default function App() {
 
 // Dynamic routing wrapper for product detail pages
 function ProductRouteWrapper({
+
   cart,
   addToCart,
   wishlist,
-  toggleWishlist
+  toggleWishlist,
+  products
 }: {
   cart: Product[];
   addToCart: (product: Product) => void;
   wishlist: Product[];
   toggleWishlist: (product: Product) => void;
+  products: Product[];
 }) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
   // Find product by slug or ID
-  const currentProduct = PRODUCTS_DATA.find(
+  const currentProduct = products.find(
     (p) => p.slug === slug || p.id === slug
   );
 
@@ -330,11 +335,10 @@ function ProductRouteWrapper({
   return (
     <ProductDetailPage
       product={currentProduct}
-      onBack={() => {
-        navigate("/");
-      }}
+      allProducts={products}
+      onBack={() => navigate("/")}
       addToCart={addToCart}
-      inCart={inCart}
+      inCart={cart.some((item) => item.id === currentProduct.id)}
       wishlist={wishlist}
       toggleWishlist={toggleWishlist}
     />

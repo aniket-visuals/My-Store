@@ -1,9 +1,8 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/CheckoutPage.tsx', 'utf-8');
+let code = fs.readFileSync('src/components/AdminDashboard.tsx', 'utf8');
 
-code = code.replace(
-  /\\(isFormValid && !isSubmitting\\)\\s+isFormValid/g,
-  '(isFormValid && !isSubmitting)'
-);
+code = code.replace(/\\\\\`Thanks for purchasing/g, '\`Thanks for purchasing');
+code = code.replace(/\\\\\`Download:/g, '\`Download:');
+code = code.replace(/\\\\\`Hi \{\{customer_name\}\}/g, '\`Hi {{customer_name}}');
 
-fs.writeFileSync('src/components/CheckoutPage.tsx', code);
+fs.writeFileSync('src/components/AdminDashboard.tsx', code);

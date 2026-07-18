@@ -6,6 +6,8 @@ interface EmailParams {
   order_id: string;
   product_name: string;
   download_link: string;
+  subject?: string;
+  body?: string;
 }
 
 export const sendApprovalEmail = async (params: EmailParams): Promise<boolean> => {
@@ -22,7 +24,9 @@ export const sendApprovalEmail = async (params: EmailParams): Promise<boolean> =
       product_name: params.product_name,
       download_link: params.download_link,
       email: params.to_email, // Mapped to the user's email address
-      name: "Editors Hub Store" // Sender name
+      name: "Editors Hub Store", // Sender name
+      subject: params.subject,
+      body: params.body
     };
 
     console.log("Sending email with params:", templateParams);

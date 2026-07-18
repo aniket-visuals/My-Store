@@ -12,28 +12,7 @@ export const CATEGORIES_DATA: Category[] = [
   }
 ];
 
-export const PRODUCTS_DATA: Product[] = [
-  {
-    id: "p1",
-    name: "MotionFX",
-    slug: "motionfx",
-    price: 10,
-    originalPrice: 19,
-    category: "sound-effects",
-    rating: 4.9,
-    reviewsCount: 148,
-    downloadCount: 1240,
-    description: "A meticulously recorded collection of sub-heavy impacts, analog synth sweeps, foley textures, and atmospheric whooshes. Perfect for cinematic videos and visual essays.",
-    features: ["Professional-quality sound effects", "Made for Video Editors & Motion Designers", "Organized & Easy to Use", "Lifetime Updates"],
-    compatibility: "Any NLE (Premiere Pro, DaVinci Resolve, FCPX, CapCut, etc.)",
-    fileSize: "70 MB",
-    fileType: "WAV",
-    image: "https://res.cloudinary.com/df5rgwdng/image/upload/v1780825245/Untitled_design_6_njcida.png",
-    audioPreview: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    isPopular: true,
-    releaseDate: "June 2, 2026"
-  }
-];
+export const PRODUCTS_DATA: Product[] = [];
 
 export const FEATURE_ITEMS: FeatureItem[] = [
   {

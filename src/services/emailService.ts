@@ -1,5 +1,3 @@
-import emailjs from '@emailjs/browser';
-
 interface EmailParams {
   to_email: string;
   to_name: string;
@@ -12,39 +10,30 @@ interface EmailParams {
 
 export const sendApprovalEmail = async (params: EmailParams): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Use the hardcoded keys by default, as environment variables might contain old deleted template IDs
-    const serviceId = 'default_service';
-    const templateId = 'template_gmucd5s';
-    const publicKey = 'LyR7uPNP80yEgPXCC';
-
-    // Matches the new template structure exactly
-    const templateParams = {
-      email: params.to_email,
-      name: "Editors Hub Store",
-      subject: params.subject,
-      message: params.body
-    };
-
-    console.log("Sending email with params:", templateParams);
-
-    // Try initializing it globally like in the HTML script
-    const response = await emailjs.send(
-      serviceId,
-      templateId,
-      templateParams,
-      {
-        publicKey: publicKey,
-      }
-    );
-
-    console.log("EmailJS response:", response);
+    console.log("Sending email via backend API:", params);
     
-    return { success: response.status === 200 };
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to_email: params.to_email,
+        subject: params.subject,
+        body: params.body
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "Failed to send email via backend");
+    }
+
+    console.log("Email API response:", data);
+    return { success: true };
   } catch (error: any) {
     console.error("Failed to send email:", error);
-    if (error.text) {
-      console.error("EmailJS Error details:", error.text);
-    }
-    return { success: false, error: error?.text || error?.message || "Unknown error" };
+    return { success: false, error: error?.message || "Unknown error" };
   }
 };

@@ -24,6 +24,9 @@ export interface Product {
   metaTitle?: string;
   metaDescription?: string;
   isPopular?: boolean;
+  faqs?: FaqItem[];
+  fileSize?: string;
+  commercialRights?: boolean;
   releaseDate?: string;
 }
 
@@ -46,6 +49,9 @@ export interface AdminProduct {
   metaDescription?: string;
   emailSubject?: string;
   emailBody?: string;
+  fileSize?: string;
+  commercialRights?: boolean;
+  faqs?: FaqItem[];
   createdAt?: any;
   updatedAt?: any;
 }

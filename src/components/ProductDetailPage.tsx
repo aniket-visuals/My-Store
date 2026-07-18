@@ -418,10 +418,11 @@ export default function ProductDetailPage({
             1. LARGE TOP MEDIA PREVIEW BOARD
            ===================================== */}
         <div className="w-full bg-white border border-brand-dark/5 rounded-3xl overflow-hidden shadow-xl mb-12 relative flex flex-col">
-          <div className="aspect-[21/9] md:aspect-[24/9] w-full bg-black relative flex items-center justify-center overflow-hidden group">
+          <div className="aspect-[21/9] md:aspect-[24/9] w-full bg-brand-dark/5 relative flex items-center justify-center overflow-hidden group">
             {currentProduct.videoPreview ? (
               <video
                 src={currentProduct.videoPreview}
+                poster={activeImage}
                 autoPlay
                 loop
                 muted
@@ -540,62 +541,30 @@ export default function ProductDetailPage({
                 <Sparkles className="w-5 h-5 text-brand-primary shrink-0" />
                 <span>Product Description</span>
               </h2>
-
               <div className="space-y-4 font-sans text-sm text-brand-dark/80 leading-relaxed font-normal whitespace-pre-wrap">
                 {currentProduct.fullDescription || currentProduct.description}
               </div>
             </div>
 
-            {/* Software Compatibility Detail Block */}
-            <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-4">
-              <h3 className="font-display font-semibold text-base text-brand-dark flex items-center space-x-2">
-                <Cpu className="w-5 h-5 text-brand-primary" />
-                <span>Software Compatibility</span>
-              </h3>
-              
-              <div className="p-5 bg-brand-dark/[0.015] border border-brand-dark/5 rounded-xl leading-relaxed font-mono text-xs text-brand-dark/80">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                  <div className="bg-white border border-brand-dark/5 p-3 rounded-xl shadow-sm">
-                    <span className="font-bold block text-brand-primary">PR</span>
-                    <span className="text-[10px] text-brand-dark/40 block mt-0.5">Premiere CC</span>
-                  </div>
-                  <div className="bg-white border border-brand-dark/5 p-3 rounded-xl shadow-sm">
-                    <span className="font-bold block text-teal-500">CP</span>
-                    <span className="text-[10px] text-brand-dark/40 block mt-0.5">CapCut</span>
-                  </div>
-                  <div className="bg-white border border-brand-dark/5 p-3 rounded-xl shadow-sm">
-                    <span className="font-bold block text-indigo-500">DV</span>
-                    <span className="text-[10px] text-brand-dark/40 block mt-0.5">DaVinci 18+</span>
-                  </div>
-                  <div className="bg-white border border-brand-dark/5 p-3 rounded-xl shadow-sm">
-                    <span className="font-bold block text-red-500">FC</span>
-                    <span className="text-[10px] text-brand-dark/40 block mt-0.5">Final Cut Pro</span>
-                  </div>
-                </div>
-                <p className="mt-4 text-[11px] leading-relaxed font-sans font-medium text-brand-dark/50 flex items-center space-x-2">
-                  <Info className="w-4 h-4 text-brand-primary shrink-0" />
-                  <span>Works with all major audio and visual workstations. Sound effects are high quality 48kHz WAV files.</span>
-                </p>
-              </div>
-            </div>
-
             {/* Perpetual Usage Rights Block */}
-            <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-4">
-              <h3 className="font-display font-semibold text-base text-brand-dark flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                <span>Commercial Usage Rights</span>
-              </h3>
-              
-              <div className="space-y-2 text-xs sm:text-sm font-sans font-medium text-brand-dark/80">
-                <div className="flex items-start space-x-3 bg-emerald-500/[0.02] border border-emerald-500/15 p-4 rounded-xl">
-                  <Check className="w-4.5 h-4.5 text-emerald-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-brand-dark/80 font-medium leading-relaxed">
-                    <strong>100% Royalty Free perpetual usage clearance:</strong> Use in monetize platforms including YouTube, Twitch, TikTok, Instagram, commercial advertisements, film displays, and indie broadcasts with no limitations or unexpected copyright claims.
-                  </p>
+            {currentProduct.commercialRights && (
+              <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-4">
+                <h3 className="font-display font-semibold text-base text-brand-dark flex items-center space-x-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <span>Commercial Usage Rights</span>
+                </h3>
+                
+                <div className="space-y-2 text-xs sm:text-sm font-sans font-medium text-brand-dark/80">
+                  <div className="flex items-start space-x-3 bg-emerald-500/[0.02] border border-emerald-500/15 p-4 rounded-xl">
+                    <Check className="w-4.5 h-4.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-brand-dark/80 font-medium leading-relaxed">
+                      <strong>100% Royalty Free perpetual usage clearance:</strong> Use in monetize platforms including YouTube, Twitch, TikTok, Instagram, commercial advertisements, film displays, and indie broadcasts with no limitations or unexpected copyright claims.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-
+            )}
+            
             {/* Gumroad Frequently Asked Questions Accordion */}
             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6">
               <h3 className="font-display font-semibold text-base text-brand-dark border-b border-brand-dark/10 pb-3 flex items-center space-x-2">

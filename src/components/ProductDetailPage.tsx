@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  ArrowLeft, Star, Download, Volume2, ShieldCheck, Play, Pause, 
+  ArrowLeft, Star, Download, Volume2, VolumeX, ShieldCheck, Play, Pause, 
   Sparkles, Check, Cpu, Send, Mail, AlertCircle, FileCode, Clock,
   Lock, ArrowRight, Video, FileCheck, Headphones, HelpCircle,
   Award, Shield, Calendar, Terminal, Info, Users, Share2, HelpCircle as FaqIcon, MessageSquare,
@@ -58,6 +58,8 @@ export default function ProductDetailPage({
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeImage, setActiveImage] = useState<string>(product.image);
+  const [activeMediaType, setActiveMediaType] = useState<"image" | "video">(product.videoPreview ? "video" : "image");
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
@@ -137,6 +139,7 @@ export default function ProductDetailPage({
   useEffect(() => {
     // setCurrentProduct(product);
     setActiveImage(product.image);
+    setActiveMediaType(product.videoPreview ? "video" : "image");
   }, [product]);
 
   // Scroll to top on product switch & sync reviews
@@ -145,6 +148,7 @@ export default function ProductDetailPage({
     setIsPlayingAudio(false);
     setAudioProgress(0);
     setActiveImage(currentProduct.image);
+    setActiveMediaType(currentProduct.videoPreview ? "video" : "image");
 
     let active = true;
     const fetchDBReviews = async () => {
@@ -423,17 +427,28 @@ export default function ProductDetailPage({
             1. LARGE TOP MEDIA PREVIEW BOARD
            ===================================== */}
         <div className="w-full bg-white border border-brand-dark/5 rounded-3xl overflow-hidden shadow-xl mb-12 relative flex flex-col">
-          <div className="aspect-[21/9] md:aspect-[24/9] w-full bg-brand-dark/5 relative flex items-center justify-center overflow-hidden group">
-            {currentProduct.videoPreview ? (
-              <video
-                src={currentProduct.videoPreview}
-                poster={activeImage}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
+          <div className="aspect-video w-full bg-brand-dark/5 relative flex items-center justify-center overflow-hidden group">
+            {currentProduct.videoPreview && activeMediaType === "video" ? (
+              <>
+                <video
+                  src={currentProduct.videoPreview}
+                  poster={activeImage}
+                  autoPlay
+                  loop
+                  muted={isVideoMuted}
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsVideoMuted(!isVideoMuted);
+                  }}
+                  className="absolute bottom-6 right-6 bg-black/50 hover:bg-black/70 text-white p-2.5 rounded-full backdrop-blur-md transition-all z-20"
+                >
+                  {isVideoMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                </button>
+              </>
             ) : (
               <img
                 src={activeImage}
@@ -463,12 +478,38 @@ export default function ProductDetailPage({
               Asset Media Slides
             </span>
             <div className="flex items-center gap-3">
+              {currentProduct.videoPreview && (
+                <button
+                  onClick={() => setActiveMediaType("video")}
+                  className={`relative h-14 w-24 sm:h-16 sm:w-28 rounded-xl overflow-hidden border-2 transition-all duration-200 cursor-pointer shrink-0 ${
+                    activeMediaType === "video"
+                      ? "border-brand-primary ring-2 ring-brand-primary/10 scale-102"
+                      : "border-transparent opacity-60 hover:opacity-100 hover:scale-102"
+                  }`}
+                >
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 pointer-events-none">
+                    <Play className="w-5 h-5 text-white fill-white shadow-sm drop-shadow-md" />
+                  </div>
+                  <img
+                    src={currentProduct.image}
+                    alt="Video Preview"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-1 right-1 bg-brand-dark/80 px-1 py-0.5 rounded text-[8px] font-mono font-bold text-white uppercase tracking-wider z-10">
+                    VID
+                  </div>
+                </button>
+              )}
               {getGalleryImages(currentProduct).map((imgUrl, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setActiveImage(imgUrl)}
+                  onClick={() => {
+                    setActiveImage(imgUrl);
+                    setActiveMediaType("image");
+                  }}
                   className={`relative h-14 w-24 sm:h-16 sm:w-28 rounded-xl overflow-hidden border-2 transition-all duration-200 cursor-pointer shrink-0 ${
-                    activeImage === imgUrl
+                    activeImage === imgUrl && activeMediaType === "image"
                       ? "border-brand-primary ring-2 ring-brand-primary/10 scale-102"
                       : "border-transparent opacity-60 hover:opacity-100 hover:scale-102"
                   }`}

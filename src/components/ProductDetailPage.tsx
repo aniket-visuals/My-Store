@@ -49,7 +49,7 @@ export default function ProductDetailPage({
   toggleWishlist
 }: ProductDetailPageProps) {
   const navigate = useNavigate();
-  const [currentProduct, setCurrentProduct] = useState<Product>(product);
+  const currentProduct = product;
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [email, setEmail] = useState("");
@@ -135,7 +135,7 @@ export default function ProductDetailPage({
 
   // Sync state if initial prop changes
   useEffect(() => {
-    setCurrentProduct(product);
+    // setCurrentProduct(product);
     setActiveImage(product.image);
   }, [product]);
 
@@ -274,7 +274,7 @@ export default function ProductDetailPage({
     if (currentProduct.faqs && currentProduct.faqs.length > 0) {
       return currentProduct.faqs.map(f => ({ q: f.question, a: f.answer }));
     }
-    return COMMON_FAQS;
+    return [];
   };
 
   const getActiveReviews = () => {
@@ -569,8 +569,8 @@ export default function ProductDetailPage({
                 </div>
               </div>
             )}
-            
-            {/* Gumroad Frequently Asked Questions Accordion */}
+                     {/* Gumroad Frequently Asked Questions Accordion */}
+            {getActiveFaqs().length > 0 && (
             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6">
               <h3 className="font-display font-semibold text-base text-brand-dark border-b border-brand-dark/10 pb-3 flex items-center space-x-2">
                 <FaqIcon className="w-5 h-5 text-brand-primary" />
@@ -592,7 +592,6 @@ export default function ProductDetailPage({
                         {activeFaq === idx ? "−" : "+"}
                       </span>
                     </button>
-
                     <AnimatePresence>
                       {activeFaq === idx && (
                         <motion.div
@@ -610,6 +609,7 @@ export default function ProductDetailPage({
                 ))}
               </div>
             </div>
+            )}
 
             {/* Verified Customer Reviews Grid */}
             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6">

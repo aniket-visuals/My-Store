@@ -84,22 +84,13 @@ export default function FeaturedProducts({
         </div>
 
         {/* Products Showcase Grid */}
-        <motion.div
-          layout
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12"
-        >
-          <AnimatePresence mode="popLayout">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
             {filteredProducts.map((product) => {
               const inCart = isItemInCart(product.id);
               const inWishlist = isItemInWishlist(product.id);
 
               return (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4 }}
+                <div
                   key={product.id}
                   className="bg-white rounded-3xl border border-black/5 overflow-hidden group hover:shadow-2xl hover:border-black/10 transition-all flex flex-col justify-between"
                 >
@@ -195,11 +186,10 @@ export default function FeaturedProducts({
                     </div>
                   </div>
 
-                </motion.div>
+                </div>
               );
             })}
-          </AnimatePresence>
-        </motion.div>
+        </div>
 
         {/* Empty filter fallbacks */}
         {filteredProducts.length === 0 && (

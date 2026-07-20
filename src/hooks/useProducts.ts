@@ -12,6 +12,7 @@ export const useProducts = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
         const fetchedProducts = snapshot.docs.map(doc => {
+          console.log("Fetched product:", doc.id, doc.data().faqs, doc.data().commercialRights);
           const data = doc.data() as AdminProduct;
           return {
             id: doc.id,

@@ -36,7 +36,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
   const [email, setEmail] = useState("");
   const [country, setCountry] = useState("");
   const [socialUsername, setSocialUsername] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wise");
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
 
@@ -230,7 +230,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
               
               {/* Method Selector */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {(["upi", "wise", "paypal"] as PaymentMethod[]).map((method) => (
+                {(["wise", "paypal", "upi"] as PaymentMethod[]).map((method) => (
                   <button
                     key={method}
                     onClick={() => {
@@ -249,38 +249,50 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
               </div>
 
               <div className="flex flex-col md:flex-row gap-8 items-center md:items-start bg-brand-dark/[0.02] p-6 rounded-xl border border-brand-dark/5 mt-4">
-                {/* QR Code */}
-                <div className="shrink-0 w-64 h-64 bg-white rounded-xl border border-brand-dark/10 flex items-center justify-center shadow-sm relative overflow-hidden p-2">
-                   <img src={paymentDetails[paymentMethod].qrCode} alt={`${paymentMethod} QR Code`} className="w-full h-full object-contain rounded-lg" />
-                </div>
-
-                <div className="flex-1 space-y-6 w-full text-center md:text-left">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-brand-dark/60">Amount to pay</p>
-                    <p className="font-display font-bold text-3xl text-brand-dark">{paymentDetails[paymentMethod].amount}</p>
+                {paymentMethod === "upi" ? (
+                  <div className="w-full flex flex-col items-center justify-center py-12 text-center space-y-4">
+                    <h3 className="font-display font-bold text-2xl text-brand-dark">Coming Soon</h3>
+                    <p className="text-brand-dark/60 font-medium">UPI payments are currently being set up.</p>
+                    <button onClick={() => navigate("/contact")} className="px-6 py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-accent transition-colors">
+                      Contact now if you want to buy
+                    </button>
                   </div>
-
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-brand-dark/60">Scan the QR code or pay to {paymentMethod.toUpperCase()} ID:</p>
-                    <div className="flex items-center justify-center md:justify-start gap-2">
-                      <code className="bg-white border border-brand-dark/10 px-4 py-2 rounded-lg font-mono text-sm font-bold text-brand-primary select-all">
-                        {paymentDetails[paymentMethod].id}
-                      </code>
-                      <button 
-                        onClick={handleCopyId}
-                        className="p-2.5 rounded-lg border border-brand-dark/10 hover:bg-brand-dark/5 text-brand-dark/60 transition-colors"
-                        title={`Copy ${paymentMethod.toUpperCase()} ID`}
-                      >
-                        {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                      </button>
+                ) : (
+                  <>
+                    {/* QR Code */}
+                    <div className="shrink-0 w-64 h-64 bg-white rounded-xl border border-brand-dark/10 flex items-center justify-center shadow-sm relative overflow-hidden p-2">
+                       <img src={paymentDetails[paymentMethod].qrCode} alt={`${paymentMethod} QR Code`} className="w-full h-full object-contain rounded-lg" />
                     </div>
-                  </div>
 
-                  <div className="flex items-start gap-3 text-sm text-brand-dark/60 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                    <p className="text-left">{paymentDetails[paymentMethod].instruction}</p>
-                  </div>
-                </div>
+                    <div className="flex-1 space-y-6 w-full text-center md:text-left">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-brand-dark/60">Amount to pay</p>
+                        <p className="font-display font-bold text-3xl text-brand-dark">{paymentDetails[paymentMethod].amount}</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-brand-dark/60">Scan the QR code or pay to {paymentMethod.toUpperCase()} ID:</p>
+                        <div className="flex items-center justify-center md:justify-start gap-2">
+                          <code className="bg-white border border-brand-dark/10 px-4 py-2 rounded-lg font-mono text-sm font-bold text-brand-primary select-all">
+                            {paymentDetails[paymentMethod].id}
+                          </code>
+                          <button 
+                            onClick={handleCopyId}
+                            className="p-2.5 rounded-lg border border-brand-dark/10 hover:bg-brand-dark/5 text-brand-dark/60 transition-colors"
+                            title={`Copy ${paymentMethod.toUpperCase()} ID`}
+                          >
+                            {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 text-sm text-brand-dark/60 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+                        <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                        <p className="text-left">{paymentDetails[paymentMethod].instruction}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 

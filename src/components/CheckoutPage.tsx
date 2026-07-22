@@ -356,16 +356,6 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                   <p>{errorMsg}</p>
                 </div>
               )}
-              {!isAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={() => navigate("/portal")}
-                  className="w-full font-bold font-mono text-sm uppercase tracking-widest py-5 rounded-xl shadow-lg flex items-center justify-center gap-3 transition-all bg-brand-primary hover:bg-brand-accent text-white hover:shadow-xl hover:-translate-y-0.5 cursor-pointer"
-                >
-                  <Shield className="w-5 h-5" />
-                  Please Login to Place Order
-                </button>
-              ) : (
               <button 
                 onClick={handleOrderSubmit}
                 disabled={!isFormValid || isSubmitting} 
@@ -378,7 +368,6 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                 <Shield className="w-5 h-5" />
                 {isSubmitting ? "Processing..." : "Submit Order"}
               </button>
-              )}
               
               {/* Verification Notice */}
               <div className="flex items-start justify-center gap-2 text-xs font-medium text-brand-dark/50 px-4 text-center">

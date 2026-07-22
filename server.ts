@@ -22,11 +22,11 @@ async function startServer() {
 
     try {
       const transporter = nodemailer.createTransport({
-        host: "smtpout.secureserver.net",
-        port: 587,
-        secure: false, 
+        host: process.env.SMTP_HOST || "smtpout.secureserver.net",
+        port: parseInt(process.env.SMTP_PORT || "587", 10),
+        secure: process.env.SMTP_SECURE === "true" || parseInt(process.env.SMTP_PORT || "587", 10) === 465,
         auth: {
-          user: "support@editorshubstore.in",
+          user: process.env.SMTP_USER || "support@editorshubstore.in",
           pass: process.env.SMTP_PASS || "Aniketraj@godaddy#password123$",
         },
       });

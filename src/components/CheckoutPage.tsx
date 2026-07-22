@@ -127,6 +127,23 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
 
       const orderId = await createOrder(orderData);
 
+      // Send email notification to admin
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to_email: 'support@editorshubstore.in',
+            subject: `New Order Received: ${orderId} for ${product.name}`,
+            body: `You have received a new order.\n\nOrder ID: ${orderId}\nCustomer Name: ${fullName}\nEmail: ${email}\nProduct: ${product.name}\nAmount: ${currency} ${amount}\nPayment Method: ${paymentMethod.toUpperCase()}\n\nPlease check the admin dashboard for more details.`,
+          }),
+        });
+      } catch (emailErr) {
+        console.error("Failed to send notification email:", emailErr);
+      }
+
       // 3. Clear cart & redirect to Thank You page
       clearCart();
       navigate("/thank-you", { state: { orderId, email } });

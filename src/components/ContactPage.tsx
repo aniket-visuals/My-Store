@@ -18,16 +18,42 @@ export default function ContactPage() {
     window.scrollTo({ top: 0, behavior: "instant" as any });
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate form submission
-    setTimeout(() => {
+    
+    // Format the email body
+    const { name, email, subject, message } = formState;
+    const body = `Name: ${name}\nEmail: ${email}\n\n${message}`;
+    
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to_email: 'support@editorshubstore.in',
+          subject: subject,
+          body: body,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsSubmitting(false);
+        setIsSubmitted(true);
+        setFormState({ name: "", email: "", subject: "", message: "" });
+        setTimeout(() => setIsSubmitted(false), 5000);
+      } else {
+        throw new Error(data.error || 'Failed to send message');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
       setIsSubmitting(false);
-      setIsSubmitted(true);
-      setFormState({ name: "", email: "", subject: "", message: "" });
-      setTimeout(() => setIsSubmitted(false), 5000);
-    }, 1500);
+      alert('Failed to send message. Please try again later.');
+    }
   };
 
   return (
@@ -94,7 +120,7 @@ export default function ContactPage() {
               <p className="text-white/70 text-sm mb-6 leading-relaxed">
                 Interested in sponsorships, partnerships, or custom editing work? Let's collaborate.
               </p>
-              <a href="mailto:support@editorshubstore.in?subject=Business%20Inquiry" className="inline-flex items-center gap-2 text-sm font-bold bg-white text-brand-dark px-6 py-3 rounded-xl hover:bg-brand-primary hover:text-white transition-colors w-full justify-center">
+              <a href="mailto:support@editorshubstore.in" className="inline-flex items-center gap-2 text-sm font-bold bg-white text-brand-dark px-6 py-3 rounded-xl hover:bg-brand-primary hover:text-white transition-colors w-full justify-center">
                 <span>Partner with us</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
@@ -189,28 +215,6 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* FAQ Section */}
-        <div className="mt-20">
-          <h2 className="font-display font-bold text-2xl text-brand-dark mb-8 text-center">Frequently Asked Questions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white p-6 rounded-2xl border border-brand-dark/5 shadow-sm">
-              <h3 className="font-bold text-brand-dark mb-2">When will I receive my files?</h3>
-              <p className="text-sm text-brand-dark/60">Digital products are typically delivered within a few hours after payment confirmation. All orders are manually verified for security.</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-brand-dark/5 shadow-sm">
-              <h3 className="font-bold text-brand-dark mb-2">Are these assets compatible with Premiere Pro?</h3>
-              <p className="text-sm text-brand-dark/60">Yes, most of our assets are universally compatible with major NLEs including Premiere Pro, After Effects, Final Cut Pro, and DaVinci Resolve.</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-brand-dark/5 shadow-sm">
-              <h3 className="font-bold text-brand-dark mb-2">Do you offer refunds?</h3>
-              <p className="text-sm text-brand-dark/60">Due to the nature of digital products, all sales are final. If you encounter any technical issues with the files, we're happy to help resolve them.</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-brand-dark/5 shadow-sm">
-              <h3 className="font-bold text-brand-dark mb-2">Can I use these in commercial work?</h3>
-              <p className="text-sm text-brand-dark/60">Yes! All our products come with a standard license that allows you to use them in both personal and commercial projects. Reselling the raw files is strictly prohibited.</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

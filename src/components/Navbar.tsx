@@ -312,20 +312,6 @@ export default function Navbar({ cart,
                         <span>My Wishlist</span>
                       </button>
                     </div>
-
-                    {/* Sign Out Section */}
-                    <div className="px-2 pt-2">
-                      <button
-                        onClick={() => {
-                          setIsProfileOpen(false);
-                          handleSignout();
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 text-xs text-black/60 font-semibold transition-all cursor-pointer flex items-center space-x-2 group"
-                      >
-                        <LogOut className="w-4 h-4 text-black/40 group-hover:text-red-600 transition-colors" />
-                        <span>Sign out</span>
-                      </button>
-                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -664,15 +650,6 @@ export default function Navbar({ cart,
                       className="w-full text-center bg-brand-primary text-white py-3 rounded-full text-xs font-semibold hover:bg-brand-accent"
                     >
                       My Account
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleSignout();
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="w-full text-center border border-brand-accent text-brand-accent py-3 rounded-full text-xs font-semibold"
-                    >
-                      Sign Out
                     </button>
                   </div>
                 ) : (

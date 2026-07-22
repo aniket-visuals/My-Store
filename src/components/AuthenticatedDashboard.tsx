@@ -923,19 +923,6 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                     <button
                       onClick={() => {
                         if (
-                          window.confirm("Are you sure you want to sign out?")
-                        ) {
-                          handleSignout();
-                        }
-                      }}
-                      className="flex-1 flex justify-center items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign Out</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (
                           window.confirm(
                             "Are you absolutely sure you want to delete your account? This will permanently delete all your data.",
                           )
@@ -965,7 +952,10 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                   </p>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border border-black/5 rounded-xl bg-black/[0.02] hover:bg-black/5 transition-colors cursor-pointer">
+                  <div 
+                    onClick={() => navigate("/contact")}
+                    className="flex items-center justify-between p-4 border border-black/5 rounded-xl bg-black/[0.02] hover:bg-black/5 transition-colors cursor-pointer"
+                  >
                     <div>
                       <h4 className="text-sm font-bold text-brand-dark">
                         Contact Support
@@ -975,17 +965,6 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                       </p>
                     </div>
                     <LifeBuoy className="w-5 h-5 text-black/40" />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-black/5 rounded-xl bg-black/[0.02] hover:bg-black/5 transition-colors cursor-pointer">
-                    <div>
-                      <h4 className="text-sm font-bold text-brand-dark">
-                        Documentation
-                      </h4>
-                      <p className="text-xs text-black/40">
-                        Read the platform guides and API docs.
-                      </p>
-                    </div>
-                    <FileSpreadsheet className="w-5 h-5 text-black/40" />
                   </div>
                 </div>
               </div>

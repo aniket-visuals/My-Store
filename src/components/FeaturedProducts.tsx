@@ -28,9 +28,10 @@ export default function FeaturedProducts({
   const { products: PRODUCTS_DATA } = useProducts();
   
   // Filter products by selected category slug
-  const filteredProducts = activeCategory === "all"
+  const filteredProducts = (activeCategory === "all"
     ? PRODUCTS_DATA
-    : PRODUCTS_DATA.filter((p) => p.category === activeCategory);
+    : PRODUCTS_DATA.filter((p) => p.category === activeCategory)
+  ).sort((a, b) => (b.rank || 0) - (a.rank || 0));
 
   // Helper check to see if item is already inside cart list
   const isItemInCart = (productId: string) => {

@@ -28,6 +28,7 @@ export interface Product {
   fileSize?: string;
   commercialRights?: boolean;
   releaseDate?: string;
+  rank?: number;
 }
 
 export interface AdminProduct {
@@ -55,6 +56,7 @@ export interface AdminProduct {
   createdAt?: any;
   updatedAt?: any;
   downloadCount?: number;
+  rank?: number;
 }
 
 export interface Category {

@@ -41,6 +41,7 @@ export const useProducts = () => {
             metaTitle: data.metaTitle,
             metaDescription: data.metaDescription,
             isPopular: false,
+            rank: data.rank,
             releaseDate: data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString()
           } as Product;
         });

@@ -489,6 +489,7 @@ export default function AdminDashboard() {
                 <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Product Name</th>
                 <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Price (USD)</th>
                 <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Price (INR)</th>
+                <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Rank</th>
                 <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Status</th>
                 <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Last Updated</th>
                 <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider text-right">Actions</th>
@@ -497,7 +498,7 @@ export default function AdminDashboard() {
             <tbody className="divide-y divide-brand-dark/5">
               {productsLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-brand-dark/40 text-sm">
+                  <td colSpan={8} className="p-8 text-center text-brand-dark/40 text-sm">
                     <div className="flex justify-center mb-2">
                       <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                     </div>
@@ -506,7 +507,7 @@ export default function AdminDashboard() {
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-brand-dark/40">
+                  <td colSpan={8} className="p-12 text-center text-brand-dark/40">
                     <SearchX className="w-12 h-12 mx-auto mb-3 opacity-20" />
                     <p className="text-base font-medium">No products found</p>
                     <p className="text-sm mt-1">Try adjusting your search or filters.</p>
@@ -533,6 +534,9 @@ export default function AdminDashboard() {
                     </td>
                     <td className="p-4">
                       <span className="text-sm font-mono text-brand-dark/80">₹{product.priceInr?.toFixed(2) || "0.00"}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm font-bold text-brand-dark/80">{product.rank || "-"}</span>
                     </td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
@@ -725,6 +729,18 @@ export default function AdminDashboard() {
                     type="number"
                     value={editingProduct.downloadCount || 0}
                     onChange={e => setEditingProduct({...editingProduct, downloadCount: parseInt(e.target.value, 10) || 0})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Rank (1-5)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    step="0.1"
+                    value={editingProduct.rank || 0}
+                    onChange={e => setEditingProduct({...editingProduct, rank: parseFloat(e.target.value) || 0})}
                     className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm font-mono"
                   />
                 </div>

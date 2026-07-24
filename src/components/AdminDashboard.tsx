@@ -11,7 +11,7 @@ import {
 import { updateMetaTags } from "../utils/seo";
 import { OrderData } from "../services/orderService";
 import { sendApprovalEmail } from "../services/emailService";
-import { AdminProduct } from "../types";
+import { AdminProduct, StoreCategory } from "../types";
 
 interface Order extends OrderData {
   id: string;
@@ -37,12 +37,22 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
-  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "edit-product">("orders");
+  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "categories" | "edit-product">("orders");
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [productStatusFilter, setProductStatusFilter] = useState<"All" | "Published" | "Draft">("All");
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
+  
+  // Category State
+  const [categories, setCategories] = useState<StoreCategory[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  const [editingCategory, setEditingCategory] = useState<StoreCategory | null>(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [deleteCategoryModal, setDeleteCategoryModal] = useState<StoreCategory | null>(null);
+  const [deleteCategoryAction, setDeleteCategoryAction] = useState<"move" | "delete" | "">("");
+  const [replacementCategoryId, setReplacementCategoryId] = useState("");
   
   // Modals state
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
@@ -94,6 +104,28 @@ export default function AdminDashboard() {
       console.error("Error fetching products:", error);
       setProducts([]);
       setProductsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, "categories"), orderBy("displayOrder", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        setCategories([]);
+        setCategoriesLoading(false);
+      } else {
+        const categoriesData: StoreCategory[] = [];
+        snapshot.forEach((doc) => {
+          categoriesData.push({ id: doc.id, ...doc.data() } as StoreCategory);
+        });
+        setCategories(categoriesData);
+        setCategoriesLoading(false);
+      }
+    }, (error) => {
+      console.error("Error fetching categories:", error);
+      setCategories([]);
+      setCategoriesLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -414,6 +446,135 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderCategories = () => {
+    const filteredCategories = categories.filter(cat => 
+      cat.name.toLowerCase().includes(categorySearchTerm.toLowerCase())
+    );
+
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="relative flex-1 max-w-md w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-dark/40" />
+            <input 
+              type="text" 
+              placeholder="Search categories..." 
+              value={categorySearchTerm}
+              onChange={(e) => setCategorySearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-brand-dark/10 bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+            />
+          </div>
+          <button
+            onClick={() => {
+              setEditingCategory({
+                id: "",
+                name: "",
+                slug: "",
+                displayOrder: categories.length + 1,
+                status: "Active"
+              });
+              setIsCategoryModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-xl font-medium text-sm hover:bg-brand-accent transition-colors shadow-sm whitespace-nowrap w-full sm:w-auto justify-center"
+          >
+            <Plus className="w-4 h-4" />
+            Add Category
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-xl shadow-brand-dark/5 border border-brand-dark/5 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead>
+                <tr className="bg-brand-dark/[0.02] border-b border-brand-dark/5">
+                  <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider w-16">Order</th>
+                  <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Category Name</th>
+                  <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Slug</th>
+                  <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider text-center">Products</th>
+                  <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Status</th>
+                  <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Created</th>
+                  <th className="p-4 text-xs font-bold text-brand-dark/60 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-dark/5">
+                {categoriesLoading ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-brand-dark/40 text-sm">
+                      <div className="flex justify-center mb-2">
+                        <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      Loading categories...
+                    </td>
+                  </tr>
+                ) : filteredCategories.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-12 text-center text-brand-dark/40">
+                      <SearchX className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                      <p className="text-base font-medium">No categories found</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCategories.map(cat => {
+                    const productCount = products.filter(p => p.category === cat.id || p.category === cat.slug).length;
+                    return (
+                      <tr key={cat.id} className="hover:bg-brand-dark/[0.01] transition-colors">
+                        <td className="p-4">
+                          <span className="font-mono text-sm text-brand-dark/60">{cat.displayOrder}</span>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm font-bold text-brand-dark">{cat.name}</div>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm font-mono text-brand-dark/60">{cat.slug}</span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-lg bg-brand-dark/5 text-xs font-bold text-brand-dark/80">
+                            {productCount}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                             cat.status === "Active" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-brand-dark/10 text-brand-dark/70 border-brand-dark/20"
+                          }`}>
+                            {cat.status}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm text-brand-dark/80 whitespace-nowrap">
+                            {cat.createdAt instanceof Date ? cat.createdAt.toLocaleDateString() : cat.createdAt?.seconds ? new Date(cat.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}
+                          </div>
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingCategory(cat);
+                              setIsCategoryModalOpen(true);
+                            }}
+                            className="p-2 rounded-lg hover:bg-brand-dark/5 text-brand-dark/60 hover:text-brand-primary transition-colors inline-flex"
+                            title="Edit Category"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteCategoryModal(cat)}
+                            className="p-2 rounded-lg hover:bg-red-50 text-brand-dark/60 hover:text-red-600 transition-colors inline-flex"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderProducts = () => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Controls */}
@@ -527,7 +688,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="p-4">
                       <div className="text-sm font-bold text-brand-dark">{product.name}</div>
-                      <div className="text-xs text-brand-dark/50">{product.category}</div>
+                      <div className="text-xs text-brand-dark/50">{categories.find(c => c.id === product.category || c.slug === product.category)?.name || product.category}</div>
                     </td>
                     <td className="p-4">
                       <span className="text-sm font-mono text-brand-dark/80">${product.priceUsd?.toFixed(2) || "0.00"}</span>
@@ -626,6 +787,106 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory) return;
+    
+    // Validation
+    const name = editingCategory.name.trim();
+    if (!name) {
+      showToast("Category name cannot be empty", "error");
+      return;
+    }
+    
+    const isNew = !editingCategory.id;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    
+    // Check for duplicate name/slug
+    const duplicate = categories.find(c => (c.name.toLowerCase() === name.toLowerCase() || c.slug === slug) && c.id !== editingCategory.id);
+    if (duplicate) {
+      showToast("A category with this name already exists", "error");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const categoryId = isNew ? slug || Date.now().toString() : editingCategory.id;
+      const categoryRef = doc(db, "categories", categoryId);
+      
+      const categoryDataToSave = {
+        ...editingCategory,
+        name,
+        slug,
+        id: categoryId,
+        updatedAt: new Date()
+      };
+      
+      if (isNew) {
+        categoryDataToSave.createdAt = new Date();
+        categoryDataToSave.displayOrder = categories.length + 1;
+      }
+      
+      await setDoc(categoryRef, categoryDataToSave, { merge: true });
+      showToast("Category saved successfully!", "success");
+      setIsCategoryModalOpen(false);
+      setEditingCategory(null);
+    } catch (error) {
+      console.error("Error saving category:", error);
+      showToast("Failed to save category", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryModal) return;
+    
+    // Check if products are using this category
+    const productsUsingCategory = products.filter(p => p.category === deleteCategoryModal.id || p.category === deleteCategoryModal.slug);
+    
+    if (productsUsingCategory.length > 0) {
+      if (!deleteCategoryAction) {
+        showToast("Please select an action for the existing products.", "error");
+        return;
+      }
+      
+      if (deleteCategoryAction === "move" && !replacementCategoryId) {
+        showToast("Please select a replacement category.", "error");
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      if (productsUsingCategory.length > 0) {
+        if (deleteCategoryAction === "move") {
+          // Move products
+          for (const product of productsUsingCategory) {
+            await updateDoc(doc(db, "products", product.id), {
+              category: replacementCategoryId
+            });
+          }
+        } else if (deleteCategoryAction === "delete") {
+          // Delete products
+          for (const product of productsUsingCategory) {
+            await deleteDoc(doc(db, "products", product.id));
+          }
+        }
+      }
+
+      await deleteDoc(doc(db, "categories", deleteCategoryModal.id));
+      showToast("Category deleted successfully", "success");
+      setDeleteCategoryModal(null);
+      setDeleteCategoryAction("");
+      setReplacementCategoryId("");
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      showToast("Failed to delete category", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderEditProduct = () => {
     if (!editingProduct) return null;
     
@@ -689,28 +950,17 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-dark/80 mb-1">Category</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={["sound-effects", "video-assets", "presets", "templates"].includes(editingProduct.category) ? editingProduct.category : (editingProduct.category ? "custom" : "sound-effects")}
-                      onChange={e => setEditingProduct({...editingProduct, category: e.target.value === 'custom' ? '' : e.target.value})}
-                      className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
-                    >
-                      <option value="sound-effects">Sound Effects</option>
-                      <option value="video-assets">Video Assets</option>
-                      <option value="presets">Presets</option>
-                      <option value="templates">Templates</option>
-                      <option value="custom">Add New Category...</option>
-                    </select>
-                    {!["sound-effects", "video-assets", "presets", "templates", ""].includes(editingProduct.category) || (!["sound-effects", "video-assets", "presets", "templates"].includes(editingProduct.category) && editingProduct.category !== undefined) ? (
-                      <input
-                        type="text"
-                        placeholder="New category..."
-                        value={editingProduct.category === 'custom' ? '' : editingProduct.category}
-                        onChange={e => setEditingProduct({...editingProduct, category: e.target.value})}
-                        className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
-                      />
-                    ) : null}
-                  </div>
+                  <select
+                    value={editingProduct.category || ""}
+                    onChange={e => setEditingProduct({...editingProduct, category: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                    required
+                  >
+                    <option value="" disabled>Select a category</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-dark/80 mb-1">Status</label>
@@ -743,6 +993,27 @@ export default function AdminDashboard() {
                     onChange={e => setEditingProduct({...editingProduct, rank: parseFloat(e.target.value) || 0})}
                     className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm font-mono"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">File Size (e.g., 2.5 GB)</label>
+                  <input
+                    type="text"
+                    value={editingProduct.fileSize || ""}
+                    onChange={e => setEditingProduct({...editingProduct, fileSize: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-2 md:col-span-2">
+                  <input
+                    type="checkbox"
+                    id="commercialRights"
+                    checked={editingProduct.commercialRights || false}
+                    onChange={e => setEditingProduct({...editingProduct, commercialRights: e.target.checked})}
+                    className="w-4 h-4 text-brand-primary border-brand-dark/20 rounded focus:ring-brand-primary"
+                  />
+                  <label htmlFor="commercialRights" className="text-sm font-medium text-brand-dark/80 select-none cursor-pointer">
+                    Includes Commercial Usage Rights
+                  </label>
                 </div>
               </div>
             </section>
@@ -843,54 +1114,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </section>
-            
-            {/* Files & Links */}
-            <section>
-              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">Files</h4>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Download Link</label>
-                  <input
-                    type="url"
-                    required
-                    value={editingProduct.downloadLink}
-                    onChange={e => setEditingProduct({...editingProduct, downloadLink: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Tutorial Link (Optional)</label>
-                  <input
-                    type="url"
-                    value={editingProduct.tutorialLink || ""}
-                    onChange={e => setEditingProduct({...editingProduct, tutorialLink: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">File Size (e.g., 2.5 GB)</label>
-                  <input
-                    type="text"
-                    value={editingProduct.fileSize || ""}
-                    onChange={e => setEditingProduct({...editingProduct, fileSize: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
-                  />
-                </div>
-                <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="commercialRights"
-                    checked={editingProduct.commercialRights || false}
-                    onChange={e => setEditingProduct({...editingProduct, commercialRights: e.target.checked})}
-                    className="w-4 h-4 text-brand-primary border-brand-dark/20 rounded focus:ring-brand-primary"
-                  />
-                  <label htmlFor="commercialRights" className="text-sm font-medium text-brand-dark/80 select-none cursor-pointer">
-                    Includes Commercial Usage Rights
-                  </label>
-                </div>
-              </div>
-            </section>
-            
             
             {/* Approval Email */}
             <section>
@@ -1035,6 +1258,180 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Category Edit Modal */}
+      {isCategoryModalOpen && editingCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/20 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-brand-dark/10">
+            <div className="p-6 border-b border-brand-dark/5 flex justify-between items-center bg-brand-dark/[0.02]">
+              <h3 className="font-display font-bold text-lg text-brand-dark">
+                {editingCategory.id ? "Edit Category" : "Add Category"}
+              </h3>
+              <button 
+                onClick={() => {
+                  setIsCategoryModalOpen(false);
+                  setEditingCategory(null);
+                }}
+                className="text-brand-dark/40 hover:text-brand-dark transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveCategory} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-brand-dark/80 mb-1">Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingCategory.name}
+                  onChange={e => setEditingCategory({...editingCategory, name: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                  placeholder="e.g. Motion Presets"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-dark/80 mb-1">Display Order</label>
+                <input
+                  type="number"
+                  required
+                  value={editingCategory.displayOrder}
+                  onChange={e => setEditingCategory({...editingCategory, displayOrder: parseInt(e.target.value) || 0})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-dark/80 mb-1">Status</label>
+                <select
+                  value={editingCategory.status}
+                  onChange={e => setEditingCategory({...editingCategory, status: e.target.value as any})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Hidden">Hidden</option>
+                </select>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-brand-dark/10 text-brand-dark font-medium hover:bg-brand-dark/5 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-primary text-white rounded-xl font-medium text-sm hover:bg-brand-accent transition-colors disabled:opacity-50"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Category Modal */}
+      {deleteCategoryModal && (() => {
+        const productsUsingCategory = products.filter(p => p.category === deleteCategoryModal.id || p.category === deleteCategoryModal.slug);
+        const hasProducts = productsUsingCategory.length > 0;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/20 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-brand-dark/10 text-center text-left">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="font-display font-bold text-xl text-brand-dark mb-2 text-center">Delete Category</h3>
+              
+              {hasProducts ? (
+                <div className="text-left space-y-4 mb-6">
+                  <p className="text-brand-dark/80 text-sm font-medium p-3 bg-red-50 text-red-800 rounded-xl border border-red-100">
+                    This category contains {productsUsingCategory.length} product(s). What would you like to do?
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <label className="flex items-start gap-3 p-3 border border-brand-dark/10 rounded-xl cursor-pointer hover:bg-brand-dark/5 transition-colors">
+                      <input 
+                        type="radio" 
+                        name="deleteAction" 
+                        value="move"
+                        checked={deleteCategoryAction === "move"}
+                        onChange={() => setDeleteCategoryAction("move")}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-bold text-brand-dark">Move products</div>
+                        <div className="text-xs text-brand-dark/60">Move all associated products to another category</div>
+                        {deleteCategoryAction === "move" && (
+                          <select 
+                            value={replacementCategoryId}
+                            onChange={(e) => setReplacementCategoryId(e.target.value)}
+                            className="w-full mt-2 px-3 py-2 rounded-lg border border-brand-dark/10 bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-sm"
+                          >
+                            <option value="" disabled>Select a category...</option>
+                            {categories.filter(c => c.id !== deleteCategoryModal.id).map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-start gap-3 p-3 border border-red-200 bg-red-50/50 rounded-xl cursor-pointer hover:bg-red-50 transition-colors">
+                      <input 
+                        type="radio" 
+                        name="deleteAction" 
+                        value="delete"
+                        checked={deleteCategoryAction === "delete"}
+                        onChange={() => setDeleteCategoryAction("delete")}
+                        className="mt-0.5 accent-red-600"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-bold text-red-700">Delete category and all products</div>
+                        <div className="text-xs text-red-600/70">Warning: This action is irreversible</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-brand-dark/60 text-sm mb-6 text-center">
+                  Are you sure you want to delete the category "{deleteCategoryModal.name}"?
+                </p>
+              )}
+              
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={() => {
+                    setDeleteCategoryModal(null);
+                    setDeleteCategoryAction("");
+                    setReplacementCategoryId("");
+                  }}
+                  className="flex-1 px-4 py-2 rounded-xl border border-brand-dark/10 text-brand-dark font-medium hover:bg-brand-dark/5 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDeleteCategory}
+                  disabled={loading || (hasProducts && !deleteCategoryAction) || (deleteCategoryAction === "move" && !replacementCategoryId)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       
       
       {/* Confirmation Modal */}
@@ -1071,73 +1468,45 @@ export default function AdminDashboard() {
               
               {confirmModal.action === "Approve" && (
                 <div className="mb-6 space-y-4 text-left">
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
-                      <input 
-                        type="radio" 
-                        name="messageType" 
-                        value="default"
-                        checked={approvalMessageType === "default"}
-                        onChange={() => setApprovalMessageType("default")}
-                        className="text-brand-primary focus:ring-brand-primary"
-                      />
-                      <span className="text-sm font-medium text-brand-dark">Use Product Default</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input 
-                        type="radio" 
-                        name="messageType" 
-                        value="custom"
-                        checked={approvalMessageType === "custom"}
-                        onChange={() => setApprovalMessageType("custom")}
-                        className="text-brand-primary focus:ring-brand-primary"
-                      />
-                      <span className="text-sm font-medium text-brand-dark">Use Custom Message</span>
-                    </label>
-                  </div>
-                  
-                  {approvalMessageType === "default" && (
-                    <div className="space-y-3 bg-brand-dark/[0.02] p-4 rounded-xl border border-brand-dark/5 opacity-80 pointer-events-none">
-                      <div>
-                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Product Subject</label>
-                        <input
-                          type="text"
-                          value={defaultSubject}
-                          readOnly
-                          className="w-full px-3 py-2 rounded-lg border border-brand-dark/10 bg-brand-dark/[0.03] outline-none text-sm text-brand-dark"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Product Body</label>
-                        <textarea
-                          value={defaultBody}
-                          readOnly
-                          rows={4}
-                          className="w-full px-3 py-2 rounded-lg border border-brand-dark/10 bg-brand-dark/[0.03] outline-none text-sm text-brand-dark resize-y"
-                        ></textarea>
-                      </div>
-                    </div>
-                  )}
-
-                  {approvalMessageType === "custom" && (
+                  {approvalMessageType === "default" ? (
+                    <button
+                      onClick={() => {
+                        setCustomEmailSubject(defaultSubject);
+                        setCustomEmailBody(defaultBody);
+                        setApprovalMessageType("custom");
+                      }}
+                      className="text-brand-primary text-sm font-medium flex items-center gap-1 hover:underline"
+                    >
+                      <Edit className="w-4 h-4" /> Edit Message
+                    </button>
+                  ) : (
                     <div className="space-y-3 bg-brand-dark/[0.02] p-4 rounded-xl border border-brand-dark/5">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Email Message</span>
+                        <button
+                          onClick={() => {
+                            setApprovalMessageType("default");
+                          }}
+                          className="text-brand-dark/40 hover:text-brand-dark text-xs font-medium"
+                        >
+                          Cancel Edit
+                        </button>
+                      </div>
                       <div>
-                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Custom Subject</label>
+                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Subject</label>
                         <input
                           type="text"
                           value={customEmailSubject}
                           onChange={(e) => setCustomEmailSubject(e.target.value)}
-                          placeholder="Custom Subject..."
                           className="w-full px-3 py-2 rounded-lg border border-brand-dark/10 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Custom Body</label>
+                        <label className="block text-xs font-bold text-brand-dark/60 uppercase tracking-wider mb-1">Body</label>
                         <textarea
                           value={customEmailBody}
                           onChange={(e) => setCustomEmailBody(e.target.value)}
-                          rows={4}
-                          placeholder="Custom message body..."
+                          rows={6}
                           className="w-full px-3 py-2 rounded-lg border border-brand-dark/10 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none text-sm resize-y"
                         ></textarea>
                       </div>
@@ -1230,11 +1599,20 @@ export default function AdminDashboard() {
           <button 
             onClick={() => setCurrentPage("products")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-              currentPage === "products" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
+              currentPage === "products" || currentPage === "edit-product" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
             }`}
           >
             <Package className="w-5 h-5" />
             Products
+          </button>
+          <button 
+            onClick={() => setCurrentPage("categories")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              currentPage === "categories" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
+            }`}
+          >
+            <Filter className="w-5 h-5" />
+            Categories
           </button>
         </div>
         
@@ -1254,12 +1632,12 @@ export default function AdminDashboard() {
         {/* Header */}
         <header className="bg-white border-b border-brand-dark/5 sticky top-0 z-30 h-16 flex items-center px-8">
            <h2 className="font-display font-bold text-xl text-brand-dark">
-             {currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : "Products"}
+             {currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : "Products"}
            </h2>
         </header>
         
         <main className="flex-1 bg-brand-bg">
-           {currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : renderProducts()}
+           {currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : currentPage === "categories" ? renderCategories() : renderProducts()}
         </main>
       </div>
     </div>

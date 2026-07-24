@@ -1,16 +1,4 @@
-import { Category, Product, FeatureItem, Testimonial, PortfolioItem, FaqItem, StatItem } from "./types";
-
-export const CATEGORIES_DATA: Category[] = [
-  {
-    id: "cat-sfx",
-    name: "Sound Effects",
-    slug: "sound-effects",
-    description: "Immersive foley, atmospheric hits, deep impacts, and organic UI transitions designed to hook audiences.",
-    iconName: "Volume2",
-    assetCount: 42,
-    gradient: "from-brand-accent to-brand-primary"
-  }
-];
+import { Product, FeatureItem, Testimonial, PortfolioItem, FaqItem, StatItem } from "./types";
 
 export const PRODUCTS_DATA: Product[] = [];
 

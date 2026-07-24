@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
               <h2 className="text-lg font-bold text-brand-dark mb-3">1. Information We Collect</h2>
               <p>
                 At Editors Hub Store, we collect minimal personal information to provide you with the best possible service. 
-                When you create an account or make a purchase, we may collect your name, email address, country, and optional social media usernames (like Discord or Telegram) for order fulfillment and support.
+                When you create an account or make a purchase, we may collect your name, email address, country, and optional social media usernames (like Discord) for order fulfillment and support.
               </p>
             </section>
 

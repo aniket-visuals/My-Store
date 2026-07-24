@@ -226,7 +226,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Discord or Telegram Username *</label>
+                  <label className="text-xs font-bold text-brand-dark/60 uppercase tracking-wider">Discord Username *</label>
                   <input 
                     type="text" 
                     value={socialUsername}

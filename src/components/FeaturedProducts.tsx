@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Heart, Sparkles, AlertCircle, Calendar } from "lucide-react";
+import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Heart, Sparkles, AlertCircle, Calendar, SearchX } from "lucide-react";
 import { Product } from "../types";
-import { CATEGORIES_DATA } from "../data";
 import { useProducts } from "../hooks/useProducts";
+import { useCategories } from "../hooks/useCategories";
 import { formatDescription } from "../utils";
 
 interface FeaturedProductsProps {
@@ -26,6 +26,10 @@ export default function FeaturedProducts({
   toggleWishlist
 }: FeaturedProductsProps) {
   const { products: PRODUCTS_DATA } = useProducts();
+  const { categories, loading: categoriesLoading } = useCategories();
+  
+  // Filter only active categories for storefront
+  const activeCategories = categories.filter(c => c.status === "Active");
   
   // Filter products by selected category slug
   const filteredProducts = (activeCategory === "all"
@@ -69,12 +73,12 @@ export default function FeaturedProducts({
             All Products
           </button>
           
-          {CATEGORIES_DATA.map((cat) => (
+          {activeCategories.map((cat) => (
             <button
                key={cat.id}
-              onClick={() => setActiveCategory(cat.slug)}
+              onClick={() => setActiveCategory(cat.id)}
               className={`px-5 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
-                activeCategory === cat.slug
+                activeCategory === cat.id
                   ? "bg-brand-primary text-white font-bold"
                   : "bg-white text-black/60 border border-black/5 hover:text-black hover:border-black/15"
               }`}
@@ -86,15 +90,15 @@ export default function FeaturedProducts({
 
         {/* Products Showcase Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
-            {filteredProducts.map((product) => {
-              const inCart = isItemInCart(product.id);
-              const inWishlist = isItemInWishlist(product.id);
+          {filteredProducts.map((product) => {
+            const inCart = isItemInCart(product.id);
+            const inWishlist = isItemInWishlist(product.id);
 
-              return (
-                <div
-                  key={product.id}
-                  className="bg-white rounded-3xl border border-black/5 overflow-hidden group hover:shadow-2xl hover:border-black/10 transition-all flex flex-col justify-between"
-                >
+            return (
+              <div
+                key={product.id}
+                className="bg-white rounded-3xl border border-black/5 overflow-hidden group hover:shadow-2xl hover:border-black/10 transition-all flex flex-col justify-between"
+              >
                   
                   {/* Aspect Ratio Preview container */}
                   <div className="relative aspect-[16/10] overflow-hidden bg-black/5 shrink-0 cursor-pointer" onClick={() => openProductPreview(product)}>

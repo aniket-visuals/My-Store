@@ -44,7 +44,7 @@ export interface AdminProduct {
   status: "Published" | "Draft";
   priceUsd: number;
   priceInr: number;
-  downloadLink: string;
+  downloadLink?: string;
   tutorialLink?: string;
   metaTitle?: string;
   metaDescription?: string;
@@ -57,6 +57,16 @@ export interface AdminProduct {
   updatedAt?: any;
   downloadCount?: number;
   rank?: number;
+}
+
+export interface StoreCategory {
+  id: string;
+  name: string;
+  slug: string;
+  displayOrder: number;
+  status: "Active" | "Hidden";
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface Category {

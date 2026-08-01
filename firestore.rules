@@ -37,6 +37,12 @@ service cloud.firestore {
       allow write: if isAdmin(); // Only admins can modify
     }
 
+    // Stats Collection
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
     // Protect settings, analytics, and admin collections
     match /settings/{settingId} {
       allow read, write: if isAdmin();

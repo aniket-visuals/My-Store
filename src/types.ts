@@ -119,4 +119,5 @@ export interface StatItem {
   value: string;
   label: string;
   subLabel: string;
+  order?: number;
 }

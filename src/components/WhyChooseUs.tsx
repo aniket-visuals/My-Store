@@ -1,8 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { STATS_DATA } from "../data";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "../firebase";
+import { StatItem } from "../types";
 
 export default function WhyChooseUs() {
+  const [stats, setStats] = useState<StatItem[]>(STATS_DATA);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const q = query(collection(db, "stats"), orderBy("order", "asc"));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          const statsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StatItem));
+          setStats(statsData);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+    fetchStats();
+  }, []);
+
   return (
     <section id="why-us" className="relative py-20 xl:py-24 bg-[#FFFFFF] border-t border-b border-black/5">
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -23,7 +44,7 @@ export default function WhyChooseUs() {
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {STATS_DATA.map((stat, idx) => (
+            {stats.map((stat, idx) => (
               <motion.div
                 key={stat.id}
                 initial={{ opacity: 0, scale: 0.95 }}

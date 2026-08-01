@@ -6,12 +6,13 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { 
   Search, Filter, CheckCircle, XCircle, Eye, 
   Clock, ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
-  SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save
+  SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users
 } from "lucide-react";
 import { updateMetaTags } from "../utils/seo";
 import { OrderData } from "../services/orderService";
 import { sendApprovalEmail } from "../services/emailService";
 import { AdminProduct, StoreCategory } from "../types";
+import OmniToolUsers from "./OmniToolUsers";
 
 interface Order extends OrderData {
   id: string;
@@ -37,7 +38,7 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
-  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "categories" | "edit-product">("orders");
+  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "categories" | "edit-product" | "omnitool-users">("orders");
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productSearchTerm, setProductSearchTerm] = useState("");
@@ -1614,6 +1615,15 @@ export default function AdminDashboard() {
             <Filter className="w-5 h-5" />
             Categories
           </button>
+          <button 
+            onClick={() => setCurrentPage("omnitool-users")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              currentPage === "omnitool-users" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            OmniTool Users
+          </button>
         </div>
         
         <div className="p-4 border-t border-brand-dark/5">
@@ -1632,12 +1642,14 @@ export default function AdminDashboard() {
         {/* Header */}
         <header className="bg-white border-b border-brand-dark/5 sticky top-0 z-30 h-16 flex items-center px-8">
            <h2 className="font-display font-bold text-xl text-brand-dark">
-             {currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : "Products"}
+             {currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : currentPage === "omnitool-users" ? "OmniTool Users" : "Products"}
            </h2>
         </header>
         
         <main className="flex-1 bg-brand-bg">
-           {currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : currentPage === "categories" ? renderCategories() : renderProducts()}
+           {currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : currentPage === "categories" ? renderCategories() : currentPage === "omnitool-users" ? (
+             <div className="p-8"><OmniToolUsers /></div>
+           ) : renderProducts()}
         </main>
       </div>
     </div>

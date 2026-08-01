@@ -1,11 +1,26 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 import firebaseConfig from "../firebase-applet-config.json";
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+const omnitoolConfig = {
+  apiKey: "AIzaSyCbGBagXeHldZGDX3LlHl8MYyBD8soiL10",
+  authDomain: "omnitool-backend-d8ce5.firebaseapp.com",
+  databaseURL: "https://omnitool-backend-d8ce5-default-rtdb.firebaseio.com",
+  projectId: "omnitool-backend-d8ce5",
+  storageBucket: "omnitool-backend-d8ce5.firebasestorage.app",
+  messagingSenderId: "433182580251",
+  appId: "1:433182580251:web:8c49b079305cef62b6a2be"
+};
+
+const omnitoolApp = initializeApp(omnitoolConfig, "omnitool");
+export const rtdb = getDatabase(omnitoolApp);
+export const omnitoolAuth = getAuth(omnitoolApp);
 
 export enum OperationType {
   CREATE = "create",

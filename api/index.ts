@@ -1,49 +1,98 @@
 import express from "express";
-import nodemailer from "nodemailer";
+import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import dotenv from "dotenv";
-import omnitoolRouter from "../server/routes/omnitool.js";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-// Mount OmniTool API routes
-app.use("/api/omnitool", omnitoolRouter);
-
-// API route for sending email (Ported from server.ts)
-app.post("/api/send-email", async (req, res) => {
-  const { to_email, subject, body } = req.body;
-
-  if (!to_email || !subject || !body) {
-    return res.status(400).json({ success: false, error: "Missing required fields" });
+// -----------------------------------------------------
+// FIREBASE SETUP
+// -----------------------------------------------------
+let websiteAdminApp;
+try {
+  if (!getApps().length) {
+    const serviceAccountJson = process.env.WEBSITE_FIREBASE_SERVICE_ACCOUNT;
+    if (serviceAccountJson) {
+      websiteAdminApp = initializeApp({
+        credential: cert(JSON.parse(serviceAccountJson)),
+        projectId: process.env.WEBSITE_FIREBASE_PROJECT_ID || "editors-hub-store"
+      });
+    } else {
+      websiteAdminApp = initializeApp({
+        projectId: process.env.WEBSITE_FIREBASE_PROJECT_ID || "editors-hub-store"
+      });
+    }
+  } else {
+    websiteAdminApp = getApp();
   }
+} catch (error) {
+  console.error("Firebase init error:", error);
+  websiteAdminApp = getApp();
+}
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
+const verifyAdmin = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized: Missing token" });
+  }
+  const token = authHeader.split("Bearer ")[1];
   try {
-    const transporter = nodemailer.createTransport({
-      host: "smtpout.secureserver.net",
-      port: 587,
-      secure: false, 
-      auth: {
-        user: process.env.SMTP_USER || "support@editorshubstore.in",
-        pass: process.env.SMTP_PASS || "Aniketraj@godaddy#password123$",
-      },
-    });
+    const authInstance = getAuth(websiteAdminApp);
+    const decodedToken = await authInstance.verifyIdToken(token);
+    
+    const userEmail = decodedToken.email?.toLowerCase();
+    if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
+      req.adminEmail = userEmail;
+      return next();
+    }
+    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  } catch (error) {
+    return res.status(401).json({ error: "Unauthorized: Invalid token" });
+  }
+};
 
-    const info = await transporter.sendMail({
-      from: `"${process.env.SMTP_FROM_NAME || 'Editors Hub Store'}" <${process.env.SMTP_FROM_EMAIL || 'support@editorshubstore.in'}>`,
-      to: to_email,
-      subject: subject,
-      text: body,
-    });
+// -----------------------------------------------------
+// ROUTES
+// -----------------------------------------------------
 
-    console.log("Message sent: %s", info.messageId);
-    res.json({ success: true });
-  } catch (error: any) {
-    console.error("Error sending email:", error);
-    res.status(500).json({ success: false, error: error.message });
+app.get("/api/health", (req, res) => {
+  res.json({ status: "Vercel Serverless Function is online (Self-Contained Edition)" });
+});
+
+app.get('/api/omnitool/users', verifyAdmin, async (req, res) => {
+  try {
+    const db = getFirestore(websiteAdminApp);
+    const snapshot = await db.collection('omnitool_users').get();
+    
+    if (snapshot.empty) {
+      return res.json([]);
+    }
+    const usersList = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const { password, passwordHash, ...rest } = data;
+      return {
+        id: doc.id,
+        username: doc.id,
+        hasPassword: !!(passwordHash || password),
+        hashPreview: passwordHash ? `${passwordHash.substring(0, 15)}...` : null,
+        ...rest
+      };
+    });
+    res.json(usersList);
+  } catch (error) {
+    console.error("Get users error:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
   }
 });
 
-// Export the app for Vercel's serverless runtime
 export default app;

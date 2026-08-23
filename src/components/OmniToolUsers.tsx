@@ -40,7 +40,10 @@ export default function OmniToolUsers() {
       const res = await fetch("/api/omnitool/users", {
         headers: { "Authorization": `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error("Failed to fetch users");
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Server returned ${res.status}: ${errorText}`);
+      }
 
       const data = await res.json();
       setUsers(data);

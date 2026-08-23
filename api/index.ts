@@ -1,10 +1,18 @@
+import express from "express";
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+import omnitoolRouter from "../server/routes/omnitool.js";
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
-  }
+dotenv.config();
 
+const app = express();
+app.use(express.json());
+
+// Mount OmniTool API routes
+app.use("/api/omnitool", omnitoolRouter);
+
+// API route for sending email (Ported from server.ts)
+app.post("/api/send-email", async (req, res) => {
   const { to_email, subject, body } = req.body;
 
   if (!to_email || !subject || !body) {
@@ -30,9 +38,12 @@ export default async function handler(req, res) {
     });
 
     console.log("Message sent: %s", info.messageId);
-    res.status(200).json({ success: true });
-  } catch (error) {
+    res.json({ success: true });
+  } catch (error: any) {
     console.error("Error sending email:", error);
     res.status(500).json({ success: false, error: error.message });
   }
-}
+});
+
+// Export the app for Vercel's serverless runtime
+export default app;

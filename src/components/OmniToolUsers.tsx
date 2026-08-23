@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { auth } from "../firebase";
-import { Search, Plus, Edit, Trash2, Key, ShieldAlert, CheckCircle, SearchX, X, MoreVertical, CheckSquare, Square, Smartphone } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Key, ShieldAlert, CheckCircle, SearchX, X, MoreVertical, CheckSquare, Square, Smartphone, Lock } from "lucide-react";
 
 export interface OmniUser {
   id: string; // The username is the key
   username: string;
   hasPassword?: boolean;
+  hashPreview?: string;
   status: string;
   activeSession?: {
     deviceId: string;
@@ -334,8 +335,20 @@ export default function OmniToolUsers() {
                       </button>
                     </td>
                     <td className="px-4 py-3 font-medium text-brand-dark">{user.username}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-brand-dark/80 bg-brand-dark/[0.02] rounded px-2">
-                      {user.hasPassword ? "••••••••" : "No Password"}
+                    <td 
+                      className="px-4 py-3 font-mono text-xs text-brand-dark/80 bg-brand-dark/[0.02] rounded px-2"
+                      title="Passwords are encrypted using bcrypt (one-way hashing). The plain text password is mathematically unrecoverable."
+                    >
+                      {user.hashPreview ? (
+                        <span className="flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-emerald-500" />
+                          {user.hashPreview}
+                        </span>
+                      ) : user.hasPassword ? (
+                        "••••••••"
+                      ) : (
+                        "No Password"
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-md text-xs font-bold ${

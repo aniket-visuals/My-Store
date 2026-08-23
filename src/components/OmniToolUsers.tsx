@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { ref, onValue, set, update, remove, get } from "firebase/database";
-import { signInAnonymously } from "firebase/auth";
-import { rtdb, omnitoolAuth } from "../firebase";
+import { auth } from "../firebase";
 import { Search, Plus, Edit, Trash2, Key, ShieldAlert, CheckCircle, SearchX, X, MoreVertical, CheckSquare, Square, Smartphone } from "lucide-react";
 
 export interface OmniUser {
   id: string; // The username is the key
   username: string;
-  password?: string;
+  hasPassword?: boolean;
   status: string;
   activeSession?: {
     deviceId: string;
@@ -32,43 +30,29 @@ export default function OmniToolUsers() {
 
   const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
 
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await fetch("/api/omnitool/users", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch users");
+
+      const data = await res.json();
+      setUsers(data);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      showToast(`Failed to load users: ${error.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let unsubscribe = () => {};
-
-    const initialize = async () => {
-      try {
-        await signInAnonymously(omnitoolAuth);
-        const usersRef = ref(rtdb, 'users');
-        unsubscribe = onValue(usersRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            const usersList: OmniUser[] = Object.keys(data).map(key => ({
-              id: key,
-              username: key,
-              ...data[key]
-            }));
-            setUsers(usersList);
-          } else {
-            setUsers([]);
-          }
-          setLoading(false);
-        }, (error) => {
-          console.error("Error fetching users:", error);
-          if (error.message.includes("permission_denied")) {
-            showToast("Database Permission Denied. Please enable Anonymous Auth in OmniTool Firebase or set Rules to true.", "error");
-          }
-          setLoading(false);
-        });
-      } catch (error: any) {
-        console.error("Auth error:", error);
-        showToast(`Authentication failed: ${error.message}. Please enable Anonymous Auth in your OmniTool Firebase project.`, "error");
-        setLoading(false);
-      }
-    };
-
-    initialize();
-
-    return () => unsubscribe();
+    fetchUsers();
   }, []);
 
   const showToast = (message: string, type: "success" | "error") => {
@@ -84,56 +68,87 @@ export default function OmniToolUsers() {
     }
 
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       if (modalMode === "add") {
         if (!newPassword) {
           showToast("Password is required for new users", "error");
           return;
         }
-        
+
         const username = currentUser.username!.trim();
-        // check for invalid paths
         if (/[.#$\[\]]/.test(username)) {
           showToast("Username contains invalid characters", "error");
           return;
         }
 
-        const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
-        if (exists) {
-          showToast("Username already exists", "error");
-          return;
-        }
-        
-        const userRef = ref(rtdb, `users/${username}`);
-        await set(userRef, {
-          password: newPassword,
-          status: currentUser.status || "active",
+        const res = await fetch("/api/omnitool/users", {
+          method: "POST",
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            username,
+            password: newPassword,
+            status: currentUser.status || "active"
+          })
         });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to create user");
+        
         showToast("User created successfully", "success");
       } else {
         if (!currentUser.id) return;
         
-        const updateData: any = {
+        const payload: any = {
           status: currentUser.status,
         };
-
         if (newPassword) {
-          updateData.password = newPassword;
+          payload.password = newPassword;
         }
 
-        await update(ref(rtdb, `users/${currentUser.id}`), updateData);
+        const res = await fetch(`/api/omnitool/users/${currentUser.id}`, {
+          method: "PUT",
+          headers: { 
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to update user");
+
         showToast("User updated successfully", "success");
       }
+      
       setIsModalOpen(false);
-    } catch (error) {
-      showToast("Error saving user", "error");
+      fetchUsers(); // Refresh list
+    } catch (error: any) {
+      showToast(error.message || "Error saving user", "error");
       console.error(error);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm(`Are you sure you want to delete ${id}? This action cannot be undone.`)) {
-      await remove(ref(rtdb, `users/${id}`));
+    if (!window.confirm(`Are you sure you want to delete ${id}? This action cannot be undone.`)) return;
+    
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`/api/omnitool/users/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete user");
+      
       showToast("User deleted", "success");
+      fetchUsers();
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to delete user", "error");
     }
   };
 
@@ -145,19 +160,26 @@ export default function OmniToolUsers() {
     }
 
     try {
-      const updates: any = {};
-      selectedUsers.forEach(id => {
-        if (action === "delete") {
-          updates[id] = null;
-        } else {
-          updates[`${id}/status`] = action;
-        }
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/omnitool/users/bulk", {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action,
+          userIds: Array.from(selectedUsers)
+        })
       });
+
+      if (!res.ok) throw new Error("Bulk action failed");
       
-      await update(ref(rtdb, 'users'), updates);
       showToast(`Bulk action completed`, "success");
       setSelectedUsers(new Set());
+      fetchUsers();
     } catch (error) {
+      console.error(error);
       showToast("Bulk action failed", "error");
     }
   };
@@ -313,7 +335,7 @@ export default function OmniToolUsers() {
                     </td>
                     <td className="px-4 py-3 font-medium text-brand-dark">{user.username}</td>
                     <td className="px-4 py-3 font-mono text-xs text-brand-dark/80 bg-brand-dark/[0.02] rounded px-2">
-                      {user.password || "••••••••"}
+                      {user.hasPassword ? "••••••••" : "No Password"}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-md text-xs font-bold ${

@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import omnitoolRouter from "./server/routes/omnitool.js";
 
 dotenv.config();
 
@@ -11,6 +12,9 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+
+  // Mount OmniTool API routes
+  app.use("/api/omnitool", omnitoolRouter);
 
   // API route for sending email
   app.post("/api/send-email", async (req, res) => {

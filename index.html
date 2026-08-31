@@ -45,7 +45,81 @@
     <link rel="manifest" href="/site.webmanifest">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <style>
+        .initial-loader-container {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: #FAFAFA;
+          z-index: 9999;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .initial-loader-spinner {
+          width: 80px;
+          height: 80px;
+          background-color: #ffffff;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 10px 15px -3px rgba(255, 115, 0, 0.1), 0 4px 6px -4px rgba(255, 115, 0, 0.1);
+          margin-bottom: 32px;
+          position: relative;
+        }
+        .initial-loader-spinner::before {
+          content: "";
+          position: absolute;
+          inset: -4px;
+          border-radius: 20px;
+          background: rgba(255, 115, 0, 0.1);
+          animation: initial-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .initial-loader-circle {
+          width: 40px;
+          height: 40px;
+          border: 4px solid rgba(255, 115, 0, 0.2);
+          border-top-color: #FF7300;
+          border-radius: 50%;
+          animation: initial-spin 1s linear infinite;
+        }
+        .initial-loader-text {
+          font-size: 24px;
+          font-weight: 700;
+          color: #1A1A1A;
+          margin: 0 0 8px 0;
+          letter-spacing: -0.02em;
+          animation: initial-pulse-text 2s ease-in-out infinite;
+        }
+        .initial-loader-subtext {
+          font-size: 14px;
+          font-weight: 500;
+          color: rgba(26, 26, 26, 0.6);
+          margin: 0;
+        }
+        @keyframes initial-spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes initial-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.5; }
+          50% { transform: scale(1.1); opacity: 0; }
+        }
+        @keyframes initial-pulse-text {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      </style>
+      <div class="initial-loader-container">
+        <div class="initial-loader-spinner">
+          <div class="initial-loader-circle"></div>
+        </div>
+        <h2 class="initial-loader-text">Editors Hub</h2>
+        <p class="initial-loader-subtext">Loading professional assets...</p>
+      </div>
+    </div>
     <script>
       window.addEventListener("unhandledrejection", function(event) { document.body.innerHTML += "<pre style=\"color:red; z-index:9999; position:absolute; top:50px; left:0; background:white; padding:20px;\">" + event.reason + "</pre>"; });
       window.onerror = function(msg, url, line, col, error) {

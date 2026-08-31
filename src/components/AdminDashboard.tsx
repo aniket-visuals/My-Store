@@ -14,6 +14,7 @@ import { sendApprovalEmail } from "../services/emailService";
 import { AdminProduct, StoreCategory } from "../types";
 import OmniToolUsers from "./OmniToolUsers";
 import AdminStats from "./AdminStats";
+import LoadingScreen from "./LoadingScreen";
 
 interface Order extends OrderData {
   id: string;
@@ -153,11 +154,7 @@ export default function AdminDashboard() {
   }, []);
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingScreen fullScreen={true} message="Authenticating admin session..." />;
   }
 
   if (!isAuthenticated || !isAdmin) {

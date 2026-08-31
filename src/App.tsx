@@ -19,6 +19,7 @@ const TermsConditions = lazy(() => import("./components/TermsConditions"));
 const RefundPolicy = lazy(() => import("./components/RefundPolicy"));
 const AboutPage = lazy(() => import("./components/AboutPage"));
 const ContactPage = lazy(() => import("./components/ContactPage"));
+import LoadingScreen from "./components/LoadingScreen";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
@@ -57,7 +58,7 @@ function CookieNotice() {
 }
 
 export default function App() {
-  const { products } = useProducts();
+  const { products, loading: isLoadingProducts } = useProducts();
   const [cart, setCart] = useState<Product[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -194,11 +195,7 @@ export default function App() {
 
       {/* 2. Interactive Main Canvas */}
       <main className="flex-1 overflow-x-hidden">
-        <Suspense fallback={
-          <div className="min-h-[50vh] flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        }>
+        <Suspense fallback={<LoadingScreen />}>
         <Routes location={location}>
           <Route path="/" element={
             <>
@@ -228,7 +225,8 @@ export default function App() {
 
           <Route path="/products/:slug" element={
             <ProductRouteWrapper
-                  products={products}
+              products={products}
+              isLoadingProducts={isLoadingProducts}
               cart={cart}
               addToCart={addToCart}
               wishlist={wishlist}
@@ -282,13 +280,15 @@ function ProductRouteWrapper({
   addToCart,
   wishlist,
   toggleWishlist,
-  products
+  products,
+  isLoadingProducts
 }: {
   cart: Product[];
   addToCart: (product: Product) => void;
   wishlist: Product[];
   toggleWishlist: (product: Product) => void;
   products: Product[];
+  isLoadingProducts: boolean;
 }) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -310,6 +310,10 @@ function ProductRouteWrapper({
       });
     }
   }, [currentProduct]);
+
+  if (isLoadingProducts) {
+    return <LoadingScreen fullScreen={true} message="Locating creative asset..." />;
+  }
 
   if (!currentProduct) {
     return (

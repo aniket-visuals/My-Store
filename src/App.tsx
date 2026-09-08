@@ -3,10 +3,10 @@ import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from "re
 import { AnimatePresence, motion } from "motion/react";
 import { Product } from "./types";
 import { useProducts } from "./hooks/useProducts";
+import { useSiteAnalytics } from "./hooks/useSiteAnalytics";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import FeaturedProducts from "./components/FeaturedProducts";
-import WhyChooseUs from "./components/WhyChooseUs";
 import FaqSection from "./components/FaqSection";
 import Footer from "./components/Footer";
 const ProductDetailPage = lazy(() => import("./components/ProductDetailPage"));
@@ -58,6 +58,7 @@ function CookieNotice() {
 }
 
 export default function App() {
+  useSiteAnalytics();
   const { products, loading: isLoadingProducts } = useProducts();
   const [cart, setCart] = useState<Product[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
@@ -204,9 +205,6 @@ export default function App() {
                 onExploreClick={() => scrollToSection("shop")}
               />
 
-              {/* Bento features and Stats row combined */}
-              <WhyChooseUs />
-
               {/* Active dynamic product list */}
               <FeaturedProducts
                 cart={cart}
@@ -262,7 +260,7 @@ export default function App() {
       </main>
 
       {/* 3. Multi-column detailed footer */}
-      {location.pathname !== "/portal" && (
+      {location.pathname !== "/portal" && location.pathname !== "/admin" && (
         <Footer
           scrollToSection={scrollToSection}
           setActiveCategory={setActiveCategory}

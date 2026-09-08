@@ -25,7 +25,7 @@ export default function FeaturedProducts({
   wishlist,
   toggleWishlist
 }: FeaturedProductsProps) {
-  const { products: PRODUCTS_DATA } = useProducts();
+  const { products: PRODUCTS_DATA, loading: productsLoading } = useProducts();
   const { categories, loading: categoriesLoading } = useCategories();
   
   // Filter only active categories for storefront
@@ -90,7 +90,7 @@ export default function FeaturedProducts({
 
         {/* Products Showcase Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
-          {filteredProducts.map((product) => {
+          {!productsLoading && filteredProducts.map((product) => {
             const inCart = isItemInCart(product.id);
             const inWishlist = isItemInWishlist(product.id);
 
@@ -196,8 +196,29 @@ export default function FeaturedProducts({
             })}
         </div>
 
+        {/* Loading Skeletons */}
+        {productsLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="animate-pulse bg-white rounded-3xl p-4 border border-black/5">
+                <div className="w-full aspect-[4/3] bg-brand-dark/5 rounded-2xl mb-4"></div>
+                <div className="h-6 bg-brand-dark/5 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-brand-dark/5 rounded w-1/2 mb-4"></div>
+                <div className="flex gap-2 mb-4">
+                  <div className="h-6 w-16 bg-brand-dark/5 rounded-full"></div>
+                  <div className="h-6 w-16 bg-brand-dark/5 rounded-full"></div>
+                </div>
+                <div className="flex justify-between items-center mt-6">
+                  <div className="h-8 w-24 bg-brand-dark/5 rounded-xl"></div>
+                  <div className="h-10 w-10 bg-brand-dark/5 rounded-xl"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Empty filter fallbacks */}
-        {filteredProducts.length === 0 && (
+        {!productsLoading && filteredProducts.length === 0 && (
           <div className="text-center py-20 bg-white rounded-3xl border border-black/5 mt-12 p-8 overflow-hidden">
             <div className="w-12 h-12 bg-brand-primary/10 text-brand-primary rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-6 h-6" />

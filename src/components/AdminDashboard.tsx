@@ -6,7 +6,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { 
   Search, Filter, CheckCircle, XCircle, Eye, 
   Clock, ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
-  SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users, BarChart
+  SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users, BarChart, TrendingUp
 } from "lucide-react";
 import { updateMetaTags } from "../utils/seo";
 import { OrderData } from "../services/orderService";
@@ -14,6 +14,7 @@ import { sendApprovalEmail } from "../services/emailService";
 import { AdminProduct, StoreCategory } from "../types";
 import OmniToolUsers from "./OmniToolUsers";
 import AdminStats from "./AdminStats";
+import StoreAnalytics from "./StoreAnalytics";
 import LoadingScreen from "./LoadingScreen";
 
 interface Order extends OrderData {
@@ -21,6 +22,14 @@ interface Order extends OrderData {
   orderId: string;
   status: "Pending" | "Approved" | "Rejected";
   createdAt: any;
+}
+
+export interface SiteStat {
+  id: string;
+  date: string;
+  views: number;
+  uniqueVisitors: number;
+  lastUpdated?: string;
 }
 
 export default function AdminDashboard() {
@@ -34,13 +43,14 @@ export default function AdminDashboard() {
 
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [siteStats, setSiteStats] = useState<SiteStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [authLoading, setAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
-  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "categories" | "edit-product" | "omnitool-users" | "stats">("orders");
+  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "categories" | "edit-product" | "omnitool-users" | "stats" | "analytics">("analytics");
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productSearchTerm, setProductSearchTerm] = useState("");
@@ -137,7 +147,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeOrders = onSnapshot(q, (snapshot) => {
       const ordersData: Order[] = [];
       snapshot.forEach((doc) => {
         ordersData.push({ id: doc.id, ...doc.data() } as Order);
@@ -150,7 +160,21 @@ export default function AdminDashboard() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    const statsQuery = query(collection(db, "site_stats"), orderBy("date", "desc"));
+    const unsubscribeStats = onSnapshot(statsQuery, (snapshot) => {
+      const statsData: SiteStat[] = [];
+      snapshot.forEach((doc) => {
+        statsData.push({ id: doc.id, ...doc.data() } as SiteStat);
+      });
+      setSiteStats(statsData);
+    }, (error) => {
+      console.error("Error fetching site stats:", error);
+    });
+
+    return () => {
+      unsubscribeOrders();
+      unsubscribeStats();
+    };
   }, []);
 
   if (authLoading) {
@@ -1587,6 +1611,15 @@ export default function AdminDashboard() {
         
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-1">
           <button 
+            onClick={() => setCurrentPage("analytics")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              currentPage === "analytics" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
+            }`}
+          >
+            <TrendingUp className="w-5 h-5" />
+            Analytics
+          </button>
+          <button 
             onClick={() => setCurrentPage("orders")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
               currentPage === "orders" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
@@ -1649,12 +1682,14 @@ export default function AdminDashboard() {
         {/* Header */}
         <header className="bg-white border-b border-brand-dark/5 sticky top-0 z-30 h-16 flex items-center px-8">
            <h2 className="font-display font-bold text-xl text-brand-dark">
-             {currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : currentPage === "omnitool-users" ? "OmniTool Users" : currentPage === "stats" ? "Community Stats" : "Products"}
+             {currentPage === "analytics" ? "Store Analytics" : currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : currentPage === "omnitool-users" ? "OmniTool Users" : currentPage === "stats" ? "Community Stats" : "Products"}
            </h2>
         </header>
         
         <main className="flex-1 bg-brand-bg">
-           {currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : currentPage === "categories" ? renderCategories() : currentPage === "omnitool-users" ? (
+           {currentPage === "analytics" ? (
+             <div className="p-8"><StoreAnalytics orders={orders} products={products} siteStats={siteStats} /></div>
+           ) : currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : currentPage === "categories" ? renderCategories() : currentPage === "omnitool-users" ? (
              <div className="p-8"><OmniToolUsers /></div>
            ) : currentPage === "stats" ? (
              <div className="p-8"><AdminStats /></div>

@@ -30,13 +30,13 @@ async function startServer() {
         port: 587,
         secure: false, 
         auth: {
-          user: process.env.SMTP_USER || "support@editorshubstore.in",
+          user: process.env.SMTP_USER || "admin@editorshubstore.in",
           pass: process.env.SMTP_PASS || "Aniketraj@godaddy#password123$",
         },
       });
 
       const info = await transporter.sendMail({
-        from: `"${process.env.SMTP_FROM_NAME || 'Editors Hub Store'}" <${process.env.SMTP_FROM_EMAIL || 'support@editorshubstore.in'}>`,
+        from: `"${process.env.SMTP_FROM_NAME || 'Editors Hub Store'}" <${process.env.SMTP_FROM_EMAIL || 'admin@editorshubstore.in'}>`,
         to: to_email,
         subject: subject,
         text: body,

@@ -135,7 +135,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            to_email: 'support@editorshubstore.in',
+            to_email: 'admin@editorshubstore.in',
             subject: `New Order Received: ${orderId} for ${product.name}`,
             body: `You have received a new order.\n\nOrder ID: ${orderId}\nCustomer Name: ${fullName}\nEmail: ${email}\nProduct: ${product.name}\nAmount: ${currency} ${amount}\nPayment Method: ${paymentMethod.toUpperCase()}\n\nPlease check the admin dashboard for more details.`,
           }),

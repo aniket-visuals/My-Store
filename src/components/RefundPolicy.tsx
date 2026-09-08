@@ -94,7 +94,7 @@ export default function RefundPolicy() {
 
             <h2>5. Contact Us</h2>
             <p>
-              For any questions or support requests, please reach out to us at <a href="mailto:support@editorshubstore.in" className="text-brand-primary hover:underline">support@editorshubstore.in</a> or visit our <button onClick={() => navigate('/contact')} className="text-brand-primary hover:underline bg-transparent border-0 p-0 inline">Contact Page</button>.
+              For any questions or support requests, please reach out to us at <a href="mailto:admin@editorshubstore.in" className="text-brand-primary hover:underline">admin@editorshubstore.in</a> or visit our <button onClick={() => navigate('/contact')} className="text-brand-primary hover:underline bg-transparent border-0 p-0 inline">Contact Page</button>.
             </p>
           </div>
         </div>

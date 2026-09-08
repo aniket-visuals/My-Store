@@ -8,7 +8,7 @@ code = code.replace(
 
 code = code.replace(
   /user: process\.env\.SMTP_USER,/,
-  `user: process.env.SMTP_USER || "support@editorshubstore.in",`
+  `user: process.env.SMTP_USER || "admin@editorshubstore.in",`
 );
 
 code = code.replace(
@@ -18,7 +18,7 @@ code = code.replace(
 
 code = code.replace(
   /from: \`"\$\{process\.env\.SMTP_FROM_NAME \|\| 'Editors Hub Store'\}\" <\$\{process\.env\.SMTP_FROM_EMAIL \|\| process\.env\.SMTP_USER\}\>\`,/,
-  `from: \`"\$\{process.env.SMTP_FROM_NAME || 'Editors Hub Store'\}\" <\$\{process.env.SMTP_FROM_EMAIL || 'support@editorshubstore.in'\}\>\`,`
+  `from: \`"\$\{process.env.SMTP_FROM_NAME || 'Editors Hub Store'\}\" <\$\{process.env.SMTP_FROM_EMAIL || 'admin@editorshubstore.in'\}\>\`,`
 );
 
 fs.writeFileSync('server.ts', code);

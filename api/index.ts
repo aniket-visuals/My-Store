@@ -5,11 +5,46 @@ import { getFirestore } from 'firebase-admin/firestore';
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+
+// API route for sending email
+app.post("/api/send-email", async (req: any, res: any) => {
+  const { to_email, subject, body } = req.body;
+
+  if (!to_email || !subject || !body) {
+    return res.status(400).json({ success: false, error: "Missing required fields" });
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.titan.email",
+      port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465,
+      secure: process.env.SMTP_SECURE === "true" || true, 
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: `"${process.env.SMTP_FROM_NAME || 'Editors Hub Store'}" <${process.env.SMTP_FROM_EMAIL || 'admin@editorshubstore.in'}>`,
+      to: to_email,
+      subject: subject,
+      text: body,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Enable CORS for external clients (like OmniTool)
 app.use((req, res, next) => {

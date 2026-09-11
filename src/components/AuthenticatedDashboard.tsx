@@ -1017,7 +1017,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                       {wishlist.map((item) => (
                         <div key={item.id} className="flex items-center space-x-4 p-4 border border-black/5 rounded-xl group hover:border-black/10 transition-colors cursor-pointer" onClick={() => navigate(`/products/${item.slug}`)}>
                           <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-black/5">
-                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                            <img src={item.image || undefined} alt={item.name} className="w-full h-full object-cover" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-0.5">{item.category.replace("-", " ")}</p>

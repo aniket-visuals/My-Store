@@ -703,7 +703,7 @@ export default function AdminDashboard() {
                     <td className="p-4">
                       <div className="w-10 h-10 rounded-lg overflow-hidden border border-brand-dark/10 bg-brand-dark/5">
                         {product.thumbnail ? (
-                           <img src={product.thumbnail} alt={product.name} className="w-full h-full object-cover" />
+                           <img src={product.thumbnail || undefined} alt={product.name} className="w-full h-full object-cover" />
                         ) : (
                            <ImageIcon className="w-5 h-5 m-2.5 text-brand-dark/40" />
                         )}
@@ -1114,7 +1114,7 @@ export default function AdminDashboard() {
                     className="w-full px-4 py-2.5 rounded-xl border border-brand-dark/10 bg-brand-bg focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm"
                   />
                   {editingProduct.thumbnail && (
-                    <img src={editingProduct.thumbnail} alt="Preview" className="mt-2 h-20 rounded-lg object-cover border border-brand-dark/10" />
+                    <img src={editingProduct.thumbnail || undefined} alt="Preview" className="mt-2 h-20 rounded-lg object-cover border border-brand-dark/10" />
                   )}
                 </div>
                 <div>
@@ -1140,8 +1140,20 @@ export default function AdminDashboard() {
             
             {/* Approval Email */}
             <section>
-              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">Approval Email</h4>
+              <h4 className="font-bold text-brand-dark mb-4 pb-2 border-b border-brand-dark/5">Approval Email & Automation</h4>
               <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="autoApprove"
+                    checked={editingProduct.autoApprove || false}
+                    onChange={(e) => setEditingProduct({...editingProduct, autoApprove: e.target.checked})}
+                    className="w-4 h-4 text-brand-primary rounded border-brand-dark/20 focus:ring-brand-primary"
+                  />
+                  <label htmlFor="autoApprove" className="text-sm font-medium text-brand-dark">
+                    Auto-Approve Orders (No payment screenshot verification required)
+                  </label>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-brand-dark/80 mb-1">Email Subject (Default)</label>
                   <input
@@ -1276,7 +1288,7 @@ export default function AdminDashboard() {
             <button aria-label="Close screenshot modal" onClick={() => setScreenshotModal(null)} className="absolute -top-12 right-0 text-white hover:text-brand-primary p-2">
               <XCircle className="w-8 h-8" />
             </button>
-            <img src={screenshotModal} alt="Payment Screenshot" className="w-full h-full object-contain rounded-xl" />
+            <img src={screenshotModal || undefined} alt="Payment Screenshot" className="w-full h-full object-contain rounded-xl" />
           </div>
         </div>
       )}

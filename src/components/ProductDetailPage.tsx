@@ -431,7 +431,7 @@ export default function ProductDetailPage({
             {currentProduct.videoPreview && activeMediaType === "video" ? (
               <>
                 <video
-                  src={currentProduct.videoPreview}
+                  src={currentProduct.videoPreview || undefined}
                   poster={activeImage}
                   autoPlay
                   loop
@@ -451,7 +451,7 @@ export default function ProductDetailPage({
               </>
             ) : (
               <img
-                src={activeImage}
+                src={activeImage || undefined}
                 alt={currentProduct.name}
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover transition-all duration-300"
@@ -491,7 +491,7 @@ export default function ProductDetailPage({
                     <Play className="w-5 h-5 text-white fill-white shadow-sm drop-shadow-md" />
                   </div>
                   <img
-                    src={currentProduct.image}
+                    src={currentProduct.image || undefined}
                     alt="Video Preview"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
@@ -515,7 +515,7 @@ export default function ProductDetailPage({
                   }`}
                 >
                   <img
-                    src={imgUrl}
+                    src={imgUrl || undefined}
                     alt={`Slide ${idx + 1}`}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"

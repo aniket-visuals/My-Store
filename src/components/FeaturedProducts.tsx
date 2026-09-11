@@ -103,7 +103,7 @@ export default function FeaturedProducts({
                   {/* Aspect Ratio Preview container */}
                   <div className="relative aspect-[16/10] overflow-hidden bg-black/5 shrink-0 cursor-pointer" onClick={() => openProductPreview(product)}>
                     <img
-                      src={product.image}
+                      src={product.image || undefined}
                       alt={product.name}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />

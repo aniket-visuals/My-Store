@@ -393,7 +393,7 @@ export default function Navbar({ cart,
                     >
                       <div className="flex items-center space-x-3">
                         <img
-                          src={product.image}
+                          src={product.image || undefined}
                           alt={product.name}
                           className="w-10 h-10 rounded-lg object-cover bg-black/5"
                         />
@@ -506,7 +506,7 @@ export default function Navbar({ cart,
                       className="flex items-start space-x-4 p-3 rounded-xl border border-black/5 hover:border-black/10 transition-all group"
                     >
                       <img
-                        src={item.image}
+                        src={item.image || undefined}
                         alt={item.name}
                         className="w-16 h-16 rounded-lg object-cover bg-black/5 shrink-0"
                       />

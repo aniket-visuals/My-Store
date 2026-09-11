@@ -45,6 +45,7 @@ export interface OrderData {
   paymentScreenshotUrl: string;
   productId: string;
   productName: string;
+  autoApprove?: boolean;
 }
 
 export const createOrder = async (orderData: OrderData): Promise<string> => {
@@ -64,11 +65,13 @@ export const createOrder = async (orderData: OrderData): Promise<string> => {
     newOrderId = `EH-${currentCount.toString().padStart(6, '0')}`;
     
     const newOrderRef = doc(collection(db, "orders"));
+    const status = orderData.autoApprove ? "Approved" : "Pending";
+    
     transaction.set(newOrderRef, {
       ...orderData,
       orderId: newOrderId,
       userId: auth.currentUser?.uid || "anonymous",
-      status: "Pending",
+      status,
       createdAt: serverTimestamp()
     });
   });

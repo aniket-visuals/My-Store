@@ -7,6 +7,7 @@ import { Product } from "../types";
 type PaymentMethod = "upi" | "wise" | "paypal";
 
 import { uploadScreenshot, createOrder } from "../services/orderService";
+import { sendApprovalEmail } from "../services/emailService";
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -97,16 +98,25 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
   };
 
   // Validation
-  
+  const isFormValid = 
+    fullName.trim() !== "" && 
+    email.trim() !== "" && 
+    country.trim() !== "" && 
+    socialUsername.trim() !== "" && 
+    (product?.autoApprove || screenshot !== null);
+
   const handleOrderSubmit = async () => {
-    if (!isFormValid || !screenshot || !product) return;
+    if (!isFormValid || !product) return;
     
     setIsSubmitting(true);
     setErrorMsg(null);
 
     try {
-      // 1. Upload screenshot to Cloudinary
-      const screenshotUrl = await uploadScreenshot(screenshot);
+      // 1. Upload screenshot to Cloudinary (if provided)
+      let screenshotUrl = "";
+      if (screenshot) {
+        screenshotUrl = await uploadScreenshot(screenshot);
+      }
 
       // 2. Create order in Firestore
       const currency = paymentMethod === "upi" ? "INR" : "USD";
@@ -123,9 +133,10 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
         paymentScreenshotUrl: screenshotUrl,
         productId: product.id,
         productName: product.name,
+        autoApprove: product.autoApprove,
       };
 
-      const orderId = await createOrder(orderData);
+      const orderId = await createOrder(orderData as any);
 
       // Send email notification to admin
       try {
@@ -144,6 +155,38 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
         console.error("Failed to send notification email:", emailErr);
       }
 
+      // If auto-approved, send the product delivery email immediately to the customer
+      if (product.autoApprove) {
+        try {
+          const replaceVariables = (text: string) => {
+            if (!text) return "";
+            return text
+              .replace(/\{\{customer_name\}\}/g, fullName || "")
+              .replace(/\{\{customer_email\}\}/g, email || "")
+              .replace(/\{\{product_name\}\}/g, product.name || "")
+              .replace(/\{\{order_id\}\}/g, orderId || "")
+              .replace(/\{\{payment_method\}\}/g, paymentMethod.toUpperCase() || "")
+              .replace(/\{\{price\}\}/g, amount?.toString() || "");
+          };
+
+          const rawSubject = product.emailSubject || `Thanks for purchasing ${product.name}`;
+          const productBody = product.emailBody || `Download:\n${product.downloadLink || "No link"}${product.tutorialLink ? `\n\nTutorial:\n${product.tutorialLink}` : ""}`;
+          const rawBody = `Hi {{customer_name}},\n\n${productBody}\n\nThank you,\nEditors Hub Store`;
+          
+          await sendApprovalEmail({
+            to_email: email,
+            to_name: fullName,
+            order_id: orderId,
+            product_name: product.name,
+            download_link: product.downloadLink || "No link provided",
+            subject: replaceVariables(rawSubject),
+            body: replaceVariables(rawBody)
+          });
+        } catch (autoEmailErr) {
+          console.error("Failed to send auto-approval email:", autoEmailErr);
+        }
+      }
+
       // 3. Clear cart & redirect to Thank You page
       clearCart();
       navigate("/thank-you", { state: { orderId, email } });
@@ -156,13 +199,6 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
     }
   };
 
-
-  const isFormValid = 
-    fullName.trim() !== "" && 
-    email.trim() !== "" && 
-    country.trim() !== "" && 
-    socialUsername.trim() !== "" && 
-    screenshot !== null;
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-dark pt-24 pb-32">
@@ -239,11 +275,12 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
             </section>
 
             {/* Payment Section */}
-            <section className="bg-white border border-brand-dark/10 rounded-2xl p-6 md:p-8 space-y-6">
-              <h2 className="font-display font-bold text-xl flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-xs">2</span>
-                Payment Method
-              </h2>
+            {!product?.autoApprove && (
+              <section className="bg-white border border-brand-dark/10 rounded-2xl p-6 md:p-8 space-y-6">
+                <h2 className="font-display font-bold text-xl flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-xs">2</span>
+                  Payment Method
+                </h2>
               
               {/* Method Selector */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -312,13 +349,15 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                 )}
               </div>
             </section>
+            )}
 
             {/* Upload Payment Screenshot */}
-            <section className="bg-white border border-brand-dark/10 rounded-2xl p-6 md:p-8 space-y-6">
-               <h2 className="font-display font-bold text-xl flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-xs">3</span>
-                Upload Screenshot *
-              </h2>
+            {!product?.autoApprove && (
+              <section className="bg-white border border-brand-dark/10 rounded-2xl p-6 md:p-8 space-y-6">
+                 <h2 className="font-display font-bold text-xl flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center text-xs">3</span>
+                  Upload Screenshot *
+                </h2>
 
               {!screenshotPreview ? (
                 <div 
@@ -339,7 +378,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
               ) : (
                 <div className="w-full bg-brand-dark/[0.02] border border-brand-dark/10 rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-4 relative">
                   <div className="w-32 h-32 rounded-lg overflow-hidden border border-brand-dark/10 shadow-sm">
-                    <img src={screenshotPreview} alt="Payment Screenshot" className="w-full h-full object-cover" />
+                    <img src={screenshotPreview || undefined} alt="Payment Screenshot" className="w-full h-full object-cover" />
                   </div>
                   <div className="space-y-1">
                     <p className="font-sans font-bold text-sm text-emerald-600 flex items-center justify-center gap-1.5">
@@ -364,6 +403,7 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                 className="hidden" 
               />
             </section>
+            )}
 
             {/* Submit Button */}
             <div className="pt-4 space-y-4">
@@ -387,10 +427,12 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
               </button>
               
               {/* Verification Notice */}
-              <div className="flex items-start justify-center gap-2 text-xs font-medium text-brand-dark/50 px-4 text-center">
-                <Clock className="w-4 h-4 shrink-0 mt-0.5" />
-                <p>Payments are manually verified within 1 hour. After verification, your order details and download link will be sent to your email. If you don't receive them, please contact us and we'll help you.</p>
-              </div>
+              {!product?.autoApprove && (
+                <div className="flex items-start justify-center gap-2 text-xs font-medium text-brand-dark/50 px-4 text-center">
+                  <Clock className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p>Payments are manually verified within 1 hour. After verification, your order details and download link will be sent to your email. If you don't receive them, please contact us and we'll help you.</p>
+                </div>
+              )}
             </div>
 
           </div>
@@ -403,20 +445,22 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
               </div>
               
               <div className="p-6 space-y-6">
-                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-bold text-emerald-900 m-0">Secure Checkout Notice</p>
-                    <p className="text-emerald-800 m-0 text-xs mt-1 leading-relaxed">Your payment information is encrypted and securely processed. We do not store any sensitive financial data.</p>
+                {!product?.autoApprove && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
+                    <Shield className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-bold text-emerald-900 m-0">Secure Checkout Notice</p>
+                      <p className="text-emerald-800 m-0 text-xs mt-1 leading-relaxed">Your payment information is encrypted and securely processed. We do not store any sensitive financial data.</p>
+                    </div>
                   </div>
-                </div>
+                )}
                 {product ? (
                   <div className="space-y-6">
                     {/* Product Image & Title */}
                     <div className="flex gap-4">
                       <div className="w-20 h-20 rounded-xl overflow-hidden border border-brand-dark/10 bg-brand-dark/[0.02] shrink-0">
                         {product.image ? (
-                          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          <img src={product.image || undefined} alt={product.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <ImageIcon className="w-6 h-6 text-brand-dark/20" />
@@ -430,7 +474,11 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                         <div className="inline-block px-2 py-0.5 bg-brand-dark/[0.05] rounded text-[10px] font-mono font-bold text-brand-dark/60 uppercase tracking-widest">
                           V 1.0
                         </div>
-                        <p className="font-bold text-brand-primary pt-1">${product.price.toFixed(2)}</p>
+                        {product.autoApprove ? (
+                          <p className="font-bold text-emerald-600 pt-1">FREE</p>
+                        ) : (
+                          <p className="font-bold text-brand-primary pt-1">${product.price.toFixed(2)}</p>
+                        )}
                       </div>
                     </div>
 
@@ -478,11 +526,15 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
                 <div className="pt-6 border-t border-brand-dark/10 space-y-3">
                   <div className="flex items-center justify-between text-sm font-medium text-brand-dark/60">
                     <span>Subtotal</span>
-                    <span>${totalPrice > 0 ? totalPrice.toFixed(2) : "0.00"}</span>
+                    <span className={product?.autoApprove ? "line-through" : ""}>${totalPrice > 0 ? totalPrice.toFixed(2) : "0.00"}</span>
                   </div>
                   <div className="flex items-center justify-between font-display font-bold text-xl text-brand-dark">
                     <span>Total</span>
-                    <span>${totalPrice > 0 ? totalPrice.toFixed(2) : "0.00"}</span>
+                    {product?.autoApprove ? (
+                      <span className="text-emerald-600">FREE</span>
+                    ) : (
+                      <span>${totalPrice > 0 ? totalPrice.toFixed(2) : "0.00"}</span>
+                    )}
                   </div>
                 </div>
                 

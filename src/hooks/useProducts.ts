@@ -42,7 +42,10 @@ export const useProducts = () => {
             metaDescription: data.metaDescription,
             isPopular: false,
             rank: data.rank,
-            releaseDate: data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString()
+            releaseDate: data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString(),
+            autoApprove: data.autoApprove || false,
+            emailSubject: data.emailSubject,
+            emailBody: data.emailBody
           } as Product;
         });
         setProducts(fetchedProducts);

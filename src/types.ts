@@ -29,6 +29,9 @@ export interface Product {
   commercialRights?: boolean;
   releaseDate?: string;
   rank?: number;
+  autoApprove?: boolean;
+  emailSubject?: string;
+  emailBody?: string;
 }
 
 export interface AdminProduct {
@@ -57,6 +60,7 @@ export interface AdminProduct {
   updatedAt?: any;
   downloadCount?: number;
   rank?: number;
+  autoApprove?: boolean;
 }
 
 export interface StoreCategory {

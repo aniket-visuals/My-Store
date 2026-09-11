@@ -243,7 +243,7 @@ export default function AdminDashboard() {
         if (emailResult.success) {
           showToast(`Approval email sent to ${order.email}`, "success");
         } else {
-          showToast(`EmailJS Error: ${emailResult.error || 'Unknown error'}`, "error");
+          showToast(`Email Error: ${emailResult.error || 'Unknown error'}`, "error");
         }
       }
     } catch (error) {

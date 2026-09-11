@@ -25,6 +25,10 @@ async function startServer() {
     }
 
     try {
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        throw new Error(`Missing email credentials! Please add ${!process.env.SMTP_USER ? 'SMTP_USER' : ''} ${!process.env.SMTP_PASS ? 'SMTP_PASS' : ''} to Environment Variables.`);
+      }
+
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || "smtp.titan.email",
         port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465,

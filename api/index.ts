@@ -26,7 +26,7 @@ app.post("/api/send-email", async (req: any, res: any) => {
     }
 
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.titan.email",
+      host: process.env.SMTP_HOST || "smtpout.secureserver.net",
       port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465,
       secure: process.env.SMTP_SECURE === "true" || true, 
       auth: {

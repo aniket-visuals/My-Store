@@ -30,11 +30,11 @@ async function startServer() {
       }
 
       const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || "smtp.titan.email",
-        port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465,
-        secure: process.env.SMTP_SECURE === "true" || true, 
+        host: "smtpout.secureserver.net",
+        port: 465,
+        secure: true, 
         auth: {
-          user: process.env.SMTP_USER,
+          user: "admin@editorshubstore.in",
           pass: process.env.SMTP_PASS,
         },
       });

@@ -98,23 +98,51 @@ export const PORTFOLIO_DATA: PortfolioItem[] = [
 export const FAQ_DATA: FaqItem[] = [
   {
     id: "faq-1",
+    category: "general",
     question: "What products do you sell?",
     answer: "We sell editing assets, plugins, and creative tools made and used by me in my YouTube live streams."
   },
   {
     id: "faq-2",
+    category: "general",
     question: "How can I get the assets?",
     answer: "After filling out the form, we will contact you through the platform you selected. Once the payment is completed, the assets will be delivered directly to you."
   },
   {
     id: "faq-3",
+    category: "features",
     question: "How much time will it take after I submit the form?",
     answer: "Once your form is submitted, we will reach out to you as soon as possible."
   },
   {
     id: "faq-4",
+    category: "pricing",
     question: "What payment options are available?",
     answer: "We accept Wise, PayPal, and UPI (for customers in India)."
+  },
+  {
+    id: "faq-5",
+    category: "pricing",
+    question: "Are there any hidden subscription fees?",
+    answer: "No! All our digital products and assets are a one-time purchase. You get lifetime access to the files without any recurring subscription fees."
+  },
+  {
+    id: "faq-6",
+    category: "features",
+    question: "Will these templates work in DaVinci Resolve?",
+    answer: "Please check the compatibility note on each specific product page. We clearly label whether a pack works for Premiere Pro, After Effects, or DaVinci Resolve."
+  },
+  {
+    id: "faq-7",
+    category: "account",
+    question: "I lost my download link, how do I get it back?",
+    answer: "Just reach out to our support email with the email address you used to make the purchase, and we'll re-issue your download link immediately."
+  },
+  {
+    id: "faq-8",
+    category: "security",
+    question: "Are my payment details secure?",
+    answer: "Yes, all payments are securely processed through trusted third-party providers (PayPal, Wise, Razorpay). We never see or store your credit card information on our servers."
   }
 ];
 

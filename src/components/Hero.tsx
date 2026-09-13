@@ -1,18 +1,11 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Play, Sparkles, FolderOpen, Video, Palette, Code, X, ChevronRight, Sliders, Volume2, Film } from "lucide-react";
+import React from "react";
+import { motion } from "motion/react";
+import { Box } from "lucide-react";
 
-interface HeroProps {
-  onExploreClick: () => void;
-}
-
-export default function Hero({ onExploreClick }: HeroProps) {
-  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
-  const [colorSplit, setColorSplit] = useState(45); // Percentage for Before/After LUT slider
-
+export default function Hero() {
   // Asset Cards floating motion configuration
-  const floatingAnimation = (delay: number) => ({
-    y: [0, -12, 0],
+  const floatingAnimation = (delay: number, yOffset: number = -12) => ({
+    y: [0, yOffset, 0],
     transition: {
       duration: 5,
       repeat: Infinity,
@@ -23,284 +16,130 @@ export default function Hero({ onExploreClick }: HeroProps) {
   });
 
   return (
-    <section id="hero" className="relative min-h-[calc(100vh-80px)] flex flex-col justify-center py-16 xl:py-24 overflow-hidden bg-brand-bg">
-      {/* Background radial soft light gradient */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-20%] w-[800px] h-[800px] rounded-full bg-brand-primary/5 blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-brand-primary/5 blur-[100px]" />
-        
-        {/* Fine background grid lines */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000003_1px,transparent_1px),linear-gradient(to_bottom,#00000003_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)]" />
+    <section id="hero" className="relative flex flex-col justify-center items-center overflow-hidden bg-[#FFFFFF] pt-8 pb-24 lg:pt-12 lg:pb-32">
+      
+      {/* Soft warm background gradients matching the image */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex justify-center items-center">
+        {/* Subtle diffuse peach glow */}
+        <div className="w-[80vw] max-w-[1200px] h-[400px] rounded-full bg-[#FFEDD5] blur-[120px] opacity-50" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 xl:gap-16 items-center relative z-10 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 flex flex-col items-center">
         
-        {/* Left Side: Typography and CTAs */}
-        <div className="lg:col-span-6 flex flex-col items-start text-left space-y-8">
+        {/* Top Graphic Composition Area */}
+        <div className="relative w-full max-w-5xl mb-2 sm:mb-6 flex items-center justify-center">
           
-          {/* Tagline */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center space-x-2 bg-black/5 hover:bg-black/10 transition-colors px-4 py-1.5 rounded-full border border-black/5"
+          {/* Main Hero Product Image Wrapper */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="relative w-full max-w-[520px] sm:max-w-[780px] md:max-w-[960px] flex items-center justify-center z-10"
           >
-            <Sparkles className="w-3.5 h-3.5 text-brand-primary animate-pulse" />
-            <span className="text-xs font-mono font-medium tracking-tight text-black flex items-center">
-              ANIKET VISUALS 2.0 • NEW LUT STOCKS REMASTERED
-            </span>
-          </motion.div>
-
-          {/* Heading */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="font-display font-bold text-4xl sm:text-5xl md:text-6xl text-black tracking-tight leading-[1.08]"
-          >
-            Create Better <br />
-            <span className="relative inline-block text-black">
-              Videos Faster
-              <span className="absolute bottom-1 left-0 w-full h-[5px] bg-brand-primary/25 rounded-full" />
-            </span>
-          </motion.h1>
-
-          {/* Supporting Text */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-            className="text-black/60 font-sans text-base sm:text-lg leading-relaxed max-w-xl"
-          >
-            Professional editing assets, templates, presets, sound effects, and creative resources designed for modern creators. Take full control of your sequence timeline.
-          </motion.p>
-
-          {/* CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto"
-          >
-            <button
-               onClick={onExploreClick}
-              className="bg-brand-primary text-white px-8 py-4 rounded-full font-bold text-sm hover:bg-brand-accent hover:translate-y-[-2px] transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-sm"
-            >
-              <span>Explore Assets</span>
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </button>
-          </motion.div>
-
-
-
-        </div>
-
-        {/* Right Side: 3D-feeling Creative Assets Canvas Mockup */}
-        <div className="lg:col-span-6 relative w-full aspect-square min-h-[400px] lg:min-h-[500px] flex items-center justify-center">
-          
-          {/* Main Simulated NLE Workspace Canvas */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, rotateY: 5 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="w-[90%] h-[90%] bg-white rounded-3xl border border-black/5 shadow-2xl relative overflow-hidden backdrop-blur-3xl flex flex-col p-4"
-          >
-            {/* Window bar controls */}
-            <div className="flex items-center justify-between border-b border-black/5 pb-3 mb-3 shrink-0">
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-[#ff5f56] border border-black/[0.08]" />
-                <div className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-black/[0.08]" />
-                <div className="w-3 h-3 rounded-full bg-[#27c93f] border border-black/[0.08]" />
-              </div>
-              <div className="text-[10px] font-mono text-black/40 font-semibold uppercase tracking-wider">
-                Resolve Workspace Layout
-              </div>
-              <div className="w-12 h-1.5 rounded bg-black/5" />
-            </div>
-
-            {/* Simulated Color Grade Area / Compare LUT split */}
-            <div className="relative flex-1 rounded-2xl overflow-hidden group/split border border-black/5 bg-black">
-              {/* BEFORE Side / Underlay (Right side when sliding to left) */}
-              <img
-                src="https://res.cloudinary.com/df5rgwdng/image/upload/v1780627894/Untitled_design_4_bryqyd.png"
-                alt="Slow manual editing visual comparison"
-                className="absolute inset-0 w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-
-              {/* AFTER Side / Overlay (Left side) */}
-              <div
-                className="absolute inset-y-0 left-0 overflow-hidden"
-                style={{ width: `${colorSplit}%` }}
-              >
-                <div className="absolute inset-0 w-full h-full min-w-[360px] lg:min-w-[500px]">
-                  <img
-                    src="https://res.cloudinary.com/df5rgwdng/image/upload/v1780627872/Untitled_design_3_xq7rgr.png"
-                    alt="Fast automated/creative editing design assets"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-              </div>
-
-              {/* Slider Controller divider line */}
-              <div
-                className="absolute inset-y-0 w-1 bg-brand-primary cursor-ew-resize flex items-center justify-center pointer-events-none"
-                style={{ left: `${colorSplit}%` }}
-              >
-                <div className="w-6 h-6 rounded-full bg-white text-brand-primary shadow-md border border-brand-primary/20 flex items-center justify-center text-[10px] font-mono scale-95 select-none font-bold">
-                  ↔
-                </div>
-              </div>
-
-              {/* Slider Input overlay overlay click area */}
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={colorSplit}
-                onChange={(e) => setColorSplit(Number(e.target.value))}
-                className="absolute inset-0 opacity-0 cursor-ew-resize z-20"
-              />
-
-              {/* Slider overlays tags */}
-              <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-mono text-emerald-400 z-20 select-none font-bold">
-                AFTER (100%)
-              </div>
-              <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-mono text-red-400 z-20 select-none font-bold">
-                BEFORE (0%)
-              </div>
-            </div>
-
-            {/* Interactive Timeline Layer Simulator */}
-            <div className="mt-4 pt-3 border-t border-black/5 shrink-0 space-y-2">
-              <div className="flex items-center justify-between text-[10px] text-black/50 font-mono">
-                <span>01:42:04 / COMPLETE RENDER</span>
-                <span>SYSTEM SPEED: 100% OK</span>
-              </div>
-              
-              <div className="grid grid-cols-12 gap-1.5 h-7">
-                {/* Visual Layers bar */}
-                <div className="col-span-1 bg-brand-primary/15 rounded flex items-center justify-center text-[8px] font-mono text-brand-primary font-bold">V2</div>
-                <div className="col-span-6 bg-brand-accent/15 border-l-2 border-brand-accent rounded p-1 flex items-center space-x-1.5 justify-start text-[8px] font-mono text-brand-accent truncate">
-                  <Film className="w-2.5 h-2.5" />
-                  <span>C_Abberation_Template.mogrt</span>
-                </div>
-                <div className="col-span-5 bg-brand-primary/15 border-l-2 border-brand-primary rounded p-1 flex items-center space-x-1.5 justify-start text-[8px] font-mono text-brand-primary truncate">
-                  <Palette className="w-2.5 h-2.5" />
-                  <span>Helios_TealOrange_C12.cube</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-12 gap-1.5 h-7">
-                {/* Audio Layers bar */}
-                <div className="col-span-1 bg-brand-primary/15 rounded flex items-center justify-center text-[8px] font-mono text-brand-primary font-bold">A1</div>
-                <div className="col-span-8 bg-brand-primary/15 border-l-2 border-brand-primary rounded p-1 flex items-center space-x-1.5 justify-between text-[8px] font-mono text-brand-primary">
-                  <div className="flex items-center space-x-1.5 truncate">
-                    <Volume2 className="w-2.5 h-2.5" />
-                    <span>Aether_Atmo_Impact_High.wav</span>
-                  </div>
-                  {/* Miniature Audio Waveform bar lines */}
-                  <div className="flex items-end space-x-0.5 h-3">
-                    <div className="w-[1.5px] h-3 bg-brand-primary/60 rounded" />
-                    <div className="w-[1.5px] h-2.5 bg-brand-primary/60 rounded" />
-                    <div className="w-[1.5px] h-1.5 bg-brand-primary/50 rounded" />
-                    <div className="w-[1.5px] h-3 bg-brand-primary/80 rounded" />
-                    <div className="w-[1.5px] h-2 bg-brand-primary/30 rounded" />
-                  </div>
-                </div>
-                <div className="col-span-3 bg-black/5 rounded group flex items-center justify-center text-[8px] font-mono text-black/40">
-                  <span>+ Add Track</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* FLOATING INGREDIENTS/CARDS OVERLAY */}
-
-          {/* Card A: Color grading LUT info box */}
-          <motion.div
-            animate={floatingAnimation(0)}
-            className="absolute top-[8%] -right-[4%] bg-white border border-black/5 shadow-xl p-3.5 rounded-2xl flex items-center space-x-3.5 max-w-[190px] z-30"
-          >
-            <div className="w-9 h-9 rounded-xl bg-brand-primary/15 flex items-center justify-center text-brand-primary">
-              <Palette className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-black leading-tight">LUT Applied</p>
-              <p className="text-[10px] font-mono text-black/50 mt-0.5">Helios Cine-Grade</p>
-            </div>
-          </motion.div>
-
-          {/* Card B: Sound design waveform preview card */}
-          <motion.div
-            animate={floatingAnimation(1.4)}
-            className="absolute bottom-[16%] -left-[4%] bg-white border border-black/5 shadow-xl p-3.5 rounded-2xl flex items-center space-x-3.5 max-w-[200px] z-30"
-          >
-            <div className="w-9 h-9 rounded-xl bg-brand-accent/15 flex items-center justify-center text-brand-accent">
-              <Volume2 className="w-4 h-4 animate-bounce" style={{ animationDuration: "1.2s" }} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-black leading-tight">Aether SFX Pack.</p>
-              <p className="text-[10px] font-mono text-black/50 mt-0.5">8D Cinematic.wav</p>
-            </div>
-          </motion.div>
-
-          {/* Card C: Tech specifications HUD */}
-          <motion.div
-            animate={floatingAnimation(2.8)}
-            className="absolute -bottom-[2%] right-[10%] bg-black text-brand-bg py-2 px-3.5 rounded-xl flex items-center space-x-2.5 z-30 shadow-lg text-[9px] font-mono uppercase tracking-widest border border-white/5"
-          >
-            <Video className="w-3.5 h-3.5 text-brand-primary stroke-[2.5]" />
-            <span>RENDER CONTEXT: 4K HIGH DEPTH</span>
-          </motion.div>
-
-        </div>
-
-      </div>
-
-      {/* WATCH PREVIEW VIDEO MODAL SCREEN */}
-      <AnimatePresence>
-        {isPlayingPreview && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsPlayingPreview(false)}
-              className="absolute inset-0 bg-black/85 backdrop-blur-md"
+            <img 
+              src="https://res.cloudinary.com/df5rgwdng/image/upload/v1789231856/4693e201-03d3-4cf3-82c1-4fb429b628f4_utme36.png" 
+              alt="Motion Essentials and Creator Toolkit Boxes" 
+              className="w-full h-auto object-contain z-10 relative mix-blend-multiply scale-[1.02]"
+              style={{ maskImage: 'radial-gradient(ellipse 45% 45% at 50% 50%, black 70%, transparent 100%)', WebkitMaskImage: 'radial-gradient(ellipse 45% 45% at 50% 50%, black 70%, transparent 100%)' }}
+              referrerPolicy="no-referrer"
             />
 
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-4xl bg-black rounded-3xl overflow-hidden aspect-video shadow-2xl border border-white/10 z-10"
-            >
-              <button
-                onClick={() => setIsPlayingPreview(false)}
-                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center border border-white/10 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <iframe
-                src="https://player.vimeo.com/video/510321287?autoplay=1&muted=0&loop=1&background=0"
-                title="Commercial Video Montage Reel"
-                className="w-full h-full border-none"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-              />
-
-              <div className="absolute bottom-4 left-6 z-20 bg-black/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/5 max-w-sm hidden sm:block">
-                <p className="text-xs font-bold text-white leading-tight">Editors Hub Cinema Reel</p>
-                <p className="text-[10px] text-white/50 font-mono mt-0.5">Asset overlays, sound beds, film textures, and LUTs in combination view.</p>
+            {/* Floating Pill Cards */}
+            
+            {/* After Effects */}
+            <motion.div animate={floatingAnimation(0)} className="absolute top-[12%] -left-[2%] sm:left-[2%] lg:-left-[2%] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)] rounded-xl sm:rounded-lg lg:rounded-2xl p-1.5 sm:p-2 lg:p-2.5 pr-3 sm:pr-4 lg:pr-5 hidden sm:flex items-center gap-2 lg:gap-3 border border-gray-100 z-20">
+              <div className="w-7 h-7 sm:w-7 sm:h-7 lg:w-9 lg:h-9 bg-[#00005B] rounded-md flex items-center justify-center text-[#D2ACFF] font-bold text-xs tracking-tight font-sans">
+                Ae
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] sm:text-[11px] lg:text-[13px] font-bold text-black leading-tight">After Effects</span>
+                <span className="text-[8px] sm:text-[9px] lg:text-[10px] text-[#71717A] font-medium">Scripts & Plugins</span>
               </div>
             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
+            {/* Premiere Pro */}
+            <motion.div animate={floatingAnimation(1.5, -8)} className="absolute bottom-[25%] -left-[5%] sm:left-[6%] lg:-left-[5%] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)] rounded-xl sm:rounded-lg lg:rounded-2xl p-1.5 sm:p-2 lg:p-2.5 pr-3 sm:pr-4 lg:pr-5 hidden sm:flex items-center gap-2 lg:gap-3 border border-gray-100 z-20">
+              <div className="w-7 h-7 sm:w-7 sm:h-7 lg:w-9 lg:h-9 bg-[#00005B] rounded-md flex items-center justify-center text-[#EA77FF] font-bold text-xs tracking-tight font-sans">
+                Pr
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] sm:text-[11px] lg:text-[13px] font-bold text-black leading-tight">Premiere Pro</span>
+                <span className="text-[8px] sm:text-[9px] lg:text-[10px] text-[#71717A] font-medium">Templates</span>
+              </div>
+            </motion.div>
+
+            {/* DaVinci Resolve */}
+            <motion.div animate={floatingAnimation(0.8, -10)} className="absolute top-[25%] -right-[2%] sm:right-[2%] lg:-right-[2%] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)] rounded-xl sm:rounded-lg lg:rounded-2xl p-1.5 sm:p-2 lg:p-2.5 pr-3 sm:pr-4 lg:pr-5 hidden sm:flex items-center gap-2 lg:gap-3 border border-gray-100 z-20">
+              <div className="w-7 h-7 sm:w-7 sm:h-7 lg:w-9 lg:h-9 bg-[#0C1220] rounded-md flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner border border-black/10">
+                {/* DaVinci Resolve SVG Logo */}
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="absolute drop-shadow-md w-5 h-5 lg:w-6 lg:h-6">
+                   {/* Top Blue Teardrop */}
+                   <path fill="#00C4FF" d="M50 15 C62 30, 68 45, 50 55 C32 45, 38 30, 50 15 Z" />
+                   {/* Bottom Left Green Teardrop */}
+                   <path fill="#9DFF00" d="M25 65 C40 55, 55 58, 48 78 C41 98, 15 80, 25 65 Z" />
+                   {/* Bottom Right Pink/Red Teardrop */}
+                   <path fill="#FF2A5F" d="M75 65 C60 55, 45 58, 52 78 C59 98, 85 80, 75 65 Z" />
+                </svg>
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] sm:text-[11px] lg:text-[13px] font-bold text-black leading-tight">DaVinci Resolve</span>
+                <span className="text-[8px] sm:text-[9px] lg:text-[10px] text-[#71717A] font-medium">LUTs & Presets</span>
+              </div>
+            </motion.div>
+
+            {/* 3D Assets */}
+            <motion.div animate={floatingAnimation(2.2)} className="absolute bottom-[20%] -right-[5%] sm:right-[6%] lg:-right-[5%] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)] rounded-xl sm:rounded-lg lg:rounded-2xl p-1.5 sm:p-2 lg:p-2.5 pr-3 sm:pr-4 lg:pr-5 hidden sm:flex items-center gap-2 lg:gap-3 border border-gray-100 z-20">
+              <div className="w-7 h-7 sm:w-7 sm:h-7 lg:w-9 lg:h-9 bg-[#F97316] rounded-md flex items-center justify-center text-white">
+                <Box className="w-3 h-3 lg:w-4 lg:h-4" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] sm:text-[11px] lg:text-[13px] font-bold text-black leading-tight">3D Assets</span>
+                <span className="text-[8px] sm:text-[9px] lg:text-[10px] text-[#71717A] font-medium">For Creators</span>
+              </div>
+            </motion.div>
+
+            {/* Handwriting Text & Arrow */}
+            <motion.div 
+              animate={floatingAnimation(1, -6)}
+              className="absolute -top-[2%] right-[10%] sm:top-[4%] sm:-right-[0%] lg:right-[6%] hidden md:flex flex-col items-center z-10 -rotate-[8deg]"
+            >
+              <span className="font-handwriting text-[26px] sm:text-[30px] leading-[1.1] text-[#F97316] font-bold text-center -mr-4">
+                Tools<br/>That Move<br/>Ideas
+              </span>
+              <svg width="42" height="38" viewBox="0 0 42 38" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-2 ml-4">
+                <path d="M2.5 35.5C8 30.5 18.5 24.5 26.5 28.5C31.7915 31.1458 35.8078 35.8453 38.5 4" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M31 3.5L38.8687 4L37.5 12" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </motion.div>
+
+          </motion.div>
+        </div>
+
+        {/* Text and Actions Section */}
+        <div className="text-center relative z-20 max-w-[800px] w-full flex flex-col items-center">
+          <motion.h3 
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+            className="text-[#F97316] font-bold tracking-[0.15em] text-xs sm:text-sm uppercase mb-4 sm:mb-5"
+          >
+            Creative Toolkit
+          </motion.h3>
+          
+          <motion.h1 
+            initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-4xl sm:text-5xl md:text-7xl font-bold text-[#000000] tracking-tight mb-5 sm:mb-7 leading-[1.1]"
+          >
+            Built for Creative Work
+          </motion.h1>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-[17px] sm:text-[20px] text-[#71717A] max-w-[550px] mx-auto font-medium leading-relaxed"
+          >
+            Scripts, presets, templates, and plugins — everything integrated.
+          </motion.p>
+        </div>
+        
+      </div>
     </section>
   );
 }

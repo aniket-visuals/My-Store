@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateMetaTags } from "../utils/seo";
-import { ArrowLeft, RefreshCw, Shield, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import Footer from "./Footer";
 
 export default function RefundPolicy() {
@@ -101,7 +101,7 @@ export default function RefundPolicy() {
       </main>
 
       {/* Footer */}
-      <Footer scrollToSection={() => {}} setActiveCategory={() => {}} />
+      <Footer scrollToSection={() => {}} />
     </div>
   );
 }

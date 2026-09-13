@@ -1,0 +1,957 @@
+1 b:0 p:0 import React, { useState, useEffect } from "react";
+2 b:0 p:0 import { useNavigate } from "react-router-dom";
+3 b:0 p:0 import { motion, AnimatePresence } from "motion/react";
+4 b:1 p:0 import { 
+5 b:1 p:0   ArrowLeft, Star, Download, Volume2, VolumeX, ShieldCheck, Play, 
+6 b:1 p:0   Sparkles, Check,
+7 b:1 p:0   Lock,
+8 b:1 p:0   Shield, HelpCircle as FaqIcon, MessageSquare,
+9 b:1 p:0   Trash2, X, Heart
+10 b:0 p:0 } from "lucide-react";
+11 b:0 p:0 import { Product } from "../types";
+12 b:0 p:0 import { collection, query, where, getDocs, getDoc, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
+13 b:0 p:0 import { db, auth, OperationType, handleFirestoreError } from "../firebase";
+14 b:0 p:0 import { onAuthStateChanged, User } from "firebase/auth";
+15 b:0 p:0 import { formatDescription } from "../utils";
+16 b:0 p:0 
+17 b:1 p:0 interface ProductDetailPageProps {
+18 b:1 p:0   product: Product;
+19 b:1 p:0   onBack: () => void;
+20 b:1 p:0   addToCart: (product: Product) => void;
+21 b:1 p:0   wishlist?: Product[];
+22 b:1 p:0   toggleWishlist?: (product: Product) => void;
+23 b:0 p:0 }
+24 b:0 p:0 
+25 b:0 p:0 // Simulated High-Fidelity products database to populate related products beautifully
+26 b:0 p:0 
+27 b:1 p:0 const getGalleryImages = (prod: Product): string[] => {
+28 b:2 p:0   if (prod.galleryImages && prod.galleryImages.length > 0) {
+29 b:2 p:0     return [prod.image, ...prod.galleryImages];
+30 b:1 p:0   }
+31 b:1 p:0   return [prod.image];
+32 b:0 p:0 };
+33 b:0 p:0 
+34 b:1 p:1 export default function ProductDetailPage({
+35 b:1 p:1   product,
+36 b:1 p:1   onBack,
+37 b:1 p:1   addToCart,
+38 b:1 p:1   wishlist = [],
+39 b:1 p:1   toggleWishlist
+40 b:1 p:0 }: ProductDetailPageProps) {
+41 b:1 p:0   const navigate = useNavigate();
+42 b:1 p:0   const currentProduct = product;
+43 b:1 p:0   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+44 b:1 p:0   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+45 b:1 p:0   const [activeImage, setActiveImage] = useState<string>(product.image);
+46 b:1 p:0   const [activeMediaType, setActiveMediaType] = useState<"image" | "video">(product.videoPreview ? "video" : "image");
+47 b:1 p:0   const [isVideoMuted, setIsVideoMuted] = useState(true);
+48 b:1 p:0 
+49 b:1 p:0   const [reviews, setReviews] = useState<{ id?: string; userId?: string; email?: string; author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
+50 b:2 p:0   const [selectedProfile, setSelectedProfile] = useState<{
+51 b:2 p:0     isOpen: boolean;
+52 b:2 p:0     userId?: string;
+53 b:2 p:0     author?: string;
+54 b:2 p:0     handle?: string;
+55 b:2 p:0     avatar?: string | null;
+56 b:2 p:0     bio?: string;
+57 b:2 p:0     location?: string;
+58 b:2 p:0     isLoadingBio?: boolean;
+59 b:1 p:0   } | null>(null);
+60 b:1 p:0 
+61 b:2 p:1   useEffect(() => {
+62 b:2 p:1   const [showReviewForm, setShowReviewForm] = useState(false);
+63 b:2 p:1   const [currentUser, setCurrentUser] = useState<User | null>(null);
+64 b:2 p:1 
+65 b:3 p:2   useEffect(() => {
+66 b:4 p:2     if (selectedProfile?.isOpen && selectedProfile.userId && selectedProfile.isLoadingBio) {
+67 b:5 p:2       const fetchBio = async () => {
+68 b:6 p:2         try {
+69 b:6 p:2           const docRef = doc(db, "users", selectedProfile.userId!);
+70 b:6 p:2           const docSnap = await getDoc(docRef);
+71 b:7 p:2           if (docSnap.exists()) {
+72 b:7 p:2             const data = docSnap.data();
+73 b:7 p:2             setSelectedProfile(prev => prev ? { ...prev, bio: data.bio || "No bio available.", location: data.location || "Unknown", isLoadingBio: false } : null);
+74 b:7 p:2           } else {
+75 b:7 p:2             setSelectedProfile(prev => prev ? { ...prev, bio: "No bio available.", location: "Unknown", isLoadingBio: false } : null);
+76 b:6 p:2           }
+77 b:6 p:2         } catch (e: any) {
+78 b:6 p:2           console.error("Failed to fetch bio", e);
+79 b:6 p:2           let errorMsg = "No bio available.";
+80 b:7 p:2           if (e && e.code === "permission-denied") {
+81 b:7 p:2             errorMsg = "Bio hidden (Permission denied).";
+82 b:6 p:2           }
+83 b:6 p:2           setSelectedProfile(prev => prev ? { ...prev, bio: errorMsg, location: "Unknown", isLoadingBio: false } : null);
+84 b:5 p:2         }
+85 b:4 p:2       };
+86 b:4 p:2       
+87 b:5 p:2       if (currentUser && currentUser.uid === selectedProfile.userId) {
+88 b:5 p:2           const localBio = localStorage.getItem("profile_bio_text");
+89 b:5 p:2           const localLoc = localStorage.getItem("profile_location");
+90 b:5 p:2           setSelectedProfile(prev => prev ? { ...prev, bio: localBio || "No bio available.", location: localLoc || "Unknown", isLoadingBio: false } : null);
+91 b:5 p:2       } else {
+92 b:5 p:2           fetchBio();
+93 b:4 p:2       }
+94 b:3 p:2     }
+95 b:2 p:1   }, [selectedProfile?.isOpen, selectedProfile?.userId, selectedProfile?.isLoadingBio, currentUser]);
+96 b:2 p:1   const [newRate, setNewRate] = useState(5);
+97 b:2 p:1   const [newReview, setNewReview] = useState("");
+98 b:2 p:1   const [reviewError, setReviewError] = useState("");
+99 b:2 p:1 
+100 b:3 p:2   useEffect(() => {
+101 b:4 p:3     const unsubscribe = onAuthStateChanged(auth, (user) => {
+102 b:4 p:3       setCurrentUser(user);
+103 b:3 p:2     });
+104 b:3 p:2     return () => unsubscribe();
+105 b:2 p:1   }, []);
+106 b:2 p:1 
+107 b:2 p:1   // Sync state if initial prop changes
+108 b:3 p:2   useEffect(() => {
+109 b:3 p:2     // setCurrentProduct(product);
+110 b:3 p:2     setActiveImage(product.image);
+111 b:3 p:2     setActiveMediaType(product.videoPreview ? "video" : "image");
+112 b:2 p:1   }, [product]);
+113 b:2 p:1 
+114 b:2 p:1   // Scroll to top on product switch & sync reviews
+115 b:3 p:2   useEffect(() => {
+116 b:3 p:2     setActiveImage(currentProduct.image);
+117 b:3 p:2     setActiveMediaType(currentProduct.videoPreview ? "video" : "image");
+118 b:3 p:2 
+119 b:3 p:2     let active = true;
+120 b:4 p:2     const fetchDBReviews = async () => {
+121 b:5 p:2       try {
+122 b:5 p:2         const q = query(collection(db, "reviews"), where("productId", "==", currentProduct.id));
+123 b:5 p:2         const querySnapshot = await getDocs(q);
+124 b:5 p:2         const fetched: any[] = [];
+125 b:6 p:3         querySnapshot.forEach((doc) => {
+126 b:7 p:4           fetched.push({
+127 b:7 p:4             id: doc.id,
+128 b:7 p:4             ...doc.data()
+129 b:6 p:3           });
+130 b:5 p:2         });
+131 b:5 p:2 
+132 b:5 p:2         // Sort client-side by createdAt descending
+133 b:6 p:3         fetched.sort((a, b) => {
+134 b:6 p:3           const timeA = a.createdAt?.seconds || a.createdAt?.toDate?.()?.getTime() || 0;
+135 b:6 p:3           const timeB = b.createdAt?.seconds || b.createdAt?.toDate?.()?.getTime() || 0;
+136 b:6 p:3           return timeB - timeA;
+137 b:5 p:2         });
+138 b:6 p:2         if (active) {
+139 b:6 p:2           setReviews(fetched);
+140 b:5 p:2         }
+141 b:5 p:2       } catch (err) {
+142 b:5 p:2         console.error("Error loading reviews from Firestore:", err);
+143 b:6 p:2         if (active) {
+144 b:6 p:2           setReviews([]);
+145 b:5 p:2         }
+146 b:6 p:2         try {
+147 b:6 p:2           handleFirestoreError(err, OperationType.LIST, "reviews");
+148 b:6 p:2         } catch (e) {
+149 b:6 p:2           // Suppress after throwing/logging so the app falls back gracefully
+150 b:5 p:2         }
+151 b:4 p:2       }
+152 b:3 p:2     };
+153 b:3 p:2 
+154 b:3 p:2     fetchDBReviews();
+155 b:3 p:2 
+156 b:3 p:2     // Reset review form state
+157 b:3 p:2     setShowReviewForm(false);
+158 b:3 p:2     setNewRate(5);
+159 b:3 p:2     setNewReview("");
+160 b:3 p:2     setReviewError("");
+161 b:3 p:2 
+162 b:4 p:2     return () => {
+163 b:4 p:2       active = false;
+164 b:3 p:2     };
+165 b:2 p:1   }, [currentProduct.id]);
+166 b:2 p:1 
+167 b:2 p:1   // Compute tier price based on current active license type
+168 b:3 p:1   const getTierPrice = () => {
+169 b:3 p:1     return currentProduct.price;
+170 b:2 p:1   };
+171 b:2 p:1 
+172 b:3 p:1   const getTierOriginalPrice = () => {
+173 b:3 p:1     return currentProduct.originalPrice || Math.round(currentProduct.price * 1.6);
+174 b:2 p:1   };
+175 b:2 p:1 
+176 b:3 p:1   const getActiveFaqs = () => {
+177 b:4 p:1     if (currentProduct.faqs && currentProduct.faqs.length > 0) {
+178 b:4 p:1       return currentProduct.faqs.map(f => ({ q: f.question, a: f.answer }));
+179 b:3 p:1     }
+180 b:3 p:1     return [];
+181 b:2 p:1   };
+182 b:2 p:1 
+183 b:3 p:1   const getActiveReviews = () => {
+184 b:3 p:1     return reviews;
+185 b:2 p:1   };
+186 b:2 p:1 
+187 b:3 p:1   const getDynamicRating = () => {
+188 b:3 p:1     if (reviews.length === 0) return 0.0;
+189 b:3 p:1     const sum = reviews.reduce((acc, r) => acc + r.rate, 0);
+190 b:3 p:1     return Number((sum / reviews.length).toFixed(1));
+191 b:2 p:1   };
+192 b:2 p:1 
+193 b:3 p:1   const getDynamicReviewsCount = () => {
+194 b:3 p:1     return reviews.length;
+195 b:2 p:1   };
+196 b:2 p:1 
+197 b:3 p:1   const handleAddReview = async (e: React.FormEvent) => {
+198 b:3 p:1     e.preventDefault();
+199 b:4 p:1     if (!currentUser) {
+200 b:4 p:1       setReviewError("Please sign in to write a review.");
+201 b:4 p:1       return;
+202 b:3 p:1     }
+203 b:3 p:1     
+204 b:3 p:1     // Check if user already reviewed this product
+205 b:3 p:1     const hasReviewed = reviews.some(r => r.userId === currentUser.uid);
+206 b:4 p:1     if (hasReviewed) {
+207 b:4 p:1       setReviewError("You have already reviewed this product.");
+208 b:4 p:1       return;
+209 b:3 p:1     }
+210 b:3 p:1 
+211 b:4 p:1     if (!newReview.trim()) {
+212 b:4 p:1       setReviewError("Please write a small review.");
+213 b:4 p:1       return;
+214 b:3 p:1     }
+215 b:3 p:1 
+216 b:3 p:1         const cleanAuthor = localStorage.getItem("profile_name") || currentUser.displayName || currentUser.email?.split("@")[0] || "Anonymous";
+217 b:3 p:1     let formattedHandle = "@" + cleanAuthor.toLowerCase().replace(/[^a-z0-9_]/g, "");
+218 b:3 p:1     
+219 b:4 p:1     try {
+220 b:4 p:1       const userDocRef = doc(db, "users", currentUser.uid);
+221 b:4 p:1       const userDocSnap = await getDoc(userDocRef);
+222 b:5 p:1       if (userDocSnap.exists() && userDocSnap.data().username) {
+223 b:5 p:1         formattedHandle = "@" + userDocSnap.data().username;
+224 b:5 p:1       } else {
+225 b:5 p:1         const localHandle = localStorage.getItem("profile_handle");
+226 b:6 p:1         if (localHandle) {
+227 b:6 p:1           formattedHandle = "@" + localHandle.replace(/[^a-zA-Z0-9_]/g, "");
+228 b:5 p:1         }
+229 b:4 p:1       }
+230 b:4 p:1     } catch (e) {
+231 b:4 p:1       console.error("Failed to fetch user handle", e);
+232 b:3 p:1     }
+233 b:3 p:1 
+234 b:3 p:1     
+235 b:3 p:1     const finalAvatar = currentUser.photoURL || null;
+236 b:3 p:1 
+237 b:4 p:1     const newReviewItem = {
+238 b:4 p:1 
+239 b:4 p:1       productId: currentProduct.id,
+240 b:4 p:1       userId: currentUser.uid,
+241 b:4 p:1       email: currentUser.email || "",
+242 b:4 p:1       author: cleanAuthor,
+243 b:4 p:1       handle: formattedHandle,
+244 b:4 p:1       rate: newRate,
+245 b:4 p:1       date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+246 b:4 p:1       review: newReview.trim(),
+247 b:4 p:1       avatar: finalAvatar,
+248 b:4 p:1       createdAt: serverTimestamp()
+249 b:3 p:1     };
+250 b:3 p:1 
+251 b:4 p:1     try {
+252 b:4 p:1       const docRef = await addDoc(collection(db, "reviews"), newReviewItem);
+253 b:5 p:1       const localNewItem = {
+254 b:5 p:1         id: docRef.id,
+255 b:5 p:1         productId: currentProduct.id,
+256 b:5 p:1         userId: currentUser.uid,
+257 b:5 p:1         email: currentUser.email || "",
+258 b:5 p:1         author: cleanAuthor,
+259 b:5 p:1         handle: formattedHandle,
+260 b:5 p:1         rate: newRate,
+261 b:5 p:1         date: newReviewItem.date,
+262 b:5 p:1         review: newReview.trim(),
+263 b:5 p:1         avatar: newReviewItem.avatar,
+264 b:5 p:1         createdAt: { seconds: Math.floor(Date.now() / 1000) }
+265 b:4 p:1       };
+266 b:4 p:1       setReviews(prev => [localNewItem, ...prev]);
+267 b:4 p:1     } catch (err) {
+268 b:4 p:1       console.error("Save review failed:", err);
+269 b:5 p:1       try {
+270 b:5 p:1         handleFirestoreError(err, OperationType.WRITE, "reviews");
+271 b:5 p:1       } catch (e) {
+272 b:5 p:1         // Suppress or format error for user
+273 b:4 p:1       }
+274 b:4 p:1       setReviewError("Failed to save review to the database. Please try again.");
+275 b:4 p:1       return;
+276 b:3 p:1     }
+277 b:3 p:1 
+278 b:3 p:1     // Clear fields and close
+279 b:3 p:1     setNewRate(5);
+280 b:3 p:1     setNewReview("");
+281 b:3 p:1     setReviewError("");
+282 b:3 p:1     setShowReviewForm(false);
+283 b:2 p:1   };
+284 b:2 p:1 
+285 b:3 p:1   const handleDeleteReview = async (reviewId: string) => {
+286 b:3 p:1     // We already filter in the UI, but we can do a check here too if needed
+287 b:4 p:1     try {
+288 b:4 p:1       await deleteDoc(doc(db, "reviews", reviewId));
+289 b:4 p:1       setReviews(prev => prev.filter(r => r.id !== reviewId));
+290 b:4 p:1     } catch (err) {
+291 b:4 p:1       console.error("Delete review failed:", err);
+292 b:5 p:1       try {
+293 b:5 p:1         handleFirestoreError(err, OperationType.DELETE, `reviews/${reviewId}`);
+294 b:5 p:1       } catch (e) {
+295 b:5 p:1         // Suppress or format message
+296 b:4 p:1       }
+297 b:3 p:1     }
+298 b:2 p:1   };
+299 b:2 p:1 
+300 b:2 p:2   return (
+301 b:2 p:2     <div id="gumroad-detail-root" className="min-h-screen bg-brand-bg text-brand-dark pt-24 pb-32">
+302 b:2 p:2       <div className="max-w-7xl mx-auto px-4 sm:px-6">
+303 b:2 p:2         
+304 b:2 p:2         {/* Breadcrumb Navigation Line */}
+305 b:2 p:2         <div className="mb-8 flex items-center justify-between">
+306 b:2 p:2           <button
+307 b:2 p:2             onClick={onBack}
+308 b:2 p:2             className="group flex items-center space-x-2 text-xs font-mono font-medium uppercase tracking-wider text-brand-dark/50 hover:text-brand-primary transition-colors cursor-pointer select-none"
+309 b:2 p:2           >
+310 b:2 p:2             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+311 b:2 p:2             <span>Back to Marketplace</span>
+312 b:2 p:2           </button>
+313 b:2 p:2           
+314 b:2 p:2           <div className="hidden sm:flex items-center space-x-2 font-mono text-[10px] text-brand-dark/40 uppercase tracking-widest">
+315 b:2 p:2             <span>Aniket Visuals</span>
+316 b:2 p:2             <span>/</span>
+317 b:2 p:2             <span>Shop</span>
+318 b:2 p:2             <span>/</span>
+319 b:2 p:2             <span className="text-brand-primary font-semibold">{currentProduct.category.replace("-", " ")}</span>
+320 b:2 p:2           </div>
+321 b:2 p:2         </div>
+322 b:2 p:2 
+323 b:3 p:2         {/* =====================================
+324 b:3 p:2             1. LARGE TOP MEDIA PREVIEW BOARD
+325 b:2 p:2            ===================================== */}
+326 b:2 p:2         <div className="w-full bg-white border border-brand-dark/5 rounded-3xl overflow-hidden shadow-xl mb-12 relative flex flex-col">
+327 b:2 p:2           <div className="aspect-video w-full bg-brand-dark/5 relative flex items-center justify-center overflow-hidden group">
+328 b:3 p:3             {currentProduct.videoPreview && activeMediaType === "video" ? (
+329 b:3 p:3               <>
+330 b:3 p:3                 <video
+331 b:3 p:3                   src={currentProduct.videoPreview || undefined}
+332 b:3 p:3                   poster={activeImage}
+333 b:3 p:3                   autoPlay
+334 b:3 p:3                   loop
+335 b:3 p:3                   muted={isVideoMuted}
+336 b:3 p:3                   playsInline
+337 b:3 p:3                   className="w-full h-full object-cover"
+338 b:3 p:3                 />
+339 b:3 p:3                 <button
+340 b:5 p:3                   onClick={(e) => {
+341 b:5 p:3                     e.stopPropagation();
+342 b:5 p:3                     setIsVideoMuted(!isVideoMuted);
+343 b:3 p:3                   }}
+344 b:3 p:3                   className="absolute bottom-6 right-6 bg-black/50 hover:bg-black/70 text-white p-2.5 rounded-full backdrop-blur-md transition-all z-20"
+345 b:3 p:3                 >
+346 b:3 p:3                   {isVideoMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+347 b:3 p:3                 </button>
+348 b:3 p:3               </>
+349 b:3 p:3             ) : (
+350 b:3 p:3               <img
+351 b:3 p:3                 src={activeImage || undefined}
+352 b:3 p:3                 alt={currentProduct.name}
+353 b:3 p:3                 referrerPolicy="no-referrer"
+354 b:3 p:3                 className="w-full h-full object-cover transition-all duration-300"
+355 b:3 p:3               />
+356 b:2 p:2             )}
+357 b:2 p:2             
+358 b:2 p:2             {/* Absolute Overlay info stripes */}
+359 b:2 p:2             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-6 flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
+360 b:2 p:2               <div className="text-left space-y-1.5">
+361 b:2 p:2                 <h3 className="text-white font-display font-bold text-lg md:text-3xl tracking-tight drop-shadow-sm">
+362 b:2 p:2                   {currentProduct.name}
+363 b:2 p:2                 </h3>
+364 b:2 p:2               </div>
+365 b:2 p:2             </div>
+366 b:2 p:2             
+367 b:2 p:2             <div className="absolute top-4 left-4 bg-brand-dark/95 text-white font-mono text-[9px] font-medium px-3 py-1.5 backdrop-blur-md tracking-wider uppercase rounded-full border border-white/10">
+368 b:2 p:2               {currentProduct.category.replace("-", " ")}
+369 b:2 p:2             </div>
+370 b:2 p:2           </div>
+371 b:2 p:2 
+372 b:2 p:2           {/* Thumbnail Slides selection tray */}
+373 b:2 p:2           <div className="p-4 bg-white border-t border-brand-dark/5 flex items-center justify-start gap-4 overflow-x-auto select-none">
+374 b:2 p:2             <span className="text-[10px] font-mono uppercase tracking-widest text-brand-dark/40 font-bold px-1 whitespace-nowrap">
+375 b:2 p:2               Asset Media Slides
+376 b:2 p:2             </span>
+377 b:2 p:2             <div className="flex items-center gap-3">
+378 b:3 p:3               {currentProduct.videoPreview && (
+379 b:3 p:3                 <button
+380 b:3 p:3                   onClick={() => setActiveMediaType("video")}
+381 b:5 p:3                   className={`relative h-14 w-24 sm:h-16 sm:w-28 rounded-xl overflow-hidden border-2 transition-all duration-200 cursor-pointer shrink-0 ${
+382 b:5 p:3                     activeMediaType === "video"
+383 b:5 p:3                       ? "border-brand-primary ring-2 ring-brand-primary/10 scale-102"
+384 b:5 p:3                       : "border-transparent opacity-60 hover:opacity-100 hover:scale-102"
+385 b:3 p:3                   }`}
+386 b:3 p:3                 >
+387 b:3 p:3                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 pointer-events-none">
+388 b:3 p:3                     <Play className="w-5 h-5 text-white fill-white shadow-sm drop-shadow-md" />
+389 b:3 p:3                   </div>
+390 b:3 p:3                   <img
+391 b:3 p:3                     src={currentProduct.image || undefined}
+392 b:3 p:3                     alt="Video Preview"
+393 b:3 p:3                     referrerPolicy="no-referrer"
+394 b:3 p:3                     className="w-full h-full object-cover"
+395 b:3 p:3                   />
+396 b:3 p:3                   <div className="absolute bottom-1 right-1 bg-brand-dark/80 px-1 py-0.5 rounded text-[8px] font-mono font-bold text-white uppercase tracking-wider z-10">
+397 b:3 p:3                     VID
+398 b:3 p:3                   </div>
+399 b:3 p:3                 </button>
+400 b:2 p:2               )}
+401 b:3 p:4               {getGalleryImages(currentProduct).map((imgUrl, idx) => (
+402 b:3 p:4                 <button
+403 b:3 p:4                   key={idx}
+404 b:5 p:4                   onClick={() => {
+405 b:5 p:4                     setActiveImage(imgUrl);
+406 b:5 p:4                     setActiveMediaType("image");
+407 b:3 p:4                   }}
+408 b:5 p:4                   className={`relative h-14 w-24 sm:h-16 sm:w-28 rounded-xl overflow-hidden border-2 transition-all duration-200 cursor-pointer shrink-0 ${
+409 b:5 p:4                     activeImage === imgUrl && activeMediaType === "image"
+410 b:5 p:4                       ? "border-brand-primary ring-2 ring-brand-primary/10 scale-102"
+411 b:5 p:4                       : "border-transparent opacity-60 hover:opacity-100 hover:scale-102"
+412 b:3 p:4                   }`}
+413 b:3 p:4                 >
+414 b:3 p:4                   <img
+415 b:3 p:4                     src={imgUrl || undefined}
+416 b:3 p:4                     alt={`Slide ${idx + 1}`}
+417 b:3 p:4                     referrerPolicy="no-referrer"
+418 b:3 p:4                     className="w-full h-full object-cover"
+419 b:3 p:4                   />
+420 b:3 p:4                   <div className="absolute inset-0 bg-brand-dark/5 hover:bg-transparent transition-colors" />
+421 b:3 p:4                   <div className="absolute bottom-1 right-1 bg-brand-dark/80 px-1 py-0.5 rounded text-[8px] font-mono font-bold text-white uppercase tracking-wider">
+422 b:3 p:4                     #{idx + 1}
+423 b:3 p:4                   </div>
+424 b:3 p:4                 </button>
+425 b:2 p:2               ))}
+426 b:2 p:2             </div>
+427 b:2 p:2           </div>
+428 b:2 p:2         </div>
+429 b:2 p:2 
+430 b:3 p:2         {/* =====================================
+431 b:3 p:2             2. MASTER TWO-COLUMN GRID LAYOUT
+432 b:2 p:2            ===================================== */}
+433 b:2 p:2         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-start">
+434 b:2 p:2           
+435 b:2 p:2           {/* ================= LEFT MAIN COLUMN ================= */}
+436 b:2 p:2           <div className="lg:col-span-7 xl:col-span-8 space-y-8">
+437 b:2 p:2             
+438 b:2 p:2             {/* Essential Metadata Box */}
+439 b:2 p:2             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-4">
+440 b:2 p:2               <div className="flex flex-wrap items-center justify-between gap-4">
+441 b:2 p:2                 <h1 className="font-display font-semibold text-2xl sm:text-4xl text-brand-dark tracking-tight leading-tight">
+442 b:2 p:2                   {currentProduct.name}
+443 b:2 p:2                 </h1>
+444 b:2 p:2                 
+445 b:2 p:2                 <div className="flex items-center space-x-1.5 font-mono text-xs text-brand-primary bg-brand-primary/5 px-3.5 py-1.5 rounded-full border border-brand-primary/10">
+446 b:2 p:2                   <Download className="w-3.5 h-3.5 text-brand-primary" />
+447 b:2 p:2                   <span className="font-semibold text-brand-primary">{currentProduct.downloadCount ?? 0}+ Clean Downloads</span>
+448 b:2 p:2                 </div>
+449 b:2 p:2               </div>
+450 b:2 p:2 
+451 b:2 p:2               <p className="text-sm font-sans tracking-tight text-brand-dark/75 leading-relaxed font-medium">
+452 b:2 p:2                 {formatDescription(currentProduct.description)}
+453 b:2 p:2               </p>
+454 b:2 p:2 
+455 b:2 p:2               <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-brand-dark/5 text-xs font-mono">
+456 b:2 p:2                 <div className="flex items-center text-brand-primary space-x-0.5">
+457 b:4 p:3                   {[1, 2, 3, 4, 5].map((s) => {
+458 b:4 p:3                     const avg = getDynamicRating();
+459 b:4 p:4                     return (
+460 b:4 p:4                       <Star 
+461 b:4 p:4                         key={s} 
+462 b:6 p:4                         className={`w-4 h-4 fill-current stroke-transparent ${
+463 b:6 p:4                           s <= Math.round(avg) ? "text-brand-primary" : "text-brand-dark/10"
+464 b:4 p:4                         }`} 
+465 b:4 p:4                       />
+466 b:4 p:3                     );
+467 b:2 p:2                   })}
+468 b:2 p:2                   <span className="font-bold text-brand-dark ml-1.5">
+469 b:2 p:2                     {getDynamicRating() > 0 ? getDynamicRating().toFixed(1) : "0.0"}
+470 b:2 p:2                   </span>
+471 b:2 p:2                 </div>
+472 b:2 p:2                 <span className="text-brand-dark/20">•</span>
+473 b:2 p:2                 <span className="text-brand-dark/50 underline font-medium">
+474 b:2 p:2                   ({getDynamicReviewsCount()} verified {getDynamicReviewsCount() === 1 ? "rating" : "ratings"})
+475 b:2 p:2                 </span>
+476 b:2 p:2                 <span className="text-brand-dark/20">•</span>
+477 b:2 p:2                 <span className="text-brand-dark/50">By <strong className="text-brand-dark font-medium">Aniket Visuals</strong></span>
+478 b:2 p:2               </div>
+479 b:2 p:2             </div>
+480 b:2 p:2 
+481 b:2 p:2             {/* Editorial Product Description Block */}
+482 b:2 p:2             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6">
+483 b:2 p:2               <h2 className="font-display font-semibold text-lg text-brand-dark border-b border-brand-dark/10 pb-3 flex items-center gap-2">
+484 b:2 p:2                 <Sparkles className="w-5 h-5 text-brand-primary shrink-0" />
+485 b:2 p:2                 <span>Product Description</span>
+486 b:2 p:2               </h2>
+487 b:2 p:2               <div className="space-y-4 font-sans text-sm text-brand-dark/80 leading-relaxed font-normal whitespace-pre-wrap">
+488 b:2 p:2                 {currentProduct.fullDescription || currentProduct.description}
+489 b:2 p:2               </div>
+490 b:2 p:2             </div>
+491 b:2 p:2 
+492 b:2 p:2             {/* Perpetual Usage Rights Block */}
+493 b:3 p:3             {currentProduct.commercialRights && (
+494 b:3 p:3               <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-4">
+495 b:3 p:3                 <h3 className="font-display font-semibold text-base text-brand-dark flex items-center space-x-2">
+496 b:3 p:3                   <ShieldCheck className="w-5 h-5 text-emerald-600" />
+497 b:3 p:3                   <span>Commercial Usage Rights</span>
+498 b:3 p:3                 </h3>
+499 b:3 p:3                 
+500 b:3 p:3                 <div className="space-y-2 text-xs sm:text-sm font-sans font-medium text-brand-dark/80">
+501 b:3 p:3                   <div className="flex items-start space-x-3 bg-emerald-500/[0.02] border border-emerald-500/15 p-4 rounded-xl">
+502 b:3 p:3                     <Check className="w-4.5 h-4.5 text-emerald-600 shrink-0 mt-0.5" />
+503 b:3 p:3                     <p className="text-xs text-brand-dark/80 font-medium leading-relaxed">
+504 b:3 p:3                       <strong>100% Royalty Free perpetual usage clearance:</strong> Use in monetize platforms including YouTube, Twitch, TikTok, Instagram, commercial advertisements, film displays, and indie broadcasts with no limitations or unexpected copyright claims.
+505 b:3 p:3                     </p>
+506 b:3 p:3                   </div>
+507 b:3 p:3                 </div>
+508 b:3 p:3               </div>
+509 b:2 p:2             )}
+510 b:2 p:2                      {/* Gumroad Frequently Asked Questions Accordion */}
+511 b:3 p:3             {getActiveFaqs().length > 0 && (
+512 b:3 p:3             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6">
+513 b:3 p:3               <h3 className="font-display font-semibold text-base text-brand-dark border-b border-brand-dark/10 pb-3 flex items-center space-x-2">
+514 b:3 p:3                 <FaqIcon className="w-5 h-5 text-brand-primary" />
+515 b:3 p:3                 <span>Frequently Asked Questions</span>
+516 b:3 p:3               </h3>
+517 b:3 p:3 
+518 b:3 p:3               <div className="space-y-3.5">
+519 b:4 p:5                 {getActiveFaqs().map((faq, idx) => (
+520 b:4 p:5                   <div 
+521 b:4 p:5                     key={idx} 
+522 b:4 p:5                     className="border border-brand-dark/5 rounded-xl overflow-hidden bg-brand-dark/[0.012]"
+523 b:4 p:5                   >
+524 b:4 p:5                     <button
+525 b:4 p:5                       onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+526 b:4 p:5                       className="w-full px-5 py-4 flex items-center justify-between text-left text-xs font-mono font-bold uppercase tracking-wider text-brand-dark hover:bg-brand-dark/[0.03] transition-colors cursor-pointer"
+527 b:4 p:5                     >
+528 b:4 p:5                       <span>{faq.q}</span>
+529 b:4 p:5                       <span className="text-brand-primary text-base ml-4 font-bold">
+530 b:4 p:5                         {activeFaq === idx ? "−" : "+"}
+531 b:4 p:5                       </span>
+532 b:4 p:5                     </button>
+533 b:4 p:5                     <AnimatePresence>
+534 b:5 p:6                       {activeFaq === idx && (
+535 b:5 p:6                         <motion.div
+536 b:5 p:6                           initial={{ height: 0, opacity: 0 }}
+537 b:5 p:6                           animate={{ height: "auto", opacity: 1 }}
+538 b:5 p:6                           exit={{ height: 0, opacity: 0 }}
+539 b:5 p:6                           transition={{ duration: 0.2 }}
+540 b:5 p:6                           className="px-5 pb-4 text-xs font-sans font-medium text-brand-dark/60 leading-relaxed border-t border-brand-dark/5 pt-2"
+541 b:5 p:6                         >
+542 b:5 p:6                           {faq.a}
+543 b:5 p:6                         </motion.div>
+544 b:4 p:5                       )}
+545 b:4 p:5                     </AnimatePresence>
+546 b:4 p:5                   </div>
+547 b:3 p:3                 ))}
+548 b:3 p:3               </div>
+549 b:3 p:3             </div>
+550 b:2 p:2             )}
+551 b:2 p:2 
+552 b:2 p:2             {/* Verified Customer Reviews Grid */}
+553 b:2 p:2             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6">
+554 b:2 p:2               
+555 b:2 p:2               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-dark/10 pb-3">
+556 b:2 p:2                 <div className="space-y-0.5">
+557 b:2 p:2                   <h3 className="font-display font-semibold text-base text-brand-dark flex items-center space-x-2">
+558 b:2 p:2                     <MessageSquare className="w-5 h-5 text-brand-primary" />
+559 b:2 p:2                     <span>Verified Editor Reviews</span>
+560 b:2 p:2                   </h3>
+561 b:2 p:2                   <p className="text-[10px] font-mono text-brand-dark/40 font-medium">Real-time designer feedback hub</p>
+562 b:2 p:2                 </div>
+563 b:2 p:2                 
+564 b:2 p:2                 <button
+565 b:4 p:2                   onClick={() => {
+566 b:4 p:2                     setShowReviewForm(!showReviewForm);
+567 b:4 p:2                     setReviewError("");
+568 b:2 p:2                   }}
+569 b:2 p:2                   className="flex items-center justify-center space-x-1.5 bg-brand-dark text-white hover:bg-brand-primary text-[10px] font-mono tracking-wider font-bold uppercase px-4 py-2.5 rounded-xl transition-all select-none cursor-pointer duration-200"
+570 b:2 p:2                 >
+571 b:3 p:3                   {showReviewForm ? (
+572 b:3 p:3                     <>
+573 b:3 p:3                       <X className="w-3.5 h-3.5" />
+574 b:3 p:3                       <span>Close Control</span>
+575 b:3 p:3                     </>
+576 b:3 p:3                   ) : (
+577 b:3 p:3                     <>
+578 b:3 p:3                       <Sparkles className="w-3.5 h-3.5 text-brand-primary" />
+579 b:3 p:3                       <span>Add your review</span>
+580 b:3 p:3                     </>
+581 b:2 p:2                   )}
+582 b:2 p:2                 </button>
+583 b:2 p:2               </div>
+584 b:2 p:2 
+585 b:2 p:2               {/* Dynamic Review Author / Verification Form */}
+586 b:2 p:2               <AnimatePresence>
+587 b:3 p:3                 {showReviewForm && (
+588 b:3 p:3                   <motion.div
+589 b:3 p:3                     initial={{ opacity: 0, height: 0 }}
+590 b:3 p:3                     animate={{ opacity: 1, height: "auto" }}
+591 b:3 p:3                     exit={{ opacity: 0, height: 0 }}
+592 b:3 p:3                     transition={{ duration: 0.25 }}
+593 b:3 p:3                     className="overflow-hidden bg-brand-dark/[0.015] border border-brand-dark/5 rounded-2xl p-5 sm:p-6 mb-4 space-y-4"
+594 b:3 p:3                   >
+595 b:4 p:4                     {!currentUser ? (
+596 b:4 p:4                       <div className="space-y-4 text-center py-6">
+597 b:4 p:4                         <div className="w-12 h-12 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+598 b:4 p:4                           <Lock className="w-5 h-5 text-brand-primary" />
+599 b:4 p:4                         </div>
+600 b:4 p:4                         <h4 className="font-display font-bold text-sm text-brand-dark">Sign in Required</h4>
+601 b:4 p:4                         <p className="text-xs font-medium text-brand-dark/40 max-w-sm mx-auto">
+602 b:4 p:4                           Please sign in to write a review.
+603 b:4 p:4                         </p>
+604 b:4 p:4                         <button
+605 b:4 p:4                           onClick={() => navigate("/portal")}
+606 b:4 p:4                           className="bg-brand-dark text-white hover:bg-brand-primary px-6 py-2.5 rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider transition-colors cursor-pointer inline-flex"
+607 b:4 p:4                         >
+608 b:4 p:4                           Sign In
+609 b:4 p:4                         </button>
+610 b:4 p:4                       </div>
+611 b:4 p:4                     ) : (
+612 b:4 p:4                       /* Authenticated Creative Feedback Builder */
+613 b:4 p:4                       <form onSubmit={handleAddReview} className="space-y-4 text-left">
+614 b:4 p:4                         <div className="flex items-center space-x-2.5 bg-emerald-500/[0.04] border border-emerald-500/15 p-3 rounded-xl text-[10px] font-mono uppercase tracking-wider font-bold text-emerald-800">
+615 b:4 p:4                           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+616 b:4 p:4                           <span>Posting as {localStorage.getItem("profile_name") || currentUser.displayName || currentUser.email}</span>
+617 b:4 p:4                         </div>
+618 b:4 p:4 
+619 b:4 p:4                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+620 b:4 p:4                           {/* Interactive stars selectors */}
+621 b:4 p:4                           <div className="space-y-1.5">
+622 b:4 p:4                             <label className="block text-[10px] font-mono text-brand-dark/50 uppercase tracking-widest font-bold">
+623 b:4 p:4                               Rating Levels
+624 b:4 p:4                             </label>
+625 b:4 p:4                             <div className="flex items-center space-x-1.5 h-[38px]">
+626 b:5 p:6                               {[1, 2, 3, 4, 5].map((val) => (
+627 b:5 p:6                                 <button
+628 b:5 p:6                                   key={val}
+629 b:5 p:6                                   type="button"
+630 b:7 p:6                                   onClick={() => {
+631 b:7 p:6                                     setNewRate(val);
+632 b:7 p:6                                     setReviewError("");
+633 b:5 p:6                                   }}
+634 b:5 p:6                                   className="p-1 hover:scale-110 transition-transform cursor-pointer"
+635 b:5 p:6                                   title={`${val} Stars`}
+636 b:5 p:6                                 >
+637 b:5 p:6                                   <Star
+638 b:7 p:6                                     className={`w-[18px] h-[18px] fill-current ${
+639 b:7 p:6                                       val <= newRate ? "text-brand-primary" : "text-brand-dark/10"
+640 b:5 p:6                                     }`}
+641 b:5 p:6                                   />
+642 b:5 p:6                                 </button>
+643 b:4 p:4                               ))}
+644 b:4 p:4                               <span className="text-[10px] font-mono font-bold text-brand-dark/40 ml-2">
+645 b:4 p:4                                 ({newRate} / 5)
+646 b:4 p:4                               </span>
+647 b:4 p:4                             </div>
+648 b:4 p:4                           </div>
+649 b:4 p:4                         </div>
+650 b:4 p:4 
+651 b:4 p:4                         {/* Review script comments body */}
+652 b:4 p:4                         <div className="space-y-1.5">
+653 b:4 p:4                           <label className="block text-[10px] font-mono text-brand-dark/50 uppercase tracking-widest font-bold">
+654 b:4 p:4                             Creative Feedback
+655 b:4 p:4                           </label>
+656 b:4 p:4                           <textarea
+657 b:4 p:4                             rows={3}
+658 b:4 p:4                             placeholder="Type your review (e.g. Incredible fidelity, perfectly optimized drag and drop overlays!)"
+659 b:4 p:4                             value={newReview}
+660 b:6 p:4                             onChange={(e) => {
+661 b:6 p:4                               setNewReview(e.target.value);
+662 b:6 p:4                               setReviewError("");
+663 b:4 p:4                             }}
+664 b:4 p:4                             className="w-full bg-white border border-brand-dark/15 pre-wrap px-4 py-3 rounded-xl text-xs placeholder-brand-dark/30 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary resize-none"
+665 b:4 p:4                             required
+666 b:4 p:4                           />
+667 b:4 p:4                         </div>
+668 b:4 p:4 
+669 b:5 p:5                         {reviewError && (
+670 b:5 p:5                           <p className="text-[10px] font-mono font-bold text-red-600 flex items-center space-x-1.5">
+671 b:5 p:5                             <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-600" />
+672 b:5 p:5                             <span>{reviewError}</span>
+673 b:5 p:5                           </p>
+674 b:4 p:4                         )}
+675 b:4 p:4 
+676 b:4 p:4                         <div className="flex items-center gap-2.5 pt-1">
+677 b:4 p:4                           <button
+678 b:4 p:4                             type="submit"
+679 b:4 p:4                             className="flex-1 bg-brand-primary hover:bg-brand-dark text-white px-4 py-2.5 h-[38px] rounded-xl font-mono text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer"
+680 b:4 p:4                           >
+681 b:4 p:4                             Publish Verified Review
+682 b:4 p:4                           </button>
+683 b:4 p:4                           <button
+684 b:4 p:4                             type="button"
+685 b:6 p:4                             onClick={() => {
+686 b:6 p:4                               setShowReviewForm(false);
+687 b:4 p:4                             }}
+688 b:4 p:4                             className="px-4 py-2.5 h-[38px] border border-brand-dark/10 hover:border-brand-dark hover:bg-brand-dark/5 rounded-xl text-brand-dark/70 text-[10px] font-mono uppercase tracking-wider font-bold transition-all shrink-0 cursor-pointer"
+689 b:4 p:4                           >
+690 b:4 p:4                             Cancel
+691 b:4 p:4                           </button>
+692 b:4 p:4                         </div>
+693 b:4 p:4                       </form>
+694 b:3 p:3                     )}
+695 b:3 p:3                   </motion.div>
+696 b:2 p:2                 )}
+697 b:2 p:2               </AnimatePresence>
+698 b:2 p:2 
+699 b:2 p:2               <div className="space-y-4">
+700 b:3 p:3                 {getActiveReviews().length === 0 ? (
+701 b:3 p:3                   <div className="p-8 text-center border border-dashed border-brand-dark/15 rounded-2xl bg-brand-dark/[0.005] py-12 space-y-3">
+702 b:3 p:3                     <div className="w-10 h-10 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto">
+703 b:3 p:3                       <MessageSquare className="w-5 h-5 text-brand-primary" />
+704 b:3 p:3                     </div>
+705 b:3 p:3                     <div className="space-y-1">
+706 b:3 p:3                       <h4 className="font-display font-bold text-sm text-brand-dark">No reviews published yet</h4>
+707 b:3 p:3                       <p className="text-xs font-medium text-brand-dark/40 max-w-sm mx-auto leading-relaxed">
+708 b:3 p:3                         Be the first verified customer to share your creative feedback and review this premium digital asset.
+709 b:3 p:3                       </p>
+710 b:3 p:3                     </div>
+711 b:3 p:3                   </div>
+712 b:3 p:3                 ) : (
+713 b:4 p:4                   getActiveReviews().map((rev, idx) => {
+714 b:4 p:4                   const isCurrentUserReview = currentUser && rev.userId === currentUser.uid;
+715 b:4 p:4                   const displayAuthor = isCurrentUserReview ? (localStorage.getItem("profile_name") || rev.author) : rev.author;
+716 b:4 p:4                   let displayHandle = rev.handle;
+717 b:5 p:4                   if (isCurrentUserReview) {
+718 b:5 p:4                       const localHandle = localStorage.getItem("profile_handle");
+719 b:5 p:4                       displayHandle = localHandle ? "@" + localHandle.replace(/^@/, '') : rev.handle;
+720 b:4 p:4                   }
+721 b:4 p:4                   const hasGenericAvatar = rev.avatar === "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png";
+722 b:4 p:4                   
+723 b:4 p:4                   const displayAvatar = isCurrentUserReview ? currentUser.photoURL : (hasGenericAvatar ? null : rev.avatar);
+724 b:4 p:4 
+725 b:4 p:4 
+726 b:4 p:5                   return (
+727 b:4 p:5                     <div key={idx} className="p-5 bg-brand-dark/[0.015] border border-brand-dark/5 rounded-xl space-y-3 relative group">
+728 b:4 p:5                       <div className="flex items-center justify-between">
+729 b:4 p:5                         <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedProfile({ isOpen: true, userId: rev.userId, author: displayAuthor, handle: displayHandle, avatar: displayAvatar, isLoadingBio: true })}>
+730 b:5 p:6                           {displayAvatar ? (
+731 b:5 p:6                             <img 
+732 b:5 p:6                               src={displayAvatar} 
+733 b:5 p:6                               alt={displayAuthor} 
+734 b:5 p:6                               referrerPolicy="no-referrer"
+735 b:5 p:6                               className="w-10 h-10 rounded-full border border-brand-dark/10 object-cover"
+736 b:5 p:6                             />
+737 b:5 p:6                           ) : (
+738 b:5 p:6                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-brand-primary to-indigo-600 text-white font-sans font-black text-sm border border-brand-dark/10 shrink-0">
+739 b:5 p:6                               {displayAuthor ? displayAuthor.charAt(0).toUpperCase() : "U"}
+740 b:5 p:6                             </div>
+741 b:4 p:5                           )}
+742 b:4 p:5                           <div className="text-left leading-tight">
+743 b:4 p:5                             <p className="text-xs font-bold text-brand-dark">{displayAuthor}</p>
+744 b:4 p:5                             <p className="text-[10px] font-mono text-brand-dark/40 mt-0.5">{displayHandle}</p>
+745 b:4 p:5                           </div>
+746 b:4 p:5                         </div>
+747 b:4 p:5 
+748 b:4 p:5                         <div className="text-right flex flex-col items-end">
+749 b:4 p:5                           <div className="flex items-center text-brand-primary text-xs tracking-tighter">
+750 b:5 p:7                             {[1, 2, 3, 4, 5].map((s) => (
+751 b:5 p:7                               <Star key={s} className={`w-3.5 h-3.5 fill-current ${s <= rev.rate ? "text-brand-primary" : "text-black/10"}`} />
+752 b:4 p:5                             ))}
+753 b:4 p:5                           </div>
+754 b:4 p:5                           <span className="text-[9px] font-mono text-brand-dark/40 mt-1 block">{rev.date}</span>
+755 b:4 p:5                         </div>
+756 b:4 p:5                       </div>
+757 b:4 p:5 
+758 b:4 p:5                       <p className="text-xs font-sans font-medium text-brand-dark/75 leading-relaxed italic">
+759 b:4 p:5                         "{rev.review}"
+760 b:4 p:5                       </p>
+761 b:4 p:5                       
+762 b:4 p:5                       <div className="flex items-center justify-between gap-4 pt-1">
+763 b:4 p:5                         <div className="flex items-center space-x-1.5 text-[9px] font-mono font-bold text-emerald-700 bg-emerald-500/[0.08] border border-emerald-500/10 px-2.5 py-1 rounded-full w-max uppercase tracking-wider select-none">
+764 b:4 p:5                           <Shield className="w-3 h-3 text-emerald-600" />
+765 b:4 p:5                           <span>Verified Purchaser</span>
+766 b:4 p:5                         </div>
+767 b:4 p:5 
+768 b:4 p:5                         {/* Owner Admin Mode Delete Action Button (Visible only when unlocked with 'Verified reviews' key) */}
+769 b:5 p:6                         {currentUser?.uid === rev.userId && (
+770 b:5 p:6                           <button
+771 b:5 p:6                             onClick={() => handleDeleteReview(rev.id || idx.toString())}
+772 b:5 p:6                             className="flex items-center space-x-1 hover:text-red-600 text-brand-dark/40 font-mono text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer select-none border border-transparent hover:border-red-500/10"
+773 b:5 p:6                             title="Delete this item permanently"
+774 b:5 p:6                           >
+775 b:5 p:6                             <Trash2 className="w-3.5 h-3.5 shrink-0" />
+776 b:5 p:6                             <span>Remove</span>
+777 b:5 p:6                           </button>
+778 b:4 p:5                         )}
+779 b:4 p:5                       </div>
+780 b:4 p:5                     </div>
+781 b:4 p:4                   );
+782 b:3 p:3                   })
+783 b:2 p:2                 )}
+784 b:2 p:2               </div>
+785 b:2 p:2             </div>
+786 b:2 p:2 
+787 b:2 p:2           </div>
+788 b:2 p:2 
+789 b:2 p:2           {/* ================= RIGHT STICKY BILLING SIDEBAR ================= */}
+790 b:2 p:2           <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+791 b:2 p:2             
+792 b:2 p:2             {/* Authentic Premium Checkout Card */}
+793 b:2 p:2             <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-3xl shadow-2xl shadow-brand-dark/[0.03] text-left relative overflow-hidden">
+794 b:2 p:2               <div className="absolute top-0 right-0 w-24 h-24 bg-brand-primary/5 rounded-full blur-2xl pointer-events-none" />
+795 b:2 p:2               
+796 b:2 p:2               <div className="space-y-4">
+797 b:2 p:2                 <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand-primary bg-brand-primary/15 px-2.5 py-1 rounded-full">
+798 b:2 p:2                   Lifetime Instant Delivery
+799 b:2 p:2                 </span>
+800 b:2 p:2                 
+801 b:2 p:2                 <h3 className="font-display font-bold text-base text-brand-dark uppercase tracking-wide">
+802 b:2 p:2                   checkout buy option
+803 b:2 p:2                 </h3>
+804 b:2 p:2 
+805 b:2 p:2                 {/* Dynamic Price Tracker Info */}
+806 b:2 p:2                 <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-4.5 rounded-xl flex flex-col gap-2 shadow-sm">
+807 b:2 p:2                   <div className="flex items-center justify-between w-full">
+808 b:2 p:2                     <div>
+809 b:2 p:2                       <p className="text-[9px] font-mono text-brand-dark/40 uppercase tracking-widest">Pricing Structure</p>
+810 b:2 p:2                       <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider font-mono mt-0.5">
+811 b:2 p:2                         Full Creator Clearance
+812 b:2 p:2                       </p>
+813 b:2 p:2                     </div>
+814 b:2 p:2                     
+815 b:2 p:2                     <div className="text-right leading-none">
+816 b:2 p:2                       <span className="text-[10px] font-mono text-brand-dark/30 line-through block mb-1">
+817 b:2 p:2                         ${getTierOriginalPrice()} USD
+818 b:2 p:2                       </span>
+819 b:2 p:2                       <span className="font-display font-bold text-2xl tracking-tight text-brand-dark">
+820 b:2 p:2                         ${getTierPrice()} USD
+821 b:2 p:2                       </span>
+822 b:2 p:2                     </div>
+823 b:2 p:2                   </div>
+824 b:2 p:2                   <div className="border-t border-brand-dark/5 pt-1.5 text-left text-[9px] font-mono text-brand-dark/40 italic">
+825 b:2 p:2                     * Note: Price may be different in future
+826 b:2 p:2                   </div>
+827 b:2 p:2                 </div>
+828 b:2 p:2 
+829 b:2 p:2                 {/* Checkout Gateway Trigger */}
+830 b:2 p:2                 <div className="pt-4 border-t border-brand-dark/5">
+831 b:2 p:2                   <div className="flex gap-2">
+832 b:2 p:2                     <button
+833 b:4 p:2                       onClick={() => {
+834 b:4 p:2                         addToCart(currentProduct);
+835 b:4 p:2                         navigate('/checkout');
+836 b:2 p:2                       }}
+837 b:2 p:2                       className="flex-1 bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
+838 b:2 p:2                     >
+839 b:2 p:2                       <span>Buy Now — ${getTierPrice()} USD</span>
+840 b:2 p:2                     </button>
+841 b:2 p:2                     <button
+842 b:2 p:2                       onClick={() => toggleWishlist?.(currentProduct)}
+843 b:4 p:2                       className={`w-14 shrink-0 border border-brand-dark/10 bg-brand-dark/[0.02] hover:bg-brand-dark/[0.05] rounded-xl flex items-center justify-center transition-all cursor-pointer hover:-translate-y-0.5 ${
+844 b:4 p:2                         wishlist.some((p) => p.id === currentProduct.id) ? "text-red-500" : "text-brand-dark/40"
+845 b:2 p:2                       }`}
+846 b:2 p:2                       title={wishlist.some((p) => p.id === currentProduct.id) ? "Remove from wishlist" : "Add to wishlist"}
+847 b:2 p:2                     >
+848 b:2 p:2                       <Heart className={`w-5 h-5 ${wishlist.some((p) => p.id === currentProduct.id) ? 'fill-current' : ''}`} />
+849 b:2 p:2                     </button>
+850 b:2 p:2                   </div>
+851 b:2 p:2                   <p className="text-[10px] text-brand-dark/45 font-mono text-center mt-2.5 leading-relaxed font-semibold">
+852 b:2 p:2                     Clicking opens our secure Google Form order and delivery gateway
+853 b:2 p:2                   </p>
+854 b:2 p:2                 </div>
+855 b:2 p:2 
+856 b:2 p:2                 <div className="flex items-center justify-center space-x-2 text-[9px] font-mono font-semibold text-brand-dark/30 pt-4 border-t border-brand-dark/5">
+857 b:2 p:2                   <Lock className="w-3.5 h-3.5 text-emerald-600" />
+858 b:2 p:2                   <span className="uppercase tracking-wider">Secure SSL Encryption Authorized</span>
+859 b:2 p:2                 </div>
+860 b:2 p:2               </div>
+861 b:2 p:2             </div>
+862 b:2 p:2 
+863 b:2 p:2             {/* General Metadata Info block */}
+864 b:2 p:2             <div className="bg-white border border-brand-dark/5 p-6 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-4">
+865 b:2 p:2               <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-brand-dark border-b border-brand-dark/5 pb-2">
+866 b:2 p:2                 Asset Metadata Card
+867 b:2 p:2               </h4>
+868 b:2 p:2               
+869 b:2 p:2               <div className="grid grid-cols-2 gap-4 font-mono text-[11px] text-brand-dark">
+870 b:2 p:2                 <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-2 rounded col-span-2">
+871 b:2 p:2                   <span className="text-brand-dark/40 block text-[9px] uppercase tracking-wider">Weight:</span>
+872 b:2 p:2                   <span className="font-semibold text-xs mt-0.5 block">{currentProduct.fileSize}</span>
+873 b:2 p:2                 </div>
+874 b:2 p:2                 <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-2 rounded col-span-2">
+875 b:2 p:2                   <span className="text-brand-dark/40 block text-[9px] uppercase tracking-wider">Release Date:</span>
+876 b:2 p:2                   <span className="font-semibold text-xs mt-0.5 block text-brand-primary">{currentProduct.releaseDate || "June 2, 2026"}</span>
+877 b:2 p:2                 </div>
+878 b:2 p:2               </div>
+879 b:2 p:2             </div>
+880 b:2 p:2 
+881 b:2 p:2           </div>
+882 b:2 p:2 
+883 b:2 p:2         </div>
+884 b:2 p:2 
+885 b:2 p:2 
+886 b:2 p:2 
+887 b:2 p:2       </div>
+888 b:2 p:2 
+889 b:2 p:2       <AnimatePresence>
+890 b:3 p:3         {selectedProfile?.isOpen && (
+891 b:3 p:3           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+892 b:3 p:3             <motion.div
+893 b:3 p:3               initial={{ opacity: 0 }}
+894 b:3 p:3               animate={{ opacity: 1 }}
+895 b:3 p:3               exit={{ opacity: 0 }}
+896 b:3 p:3               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+897 b:3 p:3               onClick={() => setSelectedProfile(null)}
+898 b:3 p:3             />
+899 b:3 p:3             <motion.div
+900 b:3 p:3               initial={{ opacity: 0, scale: 0.95, y: 10 }}
+901 b:3 p:3               animate={{ opacity: 1, scale: 1, y: 0 }}
+902 b:3 p:3               exit={{ opacity: 0, scale: 0.95, y: 10 }}
+903 b:3 p:3               className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 overflow-hidden"
+904 b:3 p:3             >
+905 b:3 p:3               <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl pointer-events-none" />
+906 b:3 p:3               <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+907 b:3 p:3               
+908 b:3 p:3               <button
+909 b:3 p:3                 onClick={() => setSelectedProfile(null)}
+910 b:3 p:3                 className="absolute top-4 right-4 text-brand-dark/40 hover:text-brand-dark hover:bg-black/5 p-2 rounded-full transition-colors z-10"
+911 b:3 p:3               >
+912 b:3 p:3                 <X className="w-5 h-5" />
+913 b:3 p:3               </button>
+914 b:3 p:3 
+915 b:3 p:3               <div className="flex flex-col items-center text-center space-y-4 relative z-10">
+916 b:3 p:3                 <div className="relative">
+917 b:4 p:4                   {selectedProfile.avatar ? (
+918 b:4 p:4                     <img 
+919 b:4 p:4                       src={selectedProfile.avatar} 
+920 b:4 p:4                       alt={selectedProfile.author} 
+921 b:4 p:4                       className="w-24 h-24 rounded-full object-cover shadow-lg border-4 border-white"
+922 b:4 p:4                       referrerPolicy="no-referrer"
+923 b:4 p:4                     />
+924 b:4 p:4                   ) : (
+925 b:4 p:4                     <div className="w-24 h-24 rounded-full shadow-lg border-4 border-white flex items-center justify-center bg-gradient-to-br from-brand-primary to-indigo-600 text-white font-sans font-black text-3xl">
+926 b:4 p:4                       {selectedProfile.author ? selectedProfile.author.charAt(0).toUpperCase() : "U"}
+927 b:4 p:4                     </div>
+928 b:3 p:3                   )}
+929 b:3 p:3                   <div className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center" title="Verified Author">
+930 b:3 p:3                     <ShieldCheck className="w-3 h-3 text-white" />
+931 b:3 p:3                   </div>
+932 b:3 p:3                 </div>
+933 b:3 p:3                 
+934 b:3 p:3                 <div className="space-y-1">
+935 b:3 p:3                   <h3 className="font-black text-xl text-brand-dark tracking-tight">{selectedProfile.author}</h3>
+936 b:3 p:3                   <p className="font-mono text-xs font-bold text-brand-primary">{selectedProfile.handle}</p>
+937 b:3 p:3                 </div>
+938 b:3 p:3                 
+939 b:3 p:3                 <div className="pt-4 border-t border-black/5 w-full space-y-3 text-left">
+940 b:3 p:3                    <div className="bg-brand-dark/[0.02] p-4 rounded-xl border border-black/5 space-y-1">
+941 b:3 p:3                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-brand-dark/40">Bio</span>
+942 b:3 p:3                      <p className="text-xs font-medium text-brand-dark/80">{selectedProfile.isLoadingBio ? "Loading bio..." : (selectedProfile.bio || "No bio available.")}</p>
+943 b:3 p:3                    </div>
+944 b:3 p:3                    <div className="bg-brand-dark/[0.02] p-4 rounded-xl border border-black/5 space-y-1">
+945 b:3 p:3                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-brand-dark/40">Location</span>
+946 b:3 p:3                      <p className="text-xs font-medium text-brand-dark/80">{selectedProfile.isLoadingBio ? "Loading location..." : (selectedProfile.location || "Unknown")}</p>
+947 b:3 p:3                    </div>
+948 b:3 p:3                 </div>
+949 b:3 p:3               </div>
+950 b:3 p:3             </motion.div>
+951 b:3 p:3           </div>
+952 b:2 p:2         )}
+953 b:2 p:2       </AnimatePresence>
+954 b:2 p:2     </div>
+955 b:2 p:1   );
+956 b:1 p:1 }
+957 b:1 p:1 

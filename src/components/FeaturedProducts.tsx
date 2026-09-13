@@ -1,32 +1,24 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Star, Download, Play, ShoppingCart, X, Check, Volume2, Film, FileCode, Heart, Sparkles, AlertCircle, Calendar, SearchX } from "lucide-react";
+import { Heart, Sparkles, AlertCircle, Calendar } from "lucide-react";
 import { Product } from "../types";
 import { useProducts } from "../hooks/useProducts";
 import { useCategories } from "../hooks/useCategories";
 import { formatDescription } from "../utils";
 
 interface FeaturedProductsProps {
-  cart: Product[];
-  addToCart: (product: Product) => void;
   openProductPreview: (product: Product) => void;
-  activeCategory: string;
-  setActiveCategory: (category: string) => void;
   wishlist: Product[];
   toggleWishlist: (product: Product) => void;
 }
 
 export default function FeaturedProducts({
-  cart,
-  addToCart,
   openProductPreview,
-  activeCategory,
-  setActiveCategory,
   wishlist,
   toggleWishlist
 }: FeaturedProductsProps) {
   const { products: PRODUCTS_DATA, loading: productsLoading } = useProducts();
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { categories } = useCategories();
+  const [activeCategory, setActiveCategory] = useState("all");
   
   // Filter only active categories for storefront
   const activeCategories = categories.filter(c => c.status === "Active");
@@ -37,10 +29,6 @@ export default function FeaturedProducts({
     : PRODUCTS_DATA.filter((p) => p.category === activeCategory)
   ).sort((a, b) => (b.rank || 0) - (a.rank || 0));
 
-  // Helper check to see if item is already inside cart list
-  const isItemInCart = (productId: string) => {
-    return cart.some((p) => p.id === productId);
-  };
   
   const isItemInWishlist = (productId: string) => {
     return wishlist.some((p) => p.id === productId);
@@ -91,7 +79,6 @@ export default function FeaturedProducts({
         {/* Products Showcase Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
           {!productsLoading && filteredProducts.map((product) => {
-            const inCart = isItemInCart(product.id);
             const inWishlist = isItemInWishlist(product.id);
 
             return (

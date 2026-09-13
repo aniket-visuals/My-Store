@@ -272,7 +272,7 @@ export default function StoreAnalytics({ orders, products, siteStats = [] }: Sto
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {statusData.map((entry, index) => (
+                  {statusData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -300,7 +300,7 @@ export default function StoreAnalytics({ orders, products, siteStats = [] }: Sto
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={32}>
-                  {topProductsData.map((entry, index) => (
+                  {topProductsData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>

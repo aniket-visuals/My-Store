@@ -10,17 +10,10 @@ import {
   User,
   Check,
   Download,
-  Settings,
-  HelpCircle,
-  Globe,
-  FileText,
-  Briefcase,
-  LogOut,
   Heart,
 } from "lucide-react";
 import { Product } from "../types";
 import { useProducts } from "../hooks/useProducts";
-import { logout as firebaseLogout } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 
@@ -30,27 +23,20 @@ interface NavbarProps {
   clearCart: () => void;
   openProductPreview: (product: Product) => void;
   scrollToSection: (id: string) => void;
-  isLoginOpen?: boolean;
-  setIsLoginOpen?: (open: boolean) => void;
   isLoggedIn: boolean;
-  setIsLoggedIn: (loggedIn: boolean) => void;
   userEmail: string;
-  setUserEmail: (email: string) => void;
   wishlist?: Product[];
 }
 
-export default function Navbar({ cart,
+export default function Navbar({
+  cart,
   removeFromCart,
   clearCart,
   openProductPreview,
   scrollToSection,
-  isLoginOpen,
-  setIsLoginOpen,
   isLoggedIn,
-  setIsLoggedIn,
   userEmail,
-  setUserEmail,
-  wishlist = [],
+  
 }: NavbarProps) {
   const { products: PRODUCTS_DATA } = useProducts();
   const navigate = useNavigate();
@@ -59,16 +45,12 @@ export default function Navbar({ cart,
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGetStartedOpen, setIsGetStartedOpen] = useState(false);
-  const [emailInput, setEmailInput] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedKit, setCopiedKit] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [profileUpdates, setProfileUpdates] = useState(0);
 
   useEffect(() => {
     const handleProfileUpdate = () => {
-      setProfileUpdates(prev => prev + 1);
     };
     window.addEventListener("profileUpdated", handleProfileUpdate);
     return () => {
@@ -115,16 +97,6 @@ export default function Navbar({ cart,
       )
     : PRODUCTS_DATA.slice(0, 3); // Quick suggestions
 
-  const handleSignout = async () => {
-    try {
-      await firebaseLogout();
-    } catch (err) {
-      console.error(err);
-    }
-    setIsLoggedIn(false);
-    setUserEmail("");
-  };
-
   const handleCopyLink = () => {
     navigator.clipboard.writeText("https://aniketvisuals.com/free-starter-kit");
     setCopiedKit(true);
@@ -145,58 +117,55 @@ export default function Navbar({ cart,
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-brand-bg/80 backdrop-blur-md border-b border-black/5">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        {/* Brand Logo */}
-        <button
-          onClick={() => scrollToSection("hero")}
-          className="flex items-center space-x-3 group cursor-pointer"
-        >
-          <div className="w-10 h-10 flex items-center justify-center shrink-0 relative overflow-hidden rounded-lg">
-            <img
-              src="https://res.cloudinary.com/df5rgwdng/image/upload/v1782835978/Logo_A_yl3rjd.png"
-              alt="Editors Hub Logo"
-              className="w-full h-full object-cover origin-center group-hover:scale-110 transition-transform duration-300"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          <div className="flex flex-col items-start translate-y-[1px]">
-            <span className="font-display font-bold tracking-tight text-lg text-black leading-none">
-              Editors Hub Store
-            </span>
-            <span className="text-[10px] uppercase tracking-widest font-mono text-black/40 mt-1">
-              Creative Assets
-            </span>
-          </div>
-        </button>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
+      <header className="sticky top-6 z-40 w-full flex justify-center px-4 transition-all duration-300">
+        <div className="w-full max-w-5xl bg-white/80 backdrop-blur-xl border border-[#E4E4E7]/80 shadow-[0_8px_40px_rgb(0,0,0,0.06)] rounded-full h-16 px-6 lg:px-8 flex items-center justify-between">
+          {/* Brand Logo */}
           <button
             onClick={() => scrollToSection("hero")}
-            className="text-sm font-medium text-black/60 hover:text-black transition-colors cursor-pointer"
+            className="flex items-center space-x-3 group cursor-pointer shrink-0"
           >
-            Home
+            <div className="w-8 h-8 flex items-center justify-center shrink-0 relative overflow-hidden rounded-md">
+              <img
+                src="https://res.cloudinary.com/df5rgwdng/image/upload/v1782835978/Logo_A_yl3rjd.png"
+                alt="Editors Hub Logo"
+                className="w-full h-full object-cover origin-center group-hover:scale-110 transition-transform duration-300"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="flex flex-col items-start justify-center hidden sm:flex">
+              <span className="font-display font-bold tracking-tight text-[15px] text-black leading-none">
+                Editors Hub
+              </span>
+            </div>
           </button>
-          <button
-            onClick={() => scrollToSection("shop")}
-            className="text-sm font-medium text-black/60 hover:text-black transition-colors cursor-pointer"
-          >
-            Shop
-          </button>
-          <button
-            onClick={() => scrollToSection("why-us")}
-            className="text-sm font-medium text-black/60 hover:text-black transition-colors cursor-pointer"
-          >
-            About
-          </button>
-          <button
-            onClick={() => scrollToSection("faq")}
-            className="text-sm font-medium text-black/60 hover:text-black transition-colors cursor-pointer"
-          >
-            FAQ
-          </button>
-        </nav>
+
+          {/* Desktop Navigation - Centered Pill Style */}
+          <nav className="hidden md:flex items-center space-x-0.5 lg:space-x-1 absolute left-1/2 -translate-x-1/2">
+            <button
+              onClick={() => scrollToSection("hero")}
+              className="text-[13px] lg:text-sm font-medium text-[#71717A] hover:text-black hover:bg-black/5 px-3 lg:px-4 py-2 rounded-full transition-all cursor-pointer"
+            >
+              Home
+            </button>
+            <button
+              onClick={() => scrollToSection("shop")}
+              className="text-[13px] lg:text-sm font-medium text-[#71717A] hover:text-black hover:bg-black/5 px-3 lg:px-4 py-2 rounded-full transition-all cursor-pointer"
+            >
+              Shop
+            </button>
+            <button
+              onClick={() => scrollToSection("why-us")}
+              className="text-[13px] lg:text-sm font-medium text-[#71717A] hover:text-black hover:bg-black/5 px-3 lg:px-4 py-2 rounded-full transition-all cursor-pointer"
+            >
+              About
+            </button>
+            <button
+              onClick={() => scrollToSection("faq")}
+              className="text-[13px] lg:text-sm font-medium text-[#71717A] hover:text-black hover:bg-black/5 px-3 lg:px-4 py-2 rounded-full transition-all cursor-pointer"
+            >
+              FAQ
+            </button>
+          </nav>
 
         {/* Action Controls */}
         <div className="flex items-center space-x-4">

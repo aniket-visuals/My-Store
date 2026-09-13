@@ -1,5 +1,4 @@
 import { 
-  getAuth, 
   signInWithPopup, 
   GoogleAuthProvider, 
   onAuthStateChanged, 
@@ -10,17 +9,12 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   fetchSignInMethodsForEmail,
-  User, 
-  Auth
+  User
 } from "firebase/auth";
 import { 
   doc, 
   setDoc, 
   getDoc,
-  collection, 
-  getDocs, 
-  query, 
-  orderBy,
   serverTimestamp
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -28,9 +22,7 @@ import { auth, db } from "../firebase";
 // Instantiating the Google Auth Provider with sheets scope
 export const googleProvider = new GoogleAuthProvider();
 
-
 // Flag to indicate if we are in the middle of a sign-in flow.
-let isSigningIn = false;
 
 // Cache the access token in memory.
 let cachedAccessToken: string | null = null;
@@ -67,7 +59,6 @@ export const initAuth = (
  */
 export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
   try {
-    isSigningIn = true;
     const result = await signInWithPopup(auth, googleProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     if (!credential?.accessToken) {
@@ -79,7 +70,6 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     console.error("Google Sign in error:", error);
     throw error;
   } finally {
-    isSigningIn = false;
   }
 };
 
@@ -230,35 +220,6 @@ export const getAccessToken = async (): Promise<string | null> => {
 export const setAccessToken = (token: string | null) => {
   cachedAccessToken = token;
 };
-
-export interface SignupRecord {
-  id: string;
-  name: string;
-  email: string;
-  date: string;
-  provider: string;
-  createdAt?: any;
-}
-
-/**
- * Register signup in Firestore db
- */
-export async function registerSignupInFirestore(
-  uid: string,
-  name: string,
-  email: string,
-  provider: string
-): Promise<void> {
-  // Disabled as per requirements (Do NOT use Firestore or Storage yet)
-}
-
-/**
- * Fetch all signups from Firestore
- */
-export async function getAllSignupsFromFirestore(): Promise<SignupRecord[]> {
-  // Disabled as per requirements (Do NOT use Firestore or Storage yet)
-  return [];
-}
 
 export const checkEmailExists = async (email: string): Promise<boolean> => {
   try {

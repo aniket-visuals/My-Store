@@ -6,13 +6,13 @@ import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import {
   User,
-  Languages,
-  Bell,
-  CreditCard,
-  Landmark,
-  FileText,
-  Lock,
-  Shield,
+  
+  
+  
+  
+  
+  
+  
   CheckCircle2,
   Trash2,
   LogOut,
@@ -22,13 +22,13 @@ import {
   X,
   Edit3,
   Compass,
-  ExternalLink,
-  PlusCircle,
-  RefreshCw,
-  FileSpreadsheet,
+  
+  
+  
+  
   Check,
-  LayoutGrid,
-  Search,
+  
+  
   Settings,
   LifeBuoy,
   Sun,
@@ -91,40 +91,16 @@ const ALL_COUNTRIES = [
 
 export interface AuthenticatedDashboardProps {
   user: any;
-  accessToken: string | null;
-  spreadsheetId: string;
-  spreadsheetUrl: string;
-  signupsList: any[];
-  isSyncing: boolean;
-  isCreatingSheet: boolean;
-  isLoading: boolean;
   handleSignout: () => void;
-  handleGoogleSignIn: () => void;
-  handleCreateNewSheet: () => void;
-  handleSyncToSheet: () => void;
-  refreshSignups: () => void;
   onClose?: () => void;
-  sendForgotPasswordEmail: (email: string) => Promise<void>;
   wishlist?: any[];
   toggleWishlist?: (product: any) => void;
 }
 
 export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
   user,
-  accessToken,
-  spreadsheetId,
-  spreadsheetUrl,
-  signupsList,
-  isSyncing,
-  isCreatingSheet,
-  isLoading,
   handleSignout,
-  handleGoogleSignIn,
-  handleCreateNewSheet,
-  handleSyncToSheet,
-  refreshSignups,
   onClose,
-  sendForgotPasswordEmail,
   wishlist = [],
   toggleWishlist,
 }) => {
@@ -140,9 +116,6 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
   const [tempProfileHandle, setTempProfileHandle] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "loading" | "available" | "taken" | "invalid">("idle");
 
-  const [profilePhone, setProfilePhone] = useState(() => {
-    return localStorage.getItem("profile_phone") || "(219) 555-0114";
-  });
   const [profileLocation, setProfileLocation] = useState(() => {
     return localStorage.getItem("profile_location") || "California";
   });
@@ -151,9 +124,6 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
       localStorage.getItem("profile_bio_text") ||
       "Hi 👋, I'm Ronald, a passionate UX designer with 10 years of experience in creating intuitive and user-centered digital experiences. With a strong background in user research, information architecture, and interaction design, I am dedicated to crafting seamless digital products that delight users and drive business results."
     );
-  });
-  const [selectedAvatar, setSelectedAvatar] = useState(() => {
-    return localStorage.getItem("profile_selected_avatar") || "ronald";
   });
   const [selectedLanguage, setSelectedLanguage] = useState(() => {
     return localStorage.getItem("profile_language") || "english";
@@ -204,46 +174,14 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
 
   // Draft/Temporary values for form fields
   const [tempProfileName, setTempProfileName] = useState(profileName);
-  const [tempProfilePhone, setTempProfilePhone] = useState(profilePhone);
   const [tempProfileLocation, setTempProfileLocation] =
     useState(profileLocation);
   const [tempProfileBioText, setTempProfileBioText] = useState(profileBioText);
 
-  const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
 
   // Notification Preferences toggles
-  const [notifyAccountActivity, setNotifyAccountActivity] = useState(true);
-  const [notifySheetsSync, setNotifySheetsSync] = useState(true);
-  const [notifyWeeklySummary, setNotifyWeeklySummary] = useState(false);
 
-  const getUserAvatarUrl = (key: string) => {
-    switch (key) {
-      case "cat":
-        return "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=240";
-      case "designer":
-        return "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=240";
-      case "pixel":
-        return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=240";
-      case "ronald":
-      default:
-        return "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=240";
-    }
-  };
 
-  const getAvatarBgColor = (key: string) => {
-    switch (key) {
-      case "ronald":
-        return "bg-amber-400";
-      case "cat":
-        return "bg-pink-100";
-      case "designer":
-        return "bg-indigo-100";
-      case "pixel":
-        return "bg-black/5";
-      default:
-        return "bg-yellow-400";
-    }
-  };
 
   const handleSaveProfileDetails = async () => {
     if (usernameStatus === "taken" || usernameStatus === "invalid") {
@@ -289,13 +227,6 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
     setTimeout(() => setSuccessMsg(null), 3000);
   };
 
-  const handleSelectAvatar = (key: string) => {
-    setSelectedAvatar(key);
-    localStorage.setItem("profile_selected_avatar", key);
-    window.dispatchEvent(new Event("profileUpdated"));
-    setIsAvatarSelectorOpen(false);
-    triggerSuccess("Avatar photo updated!");
-  };
 
   const triggerSuccess = (msg: string) => {
     setSuccessMsg(msg);

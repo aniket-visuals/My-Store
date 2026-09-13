@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, doc, setDoc } from "firebase/fi
 import { db } from "../firebase";
 import { StatItem } from "../types";
 import { STATS_DATA } from "../data";
-import { Edit, Save, Plus, X } from "lucide-react";
+import { Edit, Save,X } from "lucide-react";
 
 export default function AdminStats() {
   const [stats, setStats] = useState<StatItem[]>([]);

@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateMetaTags } from "../utils/seo";
-import { ArrowLeft, Sparkles, Video, Play, Zap } from "lucide-react";
+import { ArrowLeft, Sparkles, Video, Zap } from "lucide-react";
 import Footer from "./Footer";
 
 export default function AboutPage() {
@@ -116,7 +116,7 @@ export default function AboutPage() {
       </main>
 
       {/* Footer */}
-      <Footer scrollToSection={() => {}} setActiveCategory={() => {}} />
+      <Footer scrollToSection={() => {}} />
     </div>
   );
 }

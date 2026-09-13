@@ -1,6 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from "react";
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
 import { Product } from "./types";
 import { useProducts } from "./hooks/useProducts";
 import { useSiteAnalytics } from "./hooks/useSiteAnalytics";
@@ -27,42 +26,12 @@ import { updateMetaTags } from "./utils/seo";
 
 
 // Cookie Notice Component
-function CookieNotice() {
-  const [show, setShow] = useState(false);
-  
-  useEffect(() => {
-    const consent = localStorage.getItem('cookie-consent');
-    if (!consent) {
-      setShow(true);
-    }
-  }, []);
-  
-  const accept = () => {
-    localStorage.setItem('cookie-consent', 'true');
-    setShow(false);
-  };
-  
-  if (!show) return null;
-  
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-black/10 p-4 md:p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 font-sans text-brand-dark">
-      <div className="text-sm">
-        <p className="font-semibold mb-1">We use cookies</p>
-        <p className="opacity-70">This website uses cookies to ensure you get the best experience on our website. <a href="/privacy" className="underline">Learn more</a></p>
-      </div>
-      <button onClick={accept} className="bg-brand-dark text-white px-6 py-2 rounded-lg text-sm font-bold shrink-0 hover:bg-black transition-colors w-full md:w-auto">
-        Accept
-      </button>
-    </div>
-  );
-}
 
 export default function App() {
   useSiteAnalytics();
   const { products, loading: isLoadingProducts } = useProducts();
   const [cart, setCart] = useState<Product[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>("all");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
@@ -180,17 +149,16 @@ export default function App() {
       
       {/* 1. Header component */}
       {location.pathname !== "/portal" && (
-        <Navbar
-          cart={cart}
+        <Navbar cart={cart} 
           removeFromCart={removeFromCart}
           clearCart={clearCart}
           openProductPreview={openProductPreview}
           scrollToSection={scrollToSection}
           isLoggedIn={isLoggedIn}
-          setIsLoggedIn={setIsLoggedIn}
+          
           userEmail={userEmail}
-          setUserEmail={setUserEmail}
-          wishlist={wishlist}
+          
+          
         />
       )}
 
@@ -201,18 +169,12 @@ export default function App() {
           <Route path="/" element={
             <>
               {/* Full visual viewport showcase */}
-              <Hero
-                onExploreClick={() => scrollToSection("shop")}
-              />
+              <Hero />
 
               {/* Active dynamic product list */}
-              <FeaturedProducts
-                cart={cart}
-                addToCart={addToCart}
+              <FeaturedProducts      
                 openProductPreview={openProductPreview}
-                activeCategory={activeCategory}
-                setActiveCategory={setActiveCategory}
-                wishlist={wishlist}
+                wishlist={wishlist} 
                 toggleWishlist={toggleWishlist}
               />
 
@@ -225,9 +187,8 @@ export default function App() {
             <ProductRouteWrapper
               products={products}
               isLoadingProducts={isLoadingProducts}
-              cart={cart}
-              addToCart={addToCart}
-              wishlist={wishlist}
+              addToCart={addToCart} 
+              wishlist={wishlist} 
               toggleWishlist={toggleWishlist}
             />
           } />
@@ -239,14 +200,14 @@ export default function App() {
                   setIsLoggedIn(loggedIn);
                   setUserEmail(email);
                 }}
-                wishlist={wishlist}
-                toggleWishlist={toggleWishlist}
+                
+                addToCart={addToCart} wishlist={wishlist} toggleWishlist={toggleWishlist}
               />
             </div>
           } />
 
           {/* Catch-all route to redirect back to main storefront */}
-          <Route path="/checkout" element={<CheckoutPage cart={cart} clearCart={clearCart} />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/thank-you" element={<ThankYouPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -263,7 +224,6 @@ export default function App() {
       {location.pathname !== "/portal" && location.pathname !== "/admin" && (
         <Footer
           scrollToSection={scrollToSection}
-          setActiveCategory={setActiveCategory}
         />
       )}
 
@@ -273,15 +233,12 @@ export default function App() {
 
 // Dynamic routing wrapper for product detail pages
 function ProductRouteWrapper({
-
-  cart,
   addToCart,
   wishlist,
   toggleWishlist,
   products,
   isLoadingProducts
 }: {
-  cart: Product[];
   addToCart: (product: Product) => void;
   wishlist: Product[];
   toggleWishlist: (product: Product) => void;
@@ -332,16 +289,13 @@ function ProductRouteWrapper({
     );
   }
 
-  const inCart = cart.some((item) => item.id === currentProduct.id);
 
   return (
-    <ProductDetailPage
+    <ProductDetailPage  
       product={currentProduct}
-      allProducts={products}
       onBack={() => navigate("/")}
-      addToCart={addToCart}
-      inCart={cart.some((item) => item.id === currentProduct.id)}
-      wishlist={wishlist}
+      addToCart={addToCart} 
+      wishlist={wishlist} 
       toggleWishlist={toggleWishlist}
     />
   );

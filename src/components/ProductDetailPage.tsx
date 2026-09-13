@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  ArrowLeft, Star, Download, Volume2, VolumeX, ShieldCheck, Play, Pause, 
-  Sparkles, Check, Cpu, Send, Mail, AlertCircle, FileCode, Clock,
-  Lock, ArrowRight, Video, FileCheck, Headphones, HelpCircle,
-  Award, Shield, Calendar, Terminal, Info, Users, Share2, HelpCircle as FaqIcon, MessageSquare,
-  Trash2, X, ExternalLink, Heart
+  ArrowLeft, Star, Download, Volume2, VolumeX, ShieldCheck, Play, 
+  Sparkles, Check,
+  Lock,
+  Shield, HelpCircle as FaqIcon, MessageSquare,
+  Trash2, X, Heart
 } from "lucide-react";
 import { Product } from "../types";
 import { collection, query, where, getDocs, getDoc, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
@@ -15,22 +15,14 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { formatDescription } from "../utils";
 
 interface ProductDetailPageProps {
-  allProducts?: Product[];
   product: Product;
   onBack: () => void;
   addToCart: (product: Product) => void;
-  inCart: boolean;
   wishlist?: Product[];
   toggleWishlist?: (product: Product) => void;
 }
 
 // Simulated High-Fidelity products database to populate related products beautifully
-
-const COMMON_FAQS = [
-  { q: "Is payment absolutely safe?", a: "Yes, our processing systems utilize AES SSL 256-bit encryption pipelines ensuring complete tokenization and safe clearance." },
-  { q: "Can I refund if I am not satisfied?", a: "Due to the digital nature of instant download folders, we offer a 24-hour creative satisfaction guarantee. Send us a message and we'll resolve any issues." },
-  { q: "Are updates included free of charge?", a: "Yes, completely! Any minor optimizations, style corrections, or codec updates are delivered directly to your email free for a lifetime." }
-];
 
 const getGalleryImages = (prod: Product): string[] => {
   if (prod.galleryImages && prod.galleryImages.length > 0) {
@@ -40,32 +32,20 @@ const getGalleryImages = (prod: Product): string[] => {
 };
 
 export default function ProductDetailPage({
-  allProducts = [],
   product,
   onBack,
   addToCart,
-  inCart,
   wishlist = [],
   toggleWishlist
 }: ProductDetailPageProps) {
   const navigate = useNavigate();
   const currentProduct = product;
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [audioProgress, setAudioProgress] = useState(0);
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [downloadStep, setDownloadStep] = useState<"form" | "compiling" | "ready">("form");
-  const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeImage, setActiveImage] = useState<string>(product.image);
   const [activeMediaType, setActiveMediaType] = useState<"image" | "video">(product.videoPreview ? "video" : "image");
   const [isVideoMuted, setIsVideoMuted] = useState(true);
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvc, setCardCvc] = useState("");
 
   const [reviews, setReviews] = useState<{ id?: string; userId?: string; email?: string; author: string; handle: string; rate: number; date: string; review: string; avatar: string }[]>([]);
-  const [profileUpdates, setProfileUpdates] = useState(0);
   const [selectedProfile, setSelectedProfile] = useState<{
     isOpen: boolean;
     userId?: string;
@@ -77,17 +57,6 @@ export default function ProductDetailPage({
     isLoadingBio?: boolean;
   } | null>(null);
 
-
-
-  useEffect(() => {
-    const handleProfileUpdate = () => {
-      setProfileUpdates(prev => prev + 1);
-    };
-    window.addEventListener("profileUpdated", handleProfileUpdate);
-    return () => {
-      window.removeEventListener("profileUpdated", handleProfileUpdate);
-    };
-  }, []);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -126,8 +95,6 @@ export default function ProductDetailPage({
   const [newReview, setNewReview] = useState("");
   const [reviewError, setReviewError] = useState("");
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -144,9 +111,6 @@ export default function ProductDetailPage({
 
   // Scroll to top on product switch & sync reviews
   useEffect(() => {
-    setDownloadStep("form");
-    setIsPlayingAudio(false);
-    setAudioProgress(0);
     setActiveImage(currentProduct.image);
     setActiveMediaType(currentProduct.videoPreview ? "video" : "image");
 
@@ -197,73 +161,6 @@ export default function ProductDetailPage({
       active = false;
     };
   }, [currentProduct.id]);
-
-  // Audio Playback simulation / loader
-  useEffect(() => {
-    if (currentProduct.audioPreview) {
-      audioRef.current = new Audio(currentProduct.audioPreview);
-      audioRef.current.volume = 0.4;
-
-      const updateProgress = () => {
-        if (audioRef.current) {
-          setAudioProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0);
-        }
-      };
-
-      const handleEnded = () => {
-        setIsPlayingAudio(false);
-        setAudioProgress(0);
-      };
-
-      audioRef.current.addEventListener("timeupdate", updateProgress);
-      audioRef.current.addEventListener("ended", handleEnded);
-
-      return () => {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.removeEventListener("timeupdate", updateProgress);
-          audioRef.current.removeEventListener("ended", handleEnded);
-        }
-      };
-    }
-  }, [currentProduct.id, currentProduct.audioPreview]);
-
-  const toggleAudioPlayback = () => {
-    if (!audioRef.current) return;
-
-    if (isPlayingAudio) {
-      audioRef.current.pause();
-      setIsPlayingAudio(false);
-    } else {
-      audioRef.current.play().then(() => {
-        setIsPlayingAudio(true);
-      }).catch((err) => {
-        console.error("Audio playback clearance failed:", err);
-      });
-    }
-  };
-
-  const handleFreeCheckout = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes("@")) return;
-
-    setDownloadStep("compiling");
-    setIsSubmitting(true);
-    setSimulatedProgress(0);
-
-    // Dynamic compilation simulation
-    const interval = setInterval(() => {
-      setSimulatedProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setDownloadStep("ready");
-          setIsSubmitting(false);
-          return 100;
-        }
-        return prev + 15;
-      });
-    }, 200);
-  };
 
   // Compute tier price based on current active license type
   const getTierPrice = () => {
@@ -397,8 +294,6 @@ export default function ProductDetailPage({
       }
     }
   };
-
-  const otherProducts = allProducts.filter(p => p.id !== currentProduct.id);
 
   return (
     <div id="gumroad-detail-root" className="min-h-screen bg-brand-bg text-brand-dark pt-24 pb-32">

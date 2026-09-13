@@ -25,7 +25,6 @@ export interface Product {
   metaDescription?: string;
   isPopular?: boolean;
   faqs?: FaqItem[];
-  fileSize?: string;
   commercialRights?: boolean;
   releaseDate?: string;
   rank?: number;
@@ -114,6 +113,7 @@ export interface FeatureItem {
 
 export interface FaqItem {
   id: string;
+  category?: string;
   question: string;
   answer: string;
 }

@@ -4,8 +4,8 @@ import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { 
-  Search, Filter, CheckCircle, XCircle, Eye, 
-  Clock, ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
+  Search, Filter, CheckCircle, XCircle, 
+  ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
   SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users, BarChart, TrendingUp
 } from "lucide-react";
 import { updateMetaTags } from "../utils/seo";

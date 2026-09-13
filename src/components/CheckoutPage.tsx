@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateMetaTags } from "../utils/seo";
-import { ArrowLeft, Check, Shield, Upload, Copy, Info, Clock, Download, Image as ImageIcon, X } from "lucide-react";
+import { ArrowLeft, Check, Shield, Upload, Copy, Info, Clock, Download, Image as ImageIcon } from "lucide-react";
 import { Product } from "../types";
 
 type PaymentMethod = "upi" | "wise" | "paypal";
@@ -22,11 +22,9 @@ export default function CheckoutPage({ cart, clearCart }: { cart: Product[]; cle
   }, []);
 
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
+    const unsubscribe = onAuthStateChanged(auth, (_user) => {
     });
     return () => unsubscribe();
   }, []);

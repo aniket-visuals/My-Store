@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { auth } from "../firebase";
-import { Search, Plus, Edit, Trash2, Key, ShieldAlert, CheckCircle, SearchX, X, MoreVertical, CheckSquare, Square, Smartphone, Lock } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Key, ShieldAlert, CheckCircle, SearchX, X, CheckSquare, Square, Smartphone, Lock } from "lucide-react";
 
 export interface OmniUser {
   id: string; // The username is the key

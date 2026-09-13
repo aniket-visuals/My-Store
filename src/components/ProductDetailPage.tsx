@@ -9,7 +9,7 @@ import {
   Trash2, X, Heart
 } from "lucide-react";
 import { Product } from "../types";
-import { collection, query, where, getDocs, getDoc, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, getDoc, addDoc, serverTimestamp, deleteDoc, doc, getCountFromServer } from "firebase/firestore";
 import { db, auth, OperationType, handleFirestoreError } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { formatDescription } from "../utils";
@@ -59,6 +59,30 @@ export default function ProductDetailPage({
 
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [approvedDownloads, setApprovedDownloads] = useState<number>(currentProduct.downloadCount || 0);
+
+  useEffect(() => {
+    const fetchApprovedDownloads = async () => {
+      try {
+        const q = query(
+          collection(db, "orders"),
+          where("productId", "==", currentProduct.id),
+          where("status", "==", "Approved")
+        );
+        const snapshot = await getCountFromServer(q);
+        const count = snapshot.data().count;
+        if (count > 0) {
+          setApprovedDownloads(count);
+        }
+      } catch (error) {
+        console.error("Error fetching approved downloads:", error);
+      }
+    };
+    
+    if (currentProduct.id) {
+      fetchApprovedDownloads();
+    }
+  }, [currentProduct.id]);
 
   useEffect(() => {
     if (selectedProfile?.isOpen && selectedProfile.userId && selectedProfile.isLoadingBio) {
@@ -442,7 +466,7 @@ export default function ProductDetailPage({
                 
                 <div className="flex items-center space-x-1.5 font-mono text-xs text-brand-primary bg-brand-primary/5 px-3.5 py-1.5 rounded-full border border-brand-primary/10">
                   <Download className="w-3.5 h-3.5 text-brand-primary" />
-                  <span className="font-semibold text-brand-primary">{currentProduct.downloadCount ?? 0}+ Clean Downloads</span>
+                  <span className="font-semibold text-brand-primary">{approvedDownloads}+ Clean Downloads</span>
                 </div>
               </div>
 

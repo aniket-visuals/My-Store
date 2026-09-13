@@ -47,7 +47,7 @@ export default function LoadingScreen({
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
         >
-          Editors Hub
+          Editors Hub Store
         </motion.h2>
         
         {message && (

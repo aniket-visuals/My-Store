@@ -6,7 +6,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { 
   Search, Filter, CheckCircle, XCircle, 
   ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
-  SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users, BarChart, TrendingUp
+  Copy, SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users, BarChart, TrendingUp
 } from "lucide-react";
 import { updateMetaTags } from "../utils/seo";
 import { OrderData } from "../services/orderService";
@@ -735,6 +735,21 @@ export default function AdminDashboard() {
                       </div>
                     </td>
                     <td className="p-4 text-right space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingProduct({
+                            ...product,
+                            id: "",
+                            name: `${product.name} (Copy)`,
+                            slug: `${product.slug}-copy`
+                          });
+                          setCurrentPage("edit-product");
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-dark/5 text-brand-dark hover:bg-brand-dark/10 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Duplicate
+                      </button>
                       <button
                         onClick={() => {
                           setEditingProduct(product);

@@ -26,7 +26,11 @@ async function startServer() {
 
     try {
       if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        throw new Error(`Missing email credentials! Please add ${!process.env.SMTP_USER ? 'SMTP_USER' : ''} ${!process.env.SMTP_PASS ? 'SMTP_PASS' : ''} to Environment Variables.`);
+        console.log("Mocking Email Send (No SMTP credentials found):");
+        console.log(`To: ${to_email}`);
+        console.log(`Subject: ${subject}`);
+        console.log(`Body: ${body}`);
+        return res.json({ success: true, mocked: true });
       }
 
       const transporter = nodemailer.createTransport({

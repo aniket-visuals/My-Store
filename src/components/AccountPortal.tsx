@@ -46,10 +46,14 @@ export default function AccountPortal({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Profile setup states
-  const [isSettingUpProfile, setIsSettingUpProfile] = useState(false);
+  // Multi-step signup states
+  const [signupStep, setSignupStep] = useState<"credentials" | "otp" | "name_bio" | "location_social">("credentials");
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
+  const [enteredOtp, setEnteredOtp] = useState("");
   const [setupLocation, setSetupLocation] = useState("");
   const [setupBio, setSetupBio] = useState("");
+  const [discordUsername, setDiscordUsername] = useState("");
+  const [telegramUsername, setTelegramUsername] = useState("");
 
   
   useEffect(() => {
@@ -125,7 +129,66 @@ export default function AccountPortal({
   };
 
   
-  const handleEmailSignUpStep1 = async (e: React.FormEvent) => {
+  const handleSignupSubmitCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setErrorMsg("Please enter an email address");
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      const emailExists = await checkEmailExists(email.trim());
+      if (emailExists) {
+        setErrorMsg("User already exists. Please sign in");
+        setIsLoading(false);
+        return;
+      }
+
+      // Generate a 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(otp);
+
+      // Send OTP via email API
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to_email: email.trim(),
+          subject: "Your Account Verification Code",
+          body: `Your verification code is: ${otp}\n\nPlease enter this code to complete your signup.`
+        }),
+      });
+      
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to send OTP email");
+      }
+
+      setSignupStep("otp");
+    } catch (error: any) {
+      setErrorMsg(error.message || "Failed to initiate signup");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (enteredOtp !== generatedOtp) {
+      setErrorMsg("Invalid OTP code. Please try again.");
+      return;
+    }
+    setErrorMsg(null);
+    setSignupStep("name_bio");
+  };
+
+  const handleNameBioSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setErrorMsg("Please enter your name");
@@ -139,29 +202,17 @@ export default function AccountPortal({
       setErrorMsg("Username can only contain letters, numbers, and underscores");
       return;
     }
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters.");
-      return;
-    }
-    
+
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const signupEmail = email.trim() || `${username.trim()}@editorshub.local`;
-      const emailExists = await checkEmailExists(signupEmail);
-      if (emailExists) {
-        setErrorMsg("User already exists. Please sign in");
-        setIsLoading(false);
-        return;
-      }
-      
       const isAvailable = await checkUsernameAvailability(username.trim());
       if (!isAvailable) {
         setErrorMsg("Username is already taken");
         setIsLoading(false);
         return;
       }
-      setIsSettingUpProfile(true);
+      setSignupStep("location_social");
     } catch (error) {
       setErrorMsg("Failed to check username availability");
     } finally {
@@ -169,7 +220,6 @@ export default function AccountPortal({
     }
   };
 
-  
   const handleEmailSignUpFinal = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -180,26 +230,23 @@ export default function AccountPortal({
       localStorage.setItem("profile_bio_text", setupBio);
       localStorage.setItem("profile_name", name);
       localStorage.setItem("profile_handle", username.trim());
+      if (discordUsername) localStorage.setItem("profile_discord", discordUsername);
+      if (telegramUsername) localStorage.setItem("profile_telegram", telegramUsername);
+
+      const signupEmail = email.trim();
       
-      const signupEmail = email.trim() || `${username.trim()}@editorshub.local`;
-      
+      // Since they already verified via OTP, we can consider the email verified, 
+      // but Firebase requires verification links. We will just create the user.
       await emailSignUp(signupEmail, password, name, username.trim(), setupBio);
-      
-      if (!signupEmail.endsWith("@editorshub.local")) {
-        setUnverifiedEmail(signupEmail);
-      } else {
-        setSuccessMsg("Account created successfully! Please sign in.");
-        setTimeout(() => {
-          setActiveTab("signin");
-          setIsSettingUpProfile(false);
-          setSuccessMsg(null);
-        }, 1500);
-      }
+
+      setSuccessMsg("Account created successfully! Redirecting...");
+      setTimeout(() => {
+        setSuccessMsg(null);
+        if (onClose) onClose();
+        else navigate(-1);
+      }, 1500);
     } catch (err: any) {
-      if (err.message && (err.message.includes("User already exists") || err.message.includes("email-already-in-use"))) {
-        setIsSettingUpProfile(false);
-      }
-      setErrorMsg(err.message || "Failed to register account.");
+      setErrorMsg(err.message || "Failed to create account.");
     } finally {
       setIsLoading(false);
     }
@@ -269,34 +316,76 @@ export default function AccountPortal({
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-tr from-[#ffbe90] via-[#fde2cb] to-[#fff8f2] flex flex-col items-center justify-center p-4 md:p-8 font-sans">
-      {/* Decorative High-End Ambient Blurred Orbs ("Designer Clouds") */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-white/40 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[550px] h-[550px] bg-white/50 blur-[130px] rounded-full pointer-events-none" />
-      <div className="absolute top-[30%] right-[15%] w-[400px] h-[400px] bg-white/30 blur-[100px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[20%] left-[5%] w-[450px] h-[450px] bg-white/40 blur-[120px] rounded-full pointer-events-none" />
-
-      {/* Back button above the card */}
-      <div className="w-full max-w-4xl mb-4 flex items-center justify-between px-2 z-10">
-        <button
-          onClick={() => {
-                  if (onClose) onClose();
-                  else navigate(-1);
-                }}
-          className="inline-flex items-center space-x-2 text-xs font-bold text-black/60 hover:text-black transition-colors"
-        >
-          <span>← Back to Storefront</span>
-        </button>
-        <span className="text-xs text-black/40 font-mono tracking-wider font-semibold">Workspace Sync Center</span>
-      </div>
+    <div 
+      className="min-h-screen relative overflow-hidden bg-transparent flex flex-col items-center justify-center p-4 md:p-8 font-sans w-full"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          if (onClose) onClose();
+          else navigate(-1);
+        }
+      }}
+    >
 
       <motion.div
         initial={{ scale: 0.98, y: 15, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
-        className="relative w-full max-w-md bg-white/80 backdrop-blur-xl rounded-[28px] shadow-[0_32px_80px_rgba(110,138,181,0.25)] border border-white/80 overflow-hidden z-10 flex flex-col min-h-[580px]"
+        className="relative w-full max-w-5xl bg-white rounded-[28px] shadow-[0_32px_80px_rgba(110,138,181,0.25)] border border-white/80 overflow-hidden z-10 flex flex-col md:flex-row min-h-[600px]"
       >
+        {/* LEFT SIDE: MARKETING PANE */}
+        <div className="hidden md:flex flex-col relative w-1/2 bg-[#FDFBF9] overflow-hidden p-12 border-r border-black/5 justify-between">
+          <div className="z-10 relative">
+            <h1 className="text-[4rem] leading-[1.05] font-black tracking-tight text-[#1a1a1a]">
+              Good<br/>
+              Creators<br/>
+              <span className="font-serif italic font-medium text-[#f95a14]">Better Tools.</span>
+            </h1>
+            <p className="mt-5 text-[17px] text-black/60 font-medium max-w-[280px] leading-snug">
+              Sign in and get access to everything you need.
+            </p>
+          </div>
+          
+          <div className="relative w-full h-full min-h-[300px] mt-10 flex items-end justify-center">
+            <div className="relative w-full h-full flex items-end justify-center pb-4">
+              {/* Laptop mock */}
+              <div className="relative w-64 h-40 bg-[#333] rounded-t-xl rounded-b-sm shadow-2xl z-20 flex flex-col items-center justify-center transform -rotate-6 translate-x-4">
+                 <div className="w-8 h-8 text-[#f95a14] opacity-90 font-black text-2xl rotate-12 flex items-center justify-center">A</div>
+                 <div className="absolute bottom-0 w-full h-2 bg-[#1a1a1a] rounded-b-sm"></div>
+                 <div className="absolute -bottom-2 w-[105%] h-2 bg-[#e5e5e5] rounded-b-md shadow-lg border-b border-black/10"></div>
+              </div>
+              
+              {/* Coffee Mug/Plant mock */}
+              <div className="absolute left-0 bottom-0 z-30 flex flex-col items-center">
+                <div className="relative w-16 h-20 translate-y-4">
+                  <div className="absolute w-12 h-20 bg-green-600 rounded-t-[100%] rounded-b-[40%] origin-bottom transform -rotate-[25deg] shadow-inner"></div>
+                  <div className="absolute w-12 h-24 bg-green-500 rounded-t-[100%] rounded-b-[40%] origin-bottom transform rotate-12 translate-x-4 -translate-y-4 shadow-inner"></div>
+                  <div className="absolute w-10 h-16 bg-green-700 rounded-t-[100%] rounded-b-[40%] origin-bottom transform -rotate-[45deg] -translate-x-4 translate-y-4 shadow-inner"></div>
+                </div>
+                <div className="w-24 h-24 bg-white rounded-lg shadow-xl relative flex flex-col justify-center items-center font-serif italic text-sm text-[#1a1a1a] font-bold leading-tight z-10 border border-black/5">
+                   <span>Edit</span>
+                   <span>Create</span>
+                   <span>Grow</span>
+                   <div className="absolute -right-4 top-4 w-6 h-12 border-[5px] border-l-0 border-white rounded-r-xl shadow-sm"></div>
+                </div>
+              </div>
+
+              {/* Stacked Books mock */}
+              <div className="absolute right-0 bottom-4 z-10 flex flex-col-reverse items-end">
+                <div className="w-36 h-10 bg-[#f95a14] rounded-sm shadow-md border-b-2 border-[#d84d0b] flex items-center px-4 transform rotate-3 origin-bottom-right">
+                  <span className="text-[11px] font-bold text-white tracking-wide">Sound Effects</span>
+                </div>
+                <div className="w-36 h-9 bg-[#2a2a2a] rounded-sm shadow-md border-b-2 border-[#1a1a1a] flex items-center px-4 transform translate-y-[2px] -rotate-1 origin-bottom-right z-10">
+                  <span className="text-[11px] font-bold text-white tracking-wide">Plugins</span>
+                </div>
+                <div className="w-36 h-9 bg-[#f5f5f5] rounded-sm shadow-md border-b-2 border-black/10 flex items-center px-4 transform translate-y-[4px] -rotate-2 origin-bottom-right z-20">
+                  <span className="text-[11px] font-bold text-[#1a1a1a] tracking-wide">Templates</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* RIGHT SIDE: AUTHENTICATION FLOW OR DATABASE SIGNUPS DISPLAY */}
-        <div className="flex-1 p-8 md:p-12 flex flex-col justify-center overflow-y-auto relative bg-white">
+        <div className="flex-1 w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center overflow-y-auto relative bg-white">
           <button
             onClick={() => {
                   if (onClose) onClose();
@@ -433,117 +522,177 @@ export default function AccountPortal({
                   </p>
                 </div>
               </div>
-            ) : isSettingUpProfile ? (
-              <div className="space-y-6">
-                {/* Header Icon + Greeting */}
-                <div className="flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 bg-black/[0.03] rounded-2xl flex items-center justify-center text-black mb-3">
-                    <User className="w-5 h-5 text-black animate-pulse" />
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-black text-black font-sans tracking-tight uppercase">
-                    Profile Details
-                  </h2>
-                  <p className="text-xs text-black/40 mt-2 max-w-xs leading-relaxed font-sans font-medium">
-                    Tell us a little bit about yourself to complete your profile.
-                  </p>
-                </div>
-
-                <form onSubmit={handleEmailSignUpFinal} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
-                      Select Country
-                    </label>
-                    <div className="relative">
-                      <MapPin className="w-4 h-4 text-black/30 absolute left-4 top-1/2 -translate-y-1/2 z-10" />
-                      <select
-                        value={setupLocation}
-                        onChange={(e) => setSetupLocation(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans appearance-none"
-                        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(0,0,0,0.3)\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
-                      >
-                        <option value="" disabled>Select your country</option>
-                        <option value="United States">United States</option>
-                        <option value="United Kingdom">United Kingdom</option>
-                        <option value="Canada">Canada</option>
-                        <option value="Australia">Australia</option>
-                        <option value="Germany">Germany</option>
-                        <option value="France">France</option>
-                        <option value="Japan">Japan</option>
-                        <option value="India">India</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
-                      Short Bio
-                    </label>
-                    <div className="relative">
-                      <FileText className="w-4 h-4 text-black/30 absolute left-4 top-4" />
-                      <textarea
-                        rows={3}
-                        maxLength={65}
-                        placeholder="Tell us about your work..."
-                        value={setupBio}
-                        onChange={(e) => setSetupBio(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-black hover:bg-black/90 active:scale-[0.99] text-white py-3 rounded-xl font-bold font-sans uppercase tracking-wider text-xs transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md"
-                  >
-                    <span>{isLoading ? "Creating Account..." : "Complete Sign Up"}</span>
-                  </button>
-                </form>
-              </div>
             ) : (
-              <div className="space-y-6">
-                {/* Header Icon + Greeting */}
-                <div className="flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 bg-black/[0.03] rounded-2xl flex items-center justify-center text-black mb-3">
-                    <Sparkles className="w-5 h-5 text-black animate-pulse" />
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-black text-black font-sans tracking-tight uppercase">
-                    {activeTab === "signin" ? "WELCOME BACK" : "CREATE ACCOUNT"}
+              <div className="space-y-6 w-full max-w-sm mx-auto md:mx-0 md:max-w-md">
+                {/* Header Greeting */}
+                <div className="flex flex-col items-start justify-center">
+                  <h2 className="text-[2rem] font-bold text-[#1a1a1a] font-sans tracking-tight">
+                    {activeTab === "signin" ? "Sign In" : "Sign Up"}
                   </h2>
-                  <p className="text-xs text-black/40 mt-2 max-w-xs leading-relaxed font-sans font-medium">
+                  <p className="text-base text-black/50 mt-1.5 leading-relaxed font-sans font-medium">
                     {activeTab === "signin" 
-                      ? "Enter your email and password to access your creator account."
-                      : "Access your tables, spreadsheets, and developer assets in one place."}
+                      ? "Access your creator account."
+                      : "Create your account"}
                   </p>
                 </div>
 
-                {/* FORM FIELDS */}
-                <form 
-                  onSubmit={activeTab === "signin" ? handleEmailSignIn : handleEmailSignUpStep1} 
-                  className="space-y-4"
-                >
-                  {activeTab === "signup" && (
-                    <>
+                {activeTab === "signin" || (activeTab === "signup" && signupStep === "credentials") ? (
+                  <>
+                    <form 
+                      onSubmit={activeTab === "signin" ? handleEmailSignIn : handleSignupSubmitCredentials} 
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="block text-sm text-brand-dark mb-1.5 font-medium">
+                          Email
+                        </label>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 text-black/50 absolute left-4 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="email"
+                            required
+                            placeholder="you@company.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <label className="block text-sm text-brand-dark font-medium">
+                            Password
+                          </label>
+                        </div>
+                        <div className="relative">
+                          <Lock className="w-4 h-4 text-black/50 absolute left-4 top-1/2 -translate-y-1/2" />
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            required
+                            placeholder="••••••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full pl-11 pr-12 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all tracking-widest"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-black/30 hover:text-[#f95a14] transition-colors cursor-pointer"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {activeTab === "signin" && (
+                        <div className="flex items-center justify-between pt-1 pb-2">
+                          <label className="flex items-center space-x-2 text-xs text-black/60 font-medium cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded border-gray-300 text-[#f95a14] focus:ring-[#f95a14] transition-all cursor-pointer" 
+                            />
+                            <span>Remember me</span>
+                          </label>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              setActiveTab("forgot");
+                              setErrorMsg(null);
+                              setSuccessMsg(null);
+                            }}
+                            className="text-xs text-[#f95a14] hover:text-[#d84d0b] font-medium transition-colors cursor-pointer"
+                          >
+                            Forgot Password?
+                          </button>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-[#f95a14] hover:bg-[#d84d0b] active:scale-[0.99] text-white py-3 rounded-xl font-bold font-sans text-[15px] transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-sm mt-2 disabled:opacity-70"
+                      >
+                        <span>{isLoading ? "Validating..." : activeTab === "signin" ? "Sign In" : "Create Account"}</span>
+                      </button>
+                    </form>
+
+                    {/* GOOGLE SIGN IN DIVIDER */}
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-black/10"></div>
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="bg-white px-2 text-black/40">or continue with</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <button
+                        onClick={handleGoogleSignIn}
+                        disabled={isLoading}
+                        className="w-full flex items-center justify-center space-x-2 bg-white border border-black/10 hover:border-black/20 hover:bg-black/[0.01] text-[#1a1a1a] font-medium text-[15px] py-3 px-4 rounded-xl shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-70"
+                      >
+                        <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.9h6.6c-.28 1.5-1.12 2.76-2.38 3.6v3h3.84c2.25-2.07 3.53-5.1 3.53-8.7c0-.25-.01-.5-.03-.73z" />
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.84-3c-1.07.72-2.45 1.16-4.09 1.16c-3.15 0-5.81-2.13-6.76-5.01H1.32v3.1A11.99 11.99 0 0 0 12 24z" />
+                          <path fill="#FBBC05" d="M5.24 14.24A7.2 7.2 0 0 1 4.8 12c0-.79.13-1.56.38-2.28V6.62H1.32a11.99 11.99 0 0 0 0 10.76l3.92-3.14z" />
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A11.99 11.99 0 0 0 1.32 6.62l3.92 3.14C6.19 6.88 8.85 4.75 12 4.75z" />
+                        </svg>
+                        <span>Sign in with Google</span>
+                      </button>
+                    </div>
+                  </>
+                ) : activeTab === "signup" && signupStep === "otp" ? (
+                  <form onSubmit={handleVerifyOtp} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
+                      <label className="block text-sm text-brand-dark mb-1.5 font-medium">
+                        Verification Code (OTP)
+                      </label>
+                      <p className="text-xs text-black/50 mb-3">
+                        We sent a 6-digit code to <strong>{email}</strong>. Please enter it below.
+                      </p>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-black/50 absolute left-4 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          required
+                          maxLength={6}
+                          placeholder="123456"
+                          value={enteredOtp}
+                          onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
+                          className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all tracking-[0.5em] font-mono"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-[#f95a14] hover:bg-[#d84d0b] active:scale-[0.99] text-white py-3 rounded-xl font-bold font-sans text-[15px] transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-sm"
+                    >
+                      <span>Verify Email</span>
+                    </button>
+                  </form>
+                ) : activeTab === "signup" && signupStep === "name_bio" ? (
+                  <form onSubmit={handleNameBioSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm text-brand-dark mb-1.5 font-medium">
                         Your Full Name
                       </label>
                       <div className="relative">
-                        <User className="w-4 h-4 text-black/30 absolute left-4 top-1/2 -translate-y-1/2" />
+                        <User className="w-4 h-4 text-black/50 absolute left-4 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           required
                           placeholder="Alex Mercer"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"
+                          className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all"
                         />
                       </div>
                     </div>
                     
-                                        <div className="mt-4">
+                    <div>
                       <div className="flex justify-between items-center mb-1.5">
-                        <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest font-bold">
+                        <label className="block text-sm text-brand-dark font-medium">
                           Username
                         </label>
                         {usernameStatus === 'loading' && <span className="text-[10px] text-brand-primary font-bold">Checking...</span>}
@@ -559,127 +708,105 @@ export default function AccountPortal({
                           placeholder="alexmercer"
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
-                          className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:ring-1 transition-all font-medium font-sans ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : usernameStatus === 'available' ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20' : 'border-black/10 focus:border-black/35 focus:ring-black/5'}`}
+                          className={`w-full pl-9 pr-4 py-3 rounded-xl border bg-white hover:border-black/20 outline-none text-sm text-brand-dark transition-all ${usernameStatus === "taken" || usernameStatus === "invalid" ? "border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : usernameStatus === "available" ? "border-emerald-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20" : "border-black/10 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20"}`}
                         />
                       </div>
                     </div>
-                    </>
-                  )}
 
-                  <div>
-                    <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest mb-1.5 font-bold">
-                      {activeTab === "signin" ? "Email or Username" : "Email Address (Optional)"}
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-black/30 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type={activeTab === "signin" ? "text" : "email"}
-                        required={activeTab === "signin"}
-                        placeholder={activeTab === "signin" ? "alexmercer@gmail.com or username" : "alexmercer@gmail.com"}
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <label className="block text-[10px] font-mono text-black/50 uppercase tracking-widest font-bold">
-                        {activeTab === "signin" ? "Password" : "Create password"}
+                    <div>
+                      <label className="block text-sm text-brand-dark mb-1.5 font-medium">
+                        Short Bio
                       </label>
+                      <div className="relative">
+                        <FileText className="w-4 h-4 text-black/30 absolute left-4 top-4" />
+                        <textarea
+                          rows={3}
+                          maxLength={65}
+                          placeholder="Tell us about your work..."
+                          value={setupBio}
+                          onChange={(e) => setSetupBio(e.target.value)}
+                          className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all resize-none"
+                        />
+                      </div>
                     </div>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-black/30 absolute left-4 top-1/2 -translate-y-1/2" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        placeholder="••••••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-11 pr-12 py-3 rounded-xl border border-black/10 bg-black/[0.01] hover:bg-black/[0.02] focus:bg-white outline-none text-xs text-black focus:border-black/35 focus:ring-1 focus:ring-black/5 transition-all font-medium font-sans"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-black/30 hover:text-black transition-colors cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Remember Me & Forgot Password Row */}
-                  <div className="flex items-center justify-between pt-1 pb-2">
-                    <label className="flex items-center space-x-2 text-xs text-black/60 font-semibold cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black transition-all cursor-pointer" 
-                      />
-                      <span>Remember me</span>
-                    </label>
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setActiveTab("forgot");
-                        setErrorMsg(null);
-                        setSuccessMsg(null);
-                      }}
-                      className="text-xs text-black/60 hover:text-black font-semibold transition-colors cursor-pointer"
+                    <button
+                      type="submit"
+                      disabled={isLoading || usernameStatus === 'taken' || usernameStatus === 'invalid'}
+                      className="w-full bg-[#f95a14] hover:bg-[#d84d0b] active:scale-[0.99] text-white py-3 rounded-xl font-bold font-sans text-[15px] transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-sm disabled:opacity-70 mt-2"
                     >
-                      Forgot Password
+                      <span>Continue</span>
                     </button>
-                  </div>
+                  </form>
+                ) : activeTab === "signup" && signupStep === "location_social" ? (
+                  <form onSubmit={handleEmailSignUpFinal} className="space-y-4">
+                    <div>
+                      <label className="block text-sm text-brand-dark mb-1.5 font-medium">
+                        Select Country
+                      </label>
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-black/30 absolute left-4 top-1/2 -translate-y-1/2 z-10" />
+                        <select
+                          value={setupLocation}
+                          onChange={(e) => setSetupLocation(e.target.value)}
+                          required
+                          className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all appearance-none"
+                          style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'rgba(0,0,0,0.3)\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
+                        >
+                          <option value="" disabled>Select your country</option>
+                          <option value="United States">United States</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="Canada">Canada</option>
+                          <option value="Australia">Australia</option>
+                          <option value="Germany">Germany</option>
+                          <option value="France">France</option>
+                          <option value="Japan">Japan</option>
+                          <option value="India">India</option>
+                        </select>
+                      </div>
+                    </div>
 
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-black hover:bg-black/90 active:scale-[0.99] text-white py-3 rounded-xl font-bold font-sans uppercase tracking-wider text-xs transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md"
-                  >
-                    <span>{isLoading ? "Validating security..." : activeTab === "signin" ? "Sign In" : "Create Account"}</span>
-                  </button>
-                </form>
+                    <div>
+                      <label className="block text-sm text-brand-dark mb-1.5 font-medium">
+                        Discord Username (Optional)
+                      </label>
+                      <div className="relative">
+                        <span className="text-black/30 absolute left-4 top-1/2 -translate-y-1/2 font-mono text-sm font-bold">@</span>
+                        <input
+                          type="text"
+                          placeholder="discorduser"
+                          value={discordUsername}
+                          onChange={(e) => setDiscordUsername(e.target.value)}
+                          className="w-full pl-9 pr-4 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all"
+                        />
+                      </div>
+                    </div>
 
-                {/* GOOGLE SIGN IN DIVIDER */}
-                <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-black/10"></div>
-                  <span className="flex-shrink mx-4 text-[9px] text-black/30 uppercase tracking-widest font-mono font-bold">
-                    or continue with
-                  </span>
-                  <div className="flex-grow border-t border-black/10"></div>
-                </div>
+                    <div>
+                      <label className="block text-sm text-brand-dark mb-1.5 font-medium">
+                        Telegram Username (Optional)
+                      </label>
+                      <div className="relative">
+                        <span className="text-black/30 absolute left-4 top-1/2 -translate-y-1/2 font-mono text-sm font-bold">@</span>
+                        <input
+                          type="text"
+                          placeholder="telegramuser"
+                          value={telegramUsername}
+                          onChange={(e) => setTelegramUsername(e.target.value)}
+                          className="w-full pl-9 pr-4 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all"
+                        />
+                      </div>
+                    </div>
 
-                {/* Standard Google Sign In Button */}
-                <button
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center space-x-3 bg-white hover:bg-black/[0.02] active:bg-black/[0.04] border border-black/10 text-black font-bold text-xs py-3 px-4 rounded-xl shadow-sm transition-all duration-150 cursor-pointer"
-                >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.9h6.6c-.28 1.5-1.12 2.76-2.38 3.6v3h3.84c2.25-2.07 3.53-5.1 3.53-8.7c0-.25-.01-.5-.03-.73z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.84-3c-1.07.72-2.45 1.16-4.09 1.16c-3.15 0-5.81-2.13-6.76-5.01H1.32v3.1A11.99 11.99 0 0 0 12 24z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.24 14.24A7.2 7.2 0 0 1 4.8 12c0-.79.13-1.56.38-2.28V6.62H1.32a11.99 11.99 0 0 0 0 10.76l3.92-3.14z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A11.99 11.99 0 0 0 1.32 6.62l3.92 3.14C6.19 6.88 8.85 4.75 12 4.75z"
-                    />
-                  </svg>
-                  <span>Sign in with Google</span>
-                </button>
-                
-                <p className="text-[10px] text-center text-black/40 mt-4 font-sans font-medium px-4 leading-relaxed">
-                  By continuing, you agree to our <a href="/terms" className="underline hover:text-black">Terms of Service</a> and <a href="/privacy" className="underline hover:text-black">Privacy Policy</a>.
-                </p>
-
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full bg-[#f95a14] hover:bg-[#d84d0b] active:scale-[0.99] text-white py-3 rounded-xl font-bold font-sans text-[15px] transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-sm disabled:opacity-70 mt-4"
+                    >
+                      <span>{isLoading ? "Finalizing..." : "Complete Setup"}</span>
+                    </button>
+                  </form>
+                ) : null}
                 {/* Sign in switcher footer */}
                 <div className="text-center pt-2">
                   <p className="text-xs text-black/50 font-medium">
@@ -689,9 +816,9 @@ export default function AccountPortal({
                         setActiveTab(activeTab === "signin" ? "signup" : "signin");
                         setErrorMsg(null);
                       }}
-                      className="text-black hover:underline font-bold transition-all cursor-pointer"
+                      className="text-[#f95a14] hover:underline font-bold transition-all cursor-pointer"
                     >
-                      {activeTab === "signin" ? "Sign up" : "Register"}
+                      {activeTab === "signin" ? "Sign Up" : "Sign In"}
                     </button>
                   </p>
                 </div>

@@ -1,0 +1,122 @@
+  const handleSignupSubmitCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setErrorMsg("Please enter an email address");
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      const emailExists = await checkEmailExists(email.trim());
+      if (emailExists) {
+        setErrorMsg("User already exists. Please sign in");
+        setIsLoading(false);
+        return;
+      }
+
+      // Generate a 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(otp);
+
+      // Send OTP via email API
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to_email: email.trim(),
+          subject: "Your Account Verification Code",
+          body: `Your verification code is: ${otp}\n\nPlease enter this code to complete your signup.`
+        }),
+      });
+      
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to send OTP email");
+      }
+
+      setSignupStep("otp");
+    } catch (error: any) {
+      setErrorMsg(error.message || "Failed to initiate signup");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (enteredOtp !== generatedOtp) {
+      setErrorMsg("Invalid OTP code. Please try again.");
+      return;
+    }
+    setErrorMsg(null);
+    setSignupStep("name_bio");
+  };
+
+  const handleNameBioSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setErrorMsg("Please enter your name");
+      return;
+    }
+    if (!username.trim()) {
+      setErrorMsg("Please enter a username");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+      setErrorMsg("Username can only contain letters, numbers, and underscores");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      const isAvailable = await checkUsernameAvailability(username.trim());
+      if (!isAvailable) {
+        setErrorMsg("Username is already taken");
+        setIsLoading(false);
+        return;
+      }
+      setSignupStep("location_social");
+    } catch (error) {
+      setErrorMsg("Failed to check username availability");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailSignUpFinal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      localStorage.setItem("profile_location", setupLocation);
+      localStorage.setItem("profile_bio_text", setupBio);
+      localStorage.setItem("profile_name", name);
+      localStorage.setItem("profile_handle", username.trim());
+      if (discordUsername) localStorage.setItem("profile_discord", discordUsername);
+      if (telegramUsername) localStorage.setItem("profile_telegram", telegramUsername);
+
+      const signupEmail = email.trim();
+      
+      // Since they already verified via OTP, we can consider the email verified, 
+      // but Firebase requires verification links. We will just create the user.
+      await emailSignUp(signupEmail, password, name, username.trim(), setupBio);
+
+      setSuccessMsg("Account created successfully! Redirecting...");
+      setTimeout(() => {
+        setSuccessMsg(null);
+        if (onClose) onClose();
+        else navigate(-1);
+      }, 1500);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to create account.");
+    } finally {
+      setIsLoading(false);
+    }
+  };

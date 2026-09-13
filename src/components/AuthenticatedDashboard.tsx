@@ -149,6 +149,8 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
 
   // Card edit modes
   const [isEditingProfileDetails, setIsEditingProfileDetails] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
 
   
   useEffect(() => {
@@ -251,8 +253,22 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
   ];
 
   return (
-    <div className="min-h-screen w-full bg-brand-bg text-brand-dark flex flex-col md:flex-row font-sans relative overflow-x-hidden selection:bg-brand-primary/20 selection:text-brand-dark">
-      {/* Dynamic Action Success Notification Alert Bar */}
+    <div 
+      className="min-h-screen relative overflow-hidden bg-transparent flex flex-col items-center justify-center p-4 md:p-8 font-sans selection:bg-brand-primary/20 selection:text-brand-dark text-brand-dark w-full"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          if (onClose) onClose();
+          else navigate(-1);
+        }
+      }}
+    >
+
+      <motion.div
+        initial={{ scale: 0.98, y: 15, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        className="relative w-full max-w-6xl bg-brand-bg rounded-[28px] shadow-[0_32px_80px_rgba(110,138,181,0.25)] border border-white/80 overflow-hidden z-10 flex flex-col md:flex-row h-[85vh] min-h-[600px]"
+      >
+        {/* Dynamic Action Success Notification Alert Bar */}
       <AnimatePresence>
         {successMsg && (
           <motion.div
@@ -268,7 +284,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
       </AnimatePresence>
 
       {/* 1. DESKTOP SIDEBAR */}
-      <aside className="hidden md:flex flex-col w-72 bg-white border-r border-black/5 h-screen sticky top-0 justify-between p-6 shrink-0 z-20">
+      <aside className="hidden md:flex flex-col w-72 bg-white border-r border-black/5 h-full justify-between p-6 shrink-0 z-20">
         <div className="space-y-6">
           {/* Header Logo */}
           <button
@@ -491,7 +507,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
       </AnimatePresence>
 
       {/* 3. MAIN WORKSPACE CONTAINER */}
-      <main className="flex-1 min-h-screen p-5 sm:p-8 md:p-10 flex flex-col justify-start overflow-y-auto">
+      <main className="flex-1 h-full p-5 sm:p-8 md:p-10 flex flex-col justify-start overflow-y-auto">
         {/* DYNAMIC TAB CONTROLLER */}
         <div className="flex flex-col lg:flex-row gap-8 items-start justify-start w-full">
           {/* LEFT / CENTER CORE WORKSPACE ELEMENT */}
@@ -852,30 +868,14 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Are you sure you want to sign out?",
-                          )
-                        ) {
-                          handleSignout();
-                        }
-                      }}
+                      onClick={() => setShowSignOutConfirm(true)}
                       className="flex-1 flex justify-center items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors shadow-sm"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Sign Out</span>
                     </button>
                     <button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Are you absolutely sure you want to delete your account? This will permanently delete all your data.",
-                          )
-                        ) {
-                          handleSignout();
-                        }
-                      }}
+                      onClick={() => setShowDeleteAccountConfirm(true)}
                       className="flex-1 flex justify-center items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-rose-500 hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -972,6 +972,94 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
           </div>
         </div>
       </main>
+      <AnimatePresence>
+        {showSignOutConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowSignOutConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-black/5"
+            >
+              <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mb-5">
+                <LogOut className="w-6 h-6 text-rose-500" />
+              </div>
+              <h3 className="text-xl font-bold text-brand-dark mb-2">Sign Out</h3>
+              <p className="text-sm text-brand-muted mb-8">
+                Are you sure you want to sign out of your account?
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowSignOutConfirm(false)}
+                  className="flex-1 px-4 py-3 bg-black/[0.03] hover:bg-black/[0.05] text-brand-dark font-semibold text-xs rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSignOutConfirm(false);
+                    handleSignout();
+                  }}
+                  className="flex-1 px-4 py-3 bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs rounded-xl shadow-sm shadow-rose-500/20 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showDeleteAccountConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowDeleteAccountConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-black/5"
+            >
+              <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mb-5">
+                <Trash2 className="w-6 h-6 text-rose-500" />
+              </div>
+              <h3 className="text-xl font-bold text-brand-dark mb-2">Delete Account</h3>
+              <p className="text-sm text-brand-muted mb-8">
+                Are you absolutely sure you want to delete your account? This will permanently delete all your data and cannot be undone.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteAccountConfirm(false)}
+                  className="flex-1 px-4 py-3 bg-black/[0.03] hover:bg-black/[0.05] text-brand-dark font-semibold text-xs rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteAccountConfirm(false);
+                    handleSignout();
+                  }}
+                  className="flex-1 px-4 py-3 bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs rounded-xl shadow-sm shadow-rose-500/20 transition-colors"
+                >
+                  Delete Account
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </motion.div>
     </div>
   );
 };

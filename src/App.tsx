@@ -148,7 +148,7 @@ export default function App() {
     <div className="min-h-screen bg-brand-bg flex flex-col font-sans selection:bg-brand-primary/20">
       
       {/* 1. Header component */}
-      {location.pathname !== "/portal" && (
+      {true && (
         <Navbar cart={cart} 
           removeFromCart={removeFromCart}
           clearCart={clearCart}
@@ -194,16 +194,34 @@ export default function App() {
           } />
 
           <Route path="/portal" element={
-            <div className="w-full">
-              <AccountPortal
-                onLoginStateChange={(loggedIn, email) => {
-                  setIsLoggedIn(loggedIn);
-                  setUserEmail(email);
-                }}
-                
-                addToCart={addToCart} wishlist={wishlist} toggleWishlist={toggleWishlist}
+            <>
+              <Hero />
+              <FeaturedProducts
+                openProductPreview={openProductPreview}
+                wishlist={wishlist} 
+                toggleWishlist={toggleWishlist}
               />
-            </div>
+              <FaqSection />
+              
+              {/* Overlay portal on top */}
+              <div 
+                className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-sm overflow-y-auto w-full flex flex-col"
+                onClick={(e) => {
+                  // Only navigate back if the user clicked directly on the overlay, not on the children
+                  if (e.target === e.currentTarget) {
+                    navigate("/");
+                  }
+                }}
+              >
+                <AccountPortal
+                  onLoginStateChange={(loggedIn, email) => {
+                    setIsLoggedIn(loggedIn);
+                    setUserEmail(email);
+                  }}
+                  addToCart={addToCart} wishlist={wishlist} toggleWishlist={toggleWishlist}
+                />
+              </div>
+            </>
           } />
 
           {/* Catch-all route to redirect back to main storefront */}
@@ -221,7 +239,7 @@ export default function App() {
       </main>
 
       {/* 3. Multi-column detailed footer */}
-      {location.pathname !== "/portal" && location.pathname !== "/admin" && (
+      {location.pathname !== "/admin" && (
         <Footer
           scrollToSection={scrollToSection}
         />

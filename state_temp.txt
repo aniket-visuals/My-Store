@@ -1,0 +1,19 @@
+  // Form fields
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "loading" | "available" | "taken" | "invalid">("idle");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Multi-step signup states
+  const [signupStep, setSignupStep] = useState<"credentials" | "otp" | "name_bio" | "location_social">("credentials");
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [setupLocation, setSetupLocation] = useState("");
+  const [setupBio, setSetupBio] = useState("");
+  const [discordUsername, setDiscordUsername] = useState("");
+  const [telegramUsername, setTelegramUsername] = useState("");

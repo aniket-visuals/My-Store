@@ -1,0 +1,14 @@
+              <div className="space-y-6 w-full max-w-sm mx-auto md:mx-0 md:max-w-md">
+                {/* Header Greeting */}
+                <div className="flex flex-col items-start justify-center">
+                  <h2 className="text-[2rem] font-bold text-[#1a1a1a] font-sans tracking-tight">
+                    {activeTab === "signin" ? "Sign In" : "Sign Up"}
+                  </h2>
+                  <p className="text-base text-black/50 mt-1.5 leading-relaxed font-sans font-medium">
+                    {activeTab === "signin" 
+                      ? "Access your creator account."
+                      : "Create your account"}
+                  </p>
+                </div>
+
+                {/* FORM FIELDS */}

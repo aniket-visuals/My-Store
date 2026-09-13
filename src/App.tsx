@@ -207,7 +207,7 @@ export default function App() {
           } />
 
           {/* Catch-all route to redirect back to main storefront */}
-          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/checkout" element={<CheckoutPage cart={cart} clearCart={clearCart} />} />
           <Route path="/thank-you" element={<ThankYouPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

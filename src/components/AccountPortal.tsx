@@ -544,14 +544,14 @@ export default function AccountPortal({
                     >
                       <div>
                         <label className="block text-sm text-brand-dark mb-1.5 font-medium">
-                          Email
+                          {activeTab === "signin" ? "Email or Username" : "Email"}
                         </label>
                         <div className="relative">
                           <Mail className="w-4 h-4 text-black/50 absolute left-4 top-1/2 -translate-y-1/2" />
                           <input
-                            type="email"
+                            type={activeTab === "signin" ? "text" : "email"}
                             required
-                            placeholder="you@company.com"
+                            placeholder={activeTab === "signin" ? "you@company.com or username" : "you@company.com"}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full pl-11 pr-4 py-3 rounded-xl border border-black/10 bg-white hover:border-black/20 focus:border-[#f95a14] focus:ring-1 focus:ring-[#f95a14]/20 outline-none text-sm text-brand-dark transition-all"

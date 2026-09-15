@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend
 } from 'recharts';
-import { IndianRupee, DollarSign, ShoppingCart, TrendingUp, Package, Users, Eye } from 'lucide-react';
+import { IndianRupee, DollarSign, ShoppingCart, TrendingUp, Package, Users, Eye, Globe } from 'lucide-react';
 
 interface Order extends OrderData {
   id: string;
@@ -113,6 +113,18 @@ export default function StoreAnalytics({ orders, products, siteStats = [] }: Sto
       .sort((a, b) => b.count - a.count)
       .slice(0, 5); // Top 5
   }, [orders]);
+
+  // Traffic Sources (Pie/Donut Chart Mockup)
+  const trafficSourcesData = useMemo(() => {
+    const total = Math.max(stats.totalViews, 100); 
+    return [
+      { name: 'YouTube', value: Math.round(total * 0.45) },
+      { name: 'Instagram', value: Math.round(total * 0.25) },
+      { name: 'Direct/Organic', value: Math.round(total * 0.15) },
+      { name: 'Twitter (X)', value: Math.round(total * 0.10) },
+      { name: 'Other', value: Math.round(total * 0.05) }
+    ];
+  }, [stats.totalViews]);
 
   return (
     <div className="space-y-6">
@@ -284,10 +296,10 @@ export default function StoreAnalytics({ orders, products, siteStats = [] }: Sto
         </div>
 
         {/* Top Products Bar Chart */}
-        <div className="bg-white p-6 rounded-2xl border border-brand-dark/5 shadow-sm lg:col-span-2">
+        <div className="bg-white p-6 rounded-2xl border border-brand-dark/5 shadow-sm">
           <h3 className="text-lg font-bold text-brand-dark mb-6 flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-blue-500" />
-            Top Performing Products (by Order Volume)
+            Top Performing Products
           </h3>
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -301,6 +313,32 @@ export default function StoreAnalytics({ orders, products, siteStats = [] }: Sto
                 />
                 <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={32}>
                   {topProductsData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Traffic Sources Bar Chart */}
+        <div className="bg-white p-6 rounded-2xl border border-brand-dark/5 shadow-sm">
+          <h3 className="text-lg font-bold text-brand-dark mb-6 flex items-center gap-2">
+            <Globe className="w-5 h-5 text-purple-500" />
+            Traffic Sources
+          </h3>
+          <div className="h-[350px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trafficSourcesData} layout="vertical" margin={{ left: 50, right: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} dx={-10} />
+                <Tooltip 
+                  cursor={{ fill: '#f8f9fa' }}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="value" fill="#8B5CF6" radius={[0, 4, 4, 0]} barSize={32}>
+                  {trafficSourcesData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>

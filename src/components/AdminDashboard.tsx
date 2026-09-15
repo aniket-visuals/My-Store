@@ -69,7 +69,7 @@ export default function AdminDashboard() {
   
   // Modals state
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
-  const [confirmModal, setConfirmModal] = useState<{ action: "Approve" | "Reject", order: Order } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{ action: "Approve" | "Reject" | "Delete", order: Order } | null>(null);
   const [deleteProductModal, setDeleteProductModal] = useState<AdminProduct | null>(null);
   const [approvalMessageType, setApprovalMessageType] = useState<"default" | "custom">("default");
   const [customEmailSubject, setCustomEmailSubject] = useState("");
@@ -249,6 +249,17 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Error updating order:", error);
       showToast(`Failed to ${newStatus.toLowerCase()} order`, "error");
+    }
+  };
+
+  const handleDeleteOrder = async (order: Order) => {
+    setConfirmModal(null);
+    try {
+      await deleteDoc(doc(db, "orders", order.id));
+      showToast(`Order successfully deleted`, "success");
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      showToast("Failed to delete order", "error");
     }
   };
 
@@ -457,6 +468,12 @@ export default function AdminDashboard() {
                       >
                         <XCircle className="w-3.5 h-3.5" />
                         Reject
+                      </button>
+                      <button
+                         onClick={() => setConfirmModal({ action: "Delete", order })}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
@@ -1578,9 +1595,17 @@ export default function AdminDashboard() {
                   Cancel
                 </button>
                 <button 
-                  onClick={() => handleStatusUpdate(confirmModal.order, confirmModal.action === "Approve" ? "Approved" : "Rejected")}
+                  onClick={() => {
+                    if (confirmModal.action === "Delete") {
+                      handleDeleteOrder(confirmModal.order);
+                    } else {
+                      handleStatusUpdate(confirmModal.order, confirmModal.action === "Approve" ? "Approved" : "Rejected");
+                    }
+                  }}
                   className={`flex-1 px-4 py-2.5 rounded-xl text-white font-bold tracking-wider text-sm transition-colors
-                    ${confirmModal.action === "Approve" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}`}
+                    ${confirmModal.action === "Approve" ? "bg-emerald-500 hover:bg-emerald-600" : 
+                      confirmModal.action === "Delete" ? "bg-red-600 hover:bg-red-700" : 
+                      "bg-red-500 hover:bg-red-600"}`}
                 >
                   Yes, {confirmModal.action}
                 </button>

@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import omnitoolRouter from "./server/routes/omnitool.js";
+import { generateHtmlEmail } from "./server/emailTemplate.js";
 
 dotenv.config();
 
@@ -18,7 +19,7 @@ async function startServer() {
 
   // API route for sending email
   app.post("/api/send-email", async (req, res) => {
-    const { to_email, subject, body } = req.body;
+    const { to_email, subject, body, html } = req.body;
 
     if (!to_email || !subject || !body) {
       return res.status(400).json({ success: false, error: "Missing required fields" });
@@ -43,11 +44,27 @@ async function startServer() {
         },
       });
 
+      const senderEmail = process.env.SMTP_FROM_EMAIL || 'admin@editorshubstore.in';
+      const senderName = process.env.SMTP_FROM_NAME || 'Editors Hub Store';
+
+      const emailHtml = html || generateHtmlEmail({
+        subject,
+        body,
+        storeUrl: "https://editorshubstore.in",
+        supportEmail: senderEmail,
+      });
+
       const info = await transporter.sendMail({
-        from: `"${process.env.SMTP_FROM_NAME || 'Editors Hub Store'}" <${process.env.SMTP_FROM_EMAIL || 'admin@editorshubstore.in'}>`,
+        from: `"${senderName}" <${senderEmail}>`,
         to: to_email,
+        replyTo: senderEmail,
         subject: subject,
         text: body,
+        html: emailHtml,
+        headers: {
+          'X-Auto-Response-Suppress': 'OOF, AutoReply',
+          'X-Report-Abuse-To': senderEmail,
+        },
       });
 
       console.log("Message sent: %s", info.messageId);

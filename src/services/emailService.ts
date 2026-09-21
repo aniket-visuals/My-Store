@@ -6,6 +6,7 @@ interface EmailParams {
   download_link: string;
   subject?: string;
   body?: string;
+  html?: string;
 }
 
 export const sendApprovalEmail = async (params: EmailParams): Promise<{ success: boolean; error?: string }> => {
@@ -20,7 +21,8 @@ export const sendApprovalEmail = async (params: EmailParams): Promise<{ success:
       body: JSON.stringify({
         to_email: params.to_email,
         subject: params.subject,
-        body: params.body
+        body: params.body,
+        html: params.html
       }),
     });
 

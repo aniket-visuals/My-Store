@@ -6,7 +6,8 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { 
   Search, Filter, CheckCircle, XCircle, 
   ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
-  Copy, SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users, BarChart, TrendingUp
+  Copy, SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users, BarChart, TrendingUp,
+  Link2
 } from "lucide-react";
 import { updateMetaTags } from "../utils/seo";
 import { OrderData } from "../services/orderService";
@@ -15,6 +16,7 @@ import { AdminProduct, StoreCategory } from "../types";
 import OmniToolUsers from "./OmniToolUsers";
 import AdminStats from "./AdminStats";
 import StoreAnalytics from "./StoreAnalytics";
+import LinkCloakerAdmin from "./LinkCloakerAdmin";
 import LoadingScreen from "./LoadingScreen";
 
 interface Order extends OrderData {
@@ -50,7 +52,7 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
-  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "categories" | "edit-product" | "omnitool-users" | "stats" | "analytics">("analytics");
+  const [currentPage, setCurrentPage] = useState<"orders" | "products" | "categories" | "edit-product" | "omnitool-users" | "stats" | "analytics" | "links">("analytics");
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productSearchTerm, setProductSearchTerm] = useState("");
@@ -1197,14 +1199,26 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-brand-dark/80 mb-1">Email Body</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-brand-dark/80">Email Body</label>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage("links")}
+                      className="text-xs text-brand-primary hover:underline flex items-center gap-1 font-medium"
+                    >
+                      <Link2 className="w-3.5 h-3.5" /> Open Link Cloaker
+                    </button>
+                  </div>
                   <textarea
                     value={editingProduct.emailBody || ""}
                     onChange={(e) => setEditingProduct({...editingProduct, emailBody: e.target.value})}
                     rows={6}
-                    placeholder="Download:\nhttps://....\n\nTutorial:\nhttps://....\n\nDiscord:\nhttps://...."
-                    className="w-full px-4 py-2 rounded-xl border border-brand-dark/10 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none resize-y"
+                    placeholder="Download:\nhttps://editorshubstore.in/l/your-slug\n\nTutorial:\nhttps://editorshubstore.in/l/tutorial-slug"
+                    className="w-full px-4 py-2 rounded-xl border border-brand-dark/10 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none resize-y text-sm font-mono"
                   ></textarea>
+                  <p className="text-xs text-brand-dark/50 mt-1">
+                    Tip: Use cloaked links from the <strong>Link Cloaker</strong> tab (e.g. <code>https://editorshubstore.in/l/slug</code>) to prevent emails from going to Spam.
+                  </p>
                 </div>
               </div>
             </section>
@@ -1708,6 +1722,15 @@ export default function AdminDashboard() {
             OmniTool Users
           </button>
           <button 
+            onClick={() => setCurrentPage("links")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              currentPage === "links" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
+            }`}
+          >
+            <Link2 className="w-5 h-5 text-brand-primary" />
+            Link Cloaker
+          </button>
+          <button 
             onClick={() => setCurrentPage("stats")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
               currentPage === "stats" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
@@ -1734,7 +1757,7 @@ export default function AdminDashboard() {
         {/* Header */}
         <header className="bg-white border-b border-brand-dark/5 sticky top-0 z-30 h-16 flex items-center px-8">
            <h2 className="font-display font-bold text-xl text-brand-dark">
-             {currentPage === "analytics" ? "Store Analytics" : currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : currentPage === "omnitool-users" ? "OmniTool Users" : currentPage === "stats" ? "Community Stats" : "Products"}
+             {currentPage === "analytics" ? "Store Analytics" : currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : currentPage === "omnitool-users" ? "OmniTool Users" : currentPage === "links" ? "Domain Link Cloaker" : currentPage === "stats" ? "Community Stats" : "Products"}
            </h2>
         </header>
         
@@ -1743,6 +1766,8 @@ export default function AdminDashboard() {
              <div className="p-8"><StoreAnalytics orders={orders} products={products} siteStats={siteStats} /></div>
            ) : currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : currentPage === "categories" ? renderCategories() : currentPage === "omnitool-users" ? (
              <div className="p-8"><OmniToolUsers /></div>
+           ) : currentPage === "links" ? (
+             <div className="p-8"><LinkCloakerAdmin showToast={showToast} /></div>
            ) : currentPage === "stats" ? (
              <div className="p-8"><AdminStats /></div>
            ) : renderProducts()}

@@ -40,12 +40,55 @@
         }
       },
       "required": ["productId", "author", "handle", "rate", "review", "date", "avatar", "createdAt"]
+    },
+    "RedirectLink": {
+      "title": "RedirectLink",
+      "description": "Cloaked redirect link for emails and external resources",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "description": "Unique URL path slug"
+        },
+        "originalUrl": {
+          "type": "string",
+          "description": "Original external target URL"
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional label or description"
+        },
+        "clicks": {
+          "type": "integer",
+          "description": "Total click count"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last update"
+        },
+        "lastClickedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last click"
+        }
+      },
+      "required": ["slug", "originalUrl", "clicks", "createdAt"]
     }
   },
   "firestore": {
     "/reviews/{reviewId}": {
       "schema": "Review",
       "description": "Collection of all product reviews submitted by users"
+    },
+    "/redirects/{slug}": {
+      "schema": "RedirectLink",
+      "description": "Collection of cloaked links for email deliverability and redirection"
     }
   }
 }

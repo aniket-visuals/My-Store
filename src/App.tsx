@@ -18,6 +18,7 @@ const TermsConditions = lazy(() => import("./components/TermsConditions"));
 const RefundPolicy = lazy(() => import("./components/RefundPolicy"));
 const AboutPage = lazy(() => import("./components/AboutPage"));
 const ContactPage = lazy(() => import("./components/ContactPage"));
+const RedirectHandler = lazy(() => import("./components/RedirectHandler"));
 import LoadingScreen from "./components/LoadingScreen";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -144,11 +145,13 @@ export default function App() {
     navigate(`/products/${product.slug}`);
   };
 
+  const isRedirectPage = location.pathname.startsWith("/l/") || location.pathname.startsWith("/go/");
+
   return (
     <div className="min-h-screen bg-brand-bg flex flex-col font-sans selection:bg-brand-primary/20">
       
       {/* 1. Header component */}
-      {true && (
+      {!isRedirectPage && (
         <Navbar cart={cart} 
           removeFromCart={removeFromCart}
           clearCart={clearCart}
@@ -224,6 +227,10 @@ export default function App() {
             </>
           } />
 
+          {/* Dedicated Cloaked Link Redirect Routes */}
+          <Route path="/l/:slug" element={<RedirectHandler />} />
+          <Route path="/go/:slug" element={<RedirectHandler />} />
+
           {/* Catch-all route to redirect back to main storefront */}
           <Route path="/checkout" element={<CheckoutPage cart={cart} clearCart={clearCart} />} />
           <Route path="/thank-you" element={<ThankYouPage />} />
@@ -239,7 +246,7 @@ export default function App() {
       </main>
 
       {/* 3. Multi-column detailed footer */}
-      {location.pathname !== "/admin" && (
+      {location.pathname !== "/admin" && !isRedirectPage && (
         <Footer
           scrollToSection={scrollToSection}
         />

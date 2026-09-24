@@ -37,8 +37,8 @@ export const uploadScreenshot = async (file: File): Promise<string> => {
 export interface OrderData {
   customerName: string;
   email: string;
-  country: string;
-  discordOrTelegramUsername: string;
+  country?: string;
+  discordOrTelegramUsername?: string;
   paymentMethod: string;
   currency: string;
   amount: number;

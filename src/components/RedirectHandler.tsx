@@ -5,7 +5,7 @@ import { ExternalLink, AlertTriangle, ArrowRight, ShieldCheck } from "lucide-rea
 
 export default function RedirectHandler() {
   const { slug } = useParams<{ slug: string }>();
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [targetUrl, setTargetUrl] = useState<string | null>(null);
   const [title, setTitle] = useState<string | null>(null);

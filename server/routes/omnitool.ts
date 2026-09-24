@@ -205,7 +205,7 @@ router.post('/verify-session', async (req, res) => {
 // ==========================================
 
 // Get all users
-router.get('/users', verifyAdmin, async (req, res) => {
+router.get('/users', verifyAdmin, async (_req, res) => {
   try {
     const db = getFirestore(websiteAdminApp);
     const snapshot = await db.collection('omnitool_users').get();

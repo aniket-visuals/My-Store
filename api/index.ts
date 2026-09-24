@@ -288,7 +288,7 @@ app.post('/api/omnitool/verify-session', async (req: any, res: any) => {
 // ADMIN USER MANAGEMENT ROUTES
 // -----------------------------------------------------
 
-app.get('/api/omnitool/users', verifyAdmin, async (req: any, res: any) => {
+app.get('/api/omnitool/users', verifyAdmin, async (_req: any, res: any) => {
   try {
     const db = getFirestore(websiteAdminApp);
     const snapshot = await db.collection('omnitool_users').get();
@@ -413,7 +413,7 @@ app.post('/api/omnitool/users/bulk', verifyAdmin, async (req: any, res: any) => 
   }
 });
 
-app.get("/api/health", (req: any, res: any) => {
+app.get("/api/health", (_req: any, res: any) => {
   res.json({ status: "Vercel Serverless Function is online (Ultimate Monolith Edition)" });
 });
 

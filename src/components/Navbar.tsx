@@ -26,17 +26,18 @@ interface NavbarProps {
   isLoggedIn: boolean;
   userEmail: string;
   wishlist?: Product[];
+  onOpenCheckout?: () => void;
 }
 
 export default function Navbar({
   cart,
   removeFromCart,
-  clearCart,
+  clearCart: _clearCart,
   openProductPreview,
   scrollToSection,
   isLoggedIn,
   userEmail,
-  
+  onOpenCheckout
 }: NavbarProps) {
   const { products: PRODUCTS_DATA } = useProducts();
   const navigate = useNavigate();
@@ -45,7 +46,6 @@ export default function Navbar({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGetStartedOpen, setIsGetStartedOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedKit, setCopiedKit] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -104,15 +104,12 @@ export default function Navbar({
   };
 
   const handleCheckout = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      alert(
-        "Demo Order Processed Successfully! Your files have been compiled. In a real environment, this starts your cloud downloads instantly.",
-      );
-      clearCart();
-      setIsCartOpen(false);
-    }, 1500);
+    setIsCartOpen(false);
+    if (onOpenCheckout) {
+      onOpenCheckout();
+    } else {
+      navigate("/checkout");
+    }
   };
 
   return (
@@ -518,14 +515,9 @@ export default function Navbar({
 
                   <button
                     onClick={handleCheckout}
-                    disabled={isSubmitting}
-                    className="w-full bg-brand-primary text-white py-3.5 rounded-full font-semibold hover:bg-brand-accent transition-colors flex items-center justify-center space-x-2.5"
+                    className="w-full bg-brand-primary text-white py-3.5 rounded-full font-semibold hover:bg-brand-accent transition-colors flex items-center justify-center space-x-2.5 cursor-pointer shadow-md"
                   >
-                    <span>
-                      {isSubmitting
-                        ? "Processing secure path..."
-                        : "Complete Checkout"}
-                    </span>
+                    <span>Complete Checkout</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>

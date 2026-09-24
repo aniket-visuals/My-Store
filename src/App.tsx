@@ -35,8 +35,20 @@ export default function App() {
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const openCheckout = (product?: Product) => {
+    if (product) {
+      addToCart(product);
+    }
+    setIsCheckoutOpen(true);
+  };
+
+  const closeCheckout = () => {
+    setIsCheckoutOpen(false);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -158,10 +170,8 @@ export default function App() {
           openProductPreview={openProductPreview}
           scrollToSection={scrollToSection}
           isLoggedIn={isLoggedIn}
-          
           userEmail={userEmail}
-          
-          
+          onOpenCheckout={() => setIsCheckoutOpen(true)}
         />
       )}
 
@@ -193,6 +203,7 @@ export default function App() {
               addToCart={addToCart} 
               wishlist={wishlist} 
               toggleWishlist={toggleWishlist}
+              onOpenCheckout={openCheckout}
             />
           } />
 
@@ -231,9 +242,43 @@ export default function App() {
           <Route path="/l/:slug" element={<RedirectHandler />} />
           <Route path="/go/:slug" element={<RedirectHandler />} />
 
-          {/* Catch-all route to redirect back to main storefront */}
-          <Route path="/checkout" element={<CheckoutPage cart={cart} clearCart={clearCart} />} />
-          <Route path="/thank-you" element={<ThankYouPage />} />
+          {/* Checkout popup window route */}
+          <Route path="/checkout" element={
+            <>
+              <Hero />
+              <FeaturedProducts
+                openProductPreview={openProductPreview}
+                wishlist={wishlist} 
+                toggleWishlist={toggleWishlist}
+              />
+              <FaqSection />
+              <CheckoutPage 
+                isOpen={true} 
+                cart={cart} 
+                clearCart={clearCart} 
+                onClose={() => {
+                  if (window.history.length > 2) {
+                    navigate(-1);
+                  } else {
+                    navigate("/");
+                  }
+                }} 
+              />
+            </>
+          } />
+          {/* Thank you popup window route */}
+          <Route path="/thank-you" element={
+            <>
+              <Hero />
+              <FeaturedProducts
+                openProductPreview={openProductPreview}
+                wishlist={wishlist} 
+                toggleWishlist={toggleWishlist}
+              />
+              <FaqSection />
+              <ThankYouPage />
+            </>
+          } />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsConditions />} />
@@ -244,6 +289,18 @@ export default function App() {
         </Routes>
         </Suspense>
       </main>
+
+      {/* Global Complete Order Popup Window Modal */}
+      {location.pathname !== "/checkout" && (
+        <Suspense fallback={null}>
+          <CheckoutPage
+            isOpen={isCheckoutOpen}
+            cart={cart}
+            clearCart={clearCart}
+            onClose={closeCheckout}
+          />
+        </Suspense>
+      )}
 
       {/* 3. Multi-column detailed footer */}
       {location.pathname !== "/admin" && !isRedirectPage && (
@@ -262,13 +319,15 @@ function ProductRouteWrapper({
   wishlist,
   toggleWishlist,
   products,
-  isLoadingProducts
+  isLoadingProducts,
+  onOpenCheckout
 }: {
   addToCart: (product: Product) => void;
   wishlist: Product[];
   toggleWishlist: (product: Product) => void;
   products: Product[];
   isLoadingProducts: boolean;
+  onOpenCheckout?: (product?: Product) => void;
 }) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -322,6 +381,7 @@ function ProductRouteWrapper({
       addToCart={addToCart} 
       wishlist={wishlist} 
       toggleWishlist={toggleWishlist}
+      onOpenCheckout={onOpenCheckout}
     />
   );
 }

@@ -19,14 +19,18 @@ import {
   BarChart2, 
   Edit3, 
   X,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 interface Props {
   showToast: (message: string, type: "success" | "error") => void;
+  isHiddenFromSidebar?: boolean;
+  onToggleSidebarVisibility?: () => void;
 }
 
-export default function LinkCloakerAdmin({ showToast }: Props) {
+export default function LinkCloakerAdmin({ showToast, isHiddenFromSidebar, onToggleSidebarVisibility }: Props) {
   const [links, setLinks] = useState<CloakedLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -167,17 +171,42 @@ export default function LinkCloakerAdmin({ showToast }: Props) {
     <div className="space-y-6">
       {/* Tips Banner */}
       <div className="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-transparent border border-orange-500/20 rounded-2xl p-5 relative overflow-hidden">
-        <div className="flex items-start gap-4">
-          <div className="p-2.5 bg-orange-500 text-white rounded-xl shadow-md shrink-0">
-            <ShieldCheck className="w-6 h-6" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-orange-500 text-white rounded-xl shadow-md shrink-0">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-brand-dark text-base">Inbox Protection with Domain Link Cloaker</h3>
+              <p className="text-brand-dark/70 text-sm mt-1 leading-relaxed">
+                When emails contain raw external links (like <code>mega.nz</code> or <code>*.vercel.app</code>), Gmail's anti-phishing filters often send them to Spam. 
+                Cloaking your links routes them through <strong>{baseUrl.replace(/\/l\/$/, '')}</strong> so 100% of your email links match your verified domain.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-brand-dark text-base">Inbox Protection with Domain Link Cloaker</h3>
-            <p className="text-brand-dark/70 text-sm mt-1 leading-relaxed">
-              When emails contain raw external links (like <code>mega.nz</code> or <code>*.vercel.app</code>), Gmail's anti-phishing filters often send them to Spam. 
-              Cloaking your links routes them through <strong>{baseUrl.replace(/\/l\/$/, '')}</strong> so 100% of your email links match your verified domain.
-            </p>
-          </div>
+
+          {onToggleSidebarVisibility && (
+            <button
+              onClick={onToggleSidebarVisibility}
+              className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                isHiddenFromSidebar
+                  ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200"
+                  : "bg-white/80 hover:bg-white text-brand-dark/70 hover:text-brand-dark border-brand-dark/10 shadow-sm"
+              }`}
+            >
+              {isHiddenFromSidebar ? (
+                <>
+                  <Eye className="w-4 h-4 text-amber-700" />
+                  <span>Hidden from Sidebar (Click to Show)</span>
+                </>
+              ) : (
+                <>
+                  <EyeOff className="w-4 h-4 text-brand-dark/50" />
+                  <span>Hide from Sidebar</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 

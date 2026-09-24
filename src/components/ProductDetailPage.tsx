@@ -20,6 +20,7 @@ interface ProductDetailPageProps {
   addToCart: (product: Product) => void;
   wishlist?: Product[];
   toggleWishlist?: (product: Product) => void;
+  onOpenCheckout?: (product?: Product) => void;
 }
 
 // Simulated High-Fidelity products database to populate related products beautifully
@@ -36,7 +37,8 @@ export default function ProductDetailPage({
   onBack,
   addToCart,
   wishlist = [],
-  toggleWishlist
+  toggleWishlist,
+  onOpenCheckout
 }: ProductDetailPageProps) {
   const navigate = useNavigate();
   const currentProduct = product;
@@ -854,7 +856,11 @@ export default function ProductDetailPage({
                     <button
                       onClick={() => {
                         addToCart(currentProduct);
-                        navigate('/checkout');
+                        if (onOpenCheckout) {
+                          onOpenCheckout(currentProduct);
+                        } else {
+                          navigate('/checkout');
+                        }
                       }}
                       className="flex-1 bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
                     >

@@ -12,11 +12,13 @@ import {
   Download,
   Heart,
   Package,
+  Settings,
 } from "lucide-react";
 import { Product } from "../types";
 import { useProducts } from "../hooks/useProducts";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { getUserProfile } from "../services/authService";
 
 interface NavbarProps {
@@ -51,9 +53,11 @@ export default function Navbar({
   const [copiedKit, setCopiedKit] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState<string>(
-    auth.currentUser?.displayName || (userEmail ? userEmail.split("@")[0] : "My Account")
+    auth.currentUser?.displayName || (userEmail ? userEmail.split("@")[0] : "Aniket Visuals")
   );
-  const [profileBio, setProfileBio] = useState<string>("");
+  const [isAdminUser, setIsAdminUser] = useState<boolean>(
+    userEmail === "aniketrajcargal123@gmail.com" || auth.currentUser?.email === "aniketrajcargal123@gmail.com"
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -62,20 +66,32 @@ export default function Navbar({
       const current = auth.currentUser;
       if (!current?.uid) {
         if (isMounted) {
-          setProfileName(userEmail ? userEmail.split("@")[0] : "My Account");
-          setProfileBio("");
+          setProfileName(userEmail ? userEmail.split("@")[0] : "Aniket Visuals");
+          setIsAdminUser(userEmail === "aniketrajcargal123@gmail.com");
         }
         return;
       }
+
+      // Check admin status
+      if (current.email === "aniketrajcargal123@gmail.com" || userEmail === "aniketrajcargal123@gmail.com") {
+        if (isMounted) setIsAdminUser(true);
+      } else {
+        try {
+          const adminDoc = await getDoc(doc(db, "admins", current.uid));
+          if (isMounted) setIsAdminUser(adminDoc.exists());
+        } catch {
+          if (isMounted) setIsAdminUser(false);
+        }
+      }
+
       try {
         const p = await getUserProfile(current.uid);
         if (isMounted && p) {
-          setProfileName(p.displayName || current.displayName || current.email?.split("@")[0] || "My Account");
-          setProfileBio(p.bio || "");
+          setProfileName(p.displayName || current.displayName || current.email?.split("@")[0] || "Aniket Visuals");
         }
       } catch (err) {
         if (isMounted) {
-          setProfileName(current.displayName || current.email?.split("@")[0] || "My Account");
+          setProfileName(current.displayName || current.email?.split("@")[0] || "Aniket Visuals");
         }
       }
     };
@@ -240,83 +256,100 @@ export default function Navbar({
               <AnimatePresence>
                 {isProfileOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-[0_15px_50px_rgba(0,0,0,0.15)] border border-black/5 overflow-hidden text-left z-50 py-4 font-sans"
+                    className="absolute right-0 mt-3.5 w-[330px] sm:w-[350px] bg-white rounded-[26px] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.18)] border border-black/10 p-5 text-left z-50 font-sans"
                   >
-                    {/* Header profile info */}
-                    <div className="px-4 pb-4 border-b border-black/5">
-                      <div className="flex items-start space-x-3">
-                        {getUserAvatarUrl() ? (
-                          <img
-                            src={getUserAvatarUrl()!}
-                            alt="Profile Avatar"
-                            className="w-12 h-12 rounded-full object-cover bg-black/5 border border-black/10 shrink-0"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-primary to-indigo-600 text-white flex items-center justify-center text-xl font-bold border border-black/10 shrink-0">
-                            {getInitials()}
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center space-x-1.5">
-                            <h4 className="font-bold text-sm text-black truncate leading-tight">
-                              {profileName ||
-                                auth.currentUser?.displayName ||
-                                (userEmail ? userEmail.split("@")[0] : "Member")}
-                            </h4>
-                          </div>
-                          <p className="text-[11px] text-black/60 leading-tight mt-1 font-medium line-clamp-3">
-                            {profileBio || auth.currentUser?.email || ""}
-                          </p>
-                        </div>
-                      </div>
+                    {/* Top triangle pointer notch */}
+                    <div className="absolute -top-2 right-14 w-4 h-4 bg-white border-t border-l border-black/10 transform rotate-45 z-10 rounded-tl-[2px]" />
 
-                      <div className="grid grid-cols-2 gap-2 mt-4">
-                        <button
-                          onClick={() => {
-                            setIsProfileOpen(false);
-                            navigate("/portal");
-                          }}
-                          className="w-full text-center border border-black/15 hover:bg-black/[0.02] active:bg-black/[0.04] text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
-                        >
-                          <span>Profile</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsProfileOpen(false);
-                            navigate("/portal", { state: { tab: "orders" } });
-                          }}
-                          className="w-full text-center bg-brand-primary/10 hover:bg-brand-primary/15 text-brand-primary text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center space-x-1.5"
-                        >
-                          <Package className="w-3.5 h-3.5" />
-                          <span>My Orders</span>
-                        </button>
+                    {/* Header Profile Section */}
+                    <div className="flex items-center space-x-3.5 relative z-20">
+                      {getUserAvatarUrl() ? (
+                        <img
+                          src={getUserAvatarUrl()!}
+                          alt="Profile Avatar"
+                          className="w-14 h-14 rounded-full object-cover bg-black/5 border border-black/10 shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full bg-[#111111] border border-black/10 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden">
+                          {/* Signature Gold A with Star */}
+                          <svg viewBox="0 0 100 100" className="w-9 h-9" fill="none">
+                            <path
+                              d="M28 78L48 24H52L72 78H59L54 62H42L45 53H51L48 40L37 78H28Z"
+                              fill="#F5A623"
+                            />
+                            <path
+                              d="M66 22L67.5 27.5L73 29L67.5 30.5L66 36L64.5 30.5L59 29L64.5 27.5L66 22Z"
+                              fill="#F5A623"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-lg text-black truncate leading-snug tracking-tight">
+                          {profileName ||
+                            auth.currentUser?.displayName ||
+                            (userEmail ? userEmail.split("@")[0] : "Aniket Visuals")}
+                        </h4>
+                        <p className="text-sm font-medium text-slate-500 leading-tight mt-0.5">
+                          {isAdminUser ? "Admin" : "Member"}
+                        </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <button
-                          onClick={() => {
-                            setIsProfileOpen(false);
-                            navigate("/portal", { state: { tab: "wishlist" } });
-                          }}
-                          className="w-full text-center bg-black/5 hover:bg-black/10 text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center space-x-1.5"
-                        >
-                          <Heart className="w-3.5 h-3.5" />
-                          <span>Wishlist</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsProfileOpen(false);
-                            navigate("/portal", { state: { tab: "settings" } });
-                          }}
-                          className="w-full text-center bg-black/5 hover:bg-black/10 text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
-                        >
-                          <span>Settings</span>
-                        </button>
-                      </div>
+                    </div>
+
+                    {/* 2x2 Grid of Actions matching design */}
+                    <div className="grid grid-cols-2 gap-3 mt-5 relative z-20">
+                      {/* Profile */}
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          navigate("/portal");
+                        }}
+                        className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 active:bg-slate-100 rounded-2xl py-3.5 px-4 flex items-center gap-3 transition-all cursor-pointer group text-left"
+                      >
+                        <User className="w-5 h-5 text-black shrink-0 stroke-[1.8]" />
+                        <span className="text-sm font-semibold text-black">Profile</span>
+                      </button>
+
+                      {/* My Orders (Highlighted in orange accent as shown in design) */}
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          navigate("/portal", { state: { tab: "orders" } });
+                        }}
+                        className="bg-[#fff8f2] border border-[#ff8833]/70 hover:bg-[#fff2e6] active:bg-[#ffeade] rounded-2xl py-3.5 px-4 flex items-center gap-3 transition-all cursor-pointer group text-left shadow-xs"
+                      >
+                        <Package className="w-5 h-5 text-[#ff6600] shrink-0 stroke-[1.8]" />
+                        <span className="text-sm font-semibold text-[#ff6600]">My Orders</span>
+                      </button>
+
+                      {/* Wishlist */}
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          navigate("/portal", { state: { tab: "wishlist" } });
+                        }}
+                        className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 active:bg-slate-100 rounded-2xl py-3.5 px-4 flex items-center gap-3 transition-all cursor-pointer group text-left"
+                      >
+                        <Heart className="w-5 h-5 text-black shrink-0 stroke-[1.8]" />
+                        <span className="text-sm font-semibold text-black">Wishlist</span>
+                      </button>
+
+                      {/* Settings */}
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          navigate("/portal", { state: { tab: "settings" } });
+                        }}
+                        className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 active:bg-slate-100 rounded-2xl py-3.5 px-4 flex items-center gap-3 transition-all cursor-pointer group text-left"
+                      >
+                        <Settings className="w-5 h-5 text-black shrink-0 stroke-[1.8]" />
+                        <span className="text-sm font-semibold text-black">Settings</span>
+                      </button>
                     </div>
                   </motion.div>
                 )}

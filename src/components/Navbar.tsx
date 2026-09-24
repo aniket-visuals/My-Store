@@ -16,6 +16,7 @@ import { Product } from "../types";
 import { useProducts } from "../hooks/useProducts";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
+import { getUserProfile } from "../services/authService";
 
 interface NavbarProps {
   cart: Product[];
@@ -48,15 +49,47 @@ export default function Navbar({
   const [isGetStartedOpen, setIsGetStartedOpen] = useState(false);
   const [copiedKit, setCopiedKit] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState<string>(
+    auth.currentUser?.displayName || (userEmail ? userEmail.split("@")[0] : "My Account")
+  );
+  const [profileBio, setProfileBio] = useState<string>("");
 
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchCurrentProfile = async () => {
+      const current = auth.currentUser;
+      if (!current?.uid) {
+        if (isMounted) {
+          setProfileName(userEmail ? userEmail.split("@")[0] : "My Account");
+          setProfileBio("");
+        }
+        return;
+      }
+      try {
+        const p = await getUserProfile(current.uid);
+        if (isMounted && p) {
+          setProfileName(p.displayName || current.displayName || current.email?.split("@")[0] || "My Account");
+          setProfileBio(p.bio || "");
+        }
+      } catch (err) {
+        if (isMounted) {
+          setProfileName(current.displayName || current.email?.split("@")[0] || "My Account");
+        }
+      }
+    };
+
+    fetchCurrentProfile();
+
     const handleProfileUpdate = () => {
+      fetchCurrentProfile();
     };
     window.addEventListener("profileUpdated", handleProfileUpdate);
     return () => {
+      isMounted = false;
       window.removeEventListener("profileUpdated", handleProfileUpdate);
     };
-  }, []);
+  }, [isLoggedIn, userEmail, auth.currentUser?.uid]);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -79,11 +112,7 @@ export default function Navbar({
   };
 
   const getInitials = () => {
-    const name =
-      localStorage.getItem("profile_name") ||
-      auth.currentUser?.displayName ||
-      userEmail ||
-      "My Account";
+    const name = profileName || auth.currentUser?.displayName || userEmail || "My Account";
     return name.charAt(0).toUpperCase();
   };
 
@@ -195,7 +224,7 @@ export default function Navbar({
                   </div>
                 )}
                 <span className="max-w-[120px] truncate">
-                  {localStorage.getItem("profile_name") || auth.currentUser?.displayName || auth.currentUser?.email?.split("@")[0] || "My Account"}
+                  {profileName || auth.currentUser?.displayName || auth.currentUser?.email?.split("@")[0] || "My Account"}
                 </span>
                 <span
                   className="text-[9px] text-black/40 transition-transform duration-200"
@@ -234,15 +263,13 @@ export default function Navbar({
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center space-x-1.5">
                             <h4 className="font-bold text-sm text-black truncate leading-tight">
-                              {localStorage.getItem("profile_name") ||
+                              {profileName ||
                                 auth.currentUser?.displayName ||
-                                userEmail.split("@")[0] ||
-                                "Aniket Visuals"}
+                                (userEmail ? userEmail.split("@")[0] : "Member")}
                             </h4>
                           </div>
                           <p className="text-[11px] text-black/60 leading-tight mt-1 font-medium line-clamp-3">
-                            {localStorage.getItem("profile_bio_text") ||
-                              "Hi 👋, I'm Ronald, a passionate UX designer with 10 years of experience in creating intuitive and user-centered digital experiences."}
+                            {profileBio || auth.currentUser?.email || ""}
                           </p>
                         </div>
                       </div>

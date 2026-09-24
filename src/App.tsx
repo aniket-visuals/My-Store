@@ -36,6 +36,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,6 +49,11 @@ export default function App() {
 
   const closeCheckout = () => {
     setIsCheckoutOpen(false);
+  };
+
+  const handleOrderSuccess = (orderSummary: any) => {
+    setIsCheckoutOpen(false);
+    setCompletedOrder(orderSummary);
   };
 
   useEffect(() => {
@@ -263,6 +269,7 @@ export default function App() {
                     navigate("/");
                   }
                 }} 
+                onOrderSuccess={handleOrderSuccess}
               />
             </>
           } />
@@ -298,6 +305,18 @@ export default function App() {
             cart={cart}
             clearCart={clearCart}
             onClose={closeCheckout}
+            onOrderSuccess={handleOrderSuccess}
+          />
+        </Suspense>
+      )}
+
+      {/* Global Order Submitted Thank You Popup Window Modal */}
+      {completedOrder && (
+        <Suspense fallback={null}>
+          <ThankYouPage
+            isOpen={!!completedOrder}
+            orderData={completedOrder}
+            onClose={() => setCompletedOrder(null)}
           />
         </Suspense>
       )}

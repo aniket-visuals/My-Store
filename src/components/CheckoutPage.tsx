@@ -49,13 +49,15 @@ export interface CheckoutPageProps {
   clearCart: () => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onOrderSuccess?: (orderData: any) => void;
 }
 
 export default function CheckoutPage({ 
   cart, 
   clearCart, 
   isOpen = true, 
-  onClose 
+  onClose,
+  onOrderSuccess 
 }: CheckoutPageProps) {
   const navigate = useNavigate();
 
@@ -83,6 +85,7 @@ export default function CheckoutPage({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [progress, setProgress] = useState(15);
   const [processingStage, setProcessingStage] = useState(0);
+  const hasAutoFilledRef = useRef(false);
 
   // Smooth animation progress timer during submission
   useEffect(() => {
@@ -111,16 +114,24 @@ export default function CheckoutPage({
     return () => clearInterval(interval);
   }, [isSubmitting]);
 
-  // Auto-fill logged in user info if available
+  // Auto-fill logged in user info once on load without overriding user edits
   useEffect(() => {
+    if (auth.currentUser && !hasAutoFilledRef.current) {
+      if (auth.currentUser.email) setEmail(auth.currentUser.email);
+      if (auth.currentUser.displayName) setFullName(auth.currentUser.displayName);
+      hasAutoFilledRef.current = true;
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        if (!email && user.email) setEmail(user.email);
-        if (!fullName && user.displayName) setFullName(user.displayName);
+      if (user && !hasAutoFilledRef.current) {
+        if (user.email) setEmail(user.email);
+        if (user.displayName) setFullName(user.displayName);
+        hasAutoFilledRef.current = true;
       }
     });
     return () => unsubscribe();
-  }, [email, fullName]);
+  }, []);
 
   // Handle ESC key and scroll lock
   useEffect(() => {
@@ -324,21 +335,28 @@ export default function CheckoutPage({
       const pad = (n: number) => n.toString().padStart(2, "0");
       const formattedDateTime = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear().toString().slice(-2)} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-      // 3. Clear cart & redirect to Thank You page
+      // 3. Clear cart & complete order
       clearCart();
-      if (onClose) onClose();
-      navigate("/thank-you", { 
-        state: { 
-          orderId, 
-          email,
-          paymentMethod: paymentMethodLabel,
-          paymentMethodKey: paymentMethod,
-          total: formattedTotal,
-          dateTime: formattedDateTime,
-          productName: product.name,
-          isAutoApprove: Boolean(product.autoApprove)
-        } 
-      });
+
+      const orderSummary = { 
+        orderId, 
+        email,
+        paymentMethod: paymentMethodLabel,
+        paymentMethodKey: paymentMethod,
+        total: formattedTotal,
+        dateTime: formattedDateTime,
+        productName: product.name,
+        productSlug: product.slug,
+        productId: product.id,
+        isAutoApprove: Boolean(product.autoApprove)
+      };
+
+      if (onOrderSuccess) {
+        onOrderSuccess(orderSummary);
+      } else {
+        if (onClose) onClose();
+        navigate("/thank-you", { state: orderSummary });
+      }
 
     } catch (err: any) {
       console.error("Failed to submit order:", err);

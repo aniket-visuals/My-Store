@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { checkUsernameAvailability } from "../services/authService";
-import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { checkUsernameAvailability, ensureUserProfile } from "../services/authService";
+import { doc, setDoc, deleteDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import {
   User,
@@ -106,31 +106,60 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  // Local profile state variables with localStorage persistence
-  const [profileName, setProfileName] = useState(() => {
-    return localStorage.getItem("profile_name") || user?.displayName || user?.email?.split("@")[0] || "Ronald Richards";
-  });
-  const [profileHandle, setProfileHandle] = useState(() => {
-    return localStorage.getItem("profile_handle") || "ronaldrichards";
-  });
+  // Authoritative user profile states initialized from active Firebase User
+  const [profileName, setProfileName] = useState(() => user?.displayName || user?.email?.split("@")[0] || "");
+  const [profileHandle, setProfileHandle] = useState("");
   const [tempProfileHandle, setTempProfileHandle] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "loading" | "available" | "taken" | "invalid">("idle");
+  const [profileLocation, setProfileLocation] = useState("");
+  const [profileBioText, setProfileBioText] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("english");
+  const [themeColor, setThemeColor] = useState("light");
 
-  const [profileLocation, setProfileLocation] = useState(() => {
-    return localStorage.getItem("profile_location") || "California";
-  });
-  const [profileBioText, setProfileBioText] = useState(() => {
-    return (
-      localStorage.getItem("profile_bio_text") ||
-      "Hi 👋, I'm Ronald, a passionate UX designer with 10 years of experience in creating intuitive and user-centered digital experiences. With a strong background in user research, information architecture, and interaction design, I am dedicated to crafting seamless digital products that delight users and drive business results."
-    );
-  });
-  const [selectedLanguage, setSelectedLanguage] = useState(() => {
-    return localStorage.getItem("profile_language") || "english";
-  });
-  const [themeColor, setThemeColor] = useState(() => {
-    return localStorage.getItem("profile_theme_color") || "light";
-  });
+  // Draft/Temporary values for editing
+  const [tempProfileName, setTempProfileName] = useState(profileName);
+  const [tempProfileLocation, setTempProfileLocation] = useState(profileLocation);
+  const [tempProfileBioText, setTempProfileBioText] = useState(profileBioText);
+
+  // Load authoritative user profile from Firestore strictly keyed by user.uid
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      if (!user?.uid) return;
+      try {
+        const profile = await ensureUserProfile(user);
+        if (isMounted && profile) {
+          const resolvedName = profile.displayName || user.displayName || user.email?.split("@")[0] || "Member";
+          const resolvedHandle = profile.username || "";
+          const resolvedLoc = profile.location || "";
+          const resolvedBio = profile.bio || "";
+          const resolvedLang = profile.language || "english";
+          const resolvedTheme = profile.theme || "light";
+
+          setProfileName(resolvedName);
+          setProfileHandle(resolvedHandle);
+          setProfileLocation(resolvedLoc);
+          setProfileBioText(resolvedBio);
+          setSelectedLanguage(resolvedLang);
+          setThemeColor(resolvedTheme);
+
+          setTempProfileName(resolvedName);
+          setTempProfileHandle(resolvedHandle);
+          setTempProfileLocation(resolvedLoc);
+          setTempProfileBioText(resolvedBio);
+        }
+      } catch (err) {
+        console.error("Failed to load authoritative profile from Firestore:", err);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.uid]);
 
   // Navigation and alerts
   const location = useLocation();
@@ -152,7 +181,6 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
 
-  
   useEffect(() => {
     if (isEditingProfileDetails && tempProfileHandle.trim() && tempProfileHandle.trim() !== profileHandle) {
       if (!/^[a-zA-Z0-9_]+$/.test(tempProfileHandle.trim())) {
@@ -162,7 +190,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
       setUsernameStatus("loading");
       const delayFn = setTimeout(async () => {
         try {
-          const isAvailable = await checkUsernameAvailability(tempProfileHandle.trim());
+          const isAvailable = await checkUsernameAvailability(tempProfileHandle.trim(), user?.uid);
           setUsernameStatus(isAvailable ? "available" : "taken");
         } catch (e) {
           setUsernameStatus("idle");
@@ -172,57 +200,56 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
     } else {
       setUsernameStatus("idle");
     }
-  }, [tempProfileHandle, isEditingProfileDetails, profileHandle]);
-
-  // Draft/Temporary values for form fields
-  const [tempProfileName, setTempProfileName] = useState(profileName);
-  const [tempProfileLocation, setTempProfileLocation] =
-    useState(profileLocation);
-  const [tempProfileBioText, setTempProfileBioText] = useState(profileBioText);
-
-
-  // Notification Preferences toggles
-
-
+  }, [tempProfileHandle, isEditingProfileDetails, profileHandle, user?.uid]);
 
   const handleSaveProfileDetails = async () => {
     if (usernameStatus === "taken" || usernameStatus === "invalid") {
       setSuccessMsg("Please choose a valid and available username");
       return;
     }
+
+    if (!user || !user.uid) {
+      setSuccessMsg("User session error. Please sign in again.");
+      return;
+    }
     
-    // Save to Firestore
+    // Save to Firestore strictly under users/{user.uid}
     try {
-      if (user && user.uid) {
-        if (profileHandle && profileHandle !== tempProfileHandle) {
-          await deleteDoc(doc(db, "usernames", profileHandle.toLowerCase())).catch(() => {});
+      const cleanNewHandle = tempProfileHandle.trim().toLowerCase();
+
+      // Clean up any stale/duplicate username documents registered to this UID
+      const unameSnap = await getDocs(query(collection(db, "usernames"), where("uid", "==", user.uid)));
+      for (const d of unameSnap.docs) {
+        if (d.id.toLowerCase() !== cleanNewHandle) {
+          await deleteDoc(d.ref).catch(() => {});
         }
-        await setDoc(doc(db, "usernames", tempProfileHandle.toLowerCase()), {
+      }
+
+      if (cleanNewHandle) {
+        await setDoc(doc(db, "usernames", cleanNewHandle), {
           email: user.email || "",
           uid: user.uid,
-          createdAt: new Date()
-        });
-        await setDoc(doc(db, "users", user.uid), {
-          username: tempProfileHandle.toLowerCase(),
-          displayName: tempProfileName,
-          email: user.email || "",
-          bio: tempProfileBioText,
-          location: tempProfileLocation,
-          updatedAt: new Date()
+          createdAt: serverTimestamp()
         }, { merge: true });
       }
+
+      await setDoc(doc(db, "users", user.uid), {
+        username: cleanNewHandle,
+        displayName: tempProfileName.trim(),
+        email: user.email || "",
+        bio: tempProfileBioText.trim(),
+        location: tempProfileLocation,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
     } catch (e) {
       console.error("Failed to save to firestore", e);
     }
 
-    setProfileName(tempProfileName);
-    setProfileHandle(tempProfileHandle);
+    setProfileName(tempProfileName.trim());
+    setProfileHandle(tempProfileHandle.trim().toLowerCase());
     setProfileLocation(tempProfileLocation);
-    setProfileBioText(tempProfileBioText);
-    localStorage.setItem("profile_name", tempProfileName);
-    localStorage.setItem("profile_handle", tempProfileHandle);
-    localStorage.setItem("profile_location", tempProfileLocation);
-    localStorage.setItem("profile_bio_text", tempProfileBioText);
+    setProfileBioText(tempProfileBioText.trim());
+
     window.dispatchEvent(new Event("profileUpdated"));
     setIsEditingProfileDetails(false);
     setSuccessMsg("Profile details updated successfully!");
@@ -669,7 +696,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                           value={tempProfileName}
                           onChange={(e) => setTempProfileName(e.target.value)}
                           className="w-full text-xs font-semibold text-brand-dark bg-black/[0.02] border border-black/10 rounded-xl px-4 py-2.5 focus:bg-white focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 outline-none transition-all"
-                          placeholder="Ronald Richards"
+                          placeholder="Your Name"
                         />
                       </div>
 
@@ -690,7 +717,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                             value={tempProfileHandle}
                             onChange={(e) => setTempProfileHandle(e.target.value)}
                             className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-black/[0.02] hover:bg-black/[0.03] focus:bg-white outline-none text-xs text-brand-dark focus:ring-1 transition-all font-semibold ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : usernameStatus === 'available' ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/20' : 'border-black/10 focus:border-brand-primary focus:ring-brand-primary/20'}`}
-                            placeholder="ronaldrichards"
+                            placeholder="username"
                           />
                         </div>
                       </div>
@@ -773,10 +800,12 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                       <div className="relative">
                         <select
                           value={selectedLanguage}
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const val = e.target.value;
                             setSelectedLanguage(val);
-                            localStorage.setItem("profile_language", val);
+                            if (user?.uid) {
+                              await setDoc(doc(db, "users", user.uid), { language: val }, { merge: true }).catch(() => {});
+                            }
                             const labels: Record<string, string> = {
                               english: "English",
                               spanish: "Español",
@@ -825,12 +854,11 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                         ].map((theme) => (
                           <button
                             key={theme.id}
-                            onClick={() => {
+                            onClick={async () => {
                               setThemeColor(theme.id);
-                              localStorage.setItem(
-                                "profile_theme_color",
-                                theme.id,
-                              );
+                              if (user?.uid) {
+                                await setDoc(doc(db, "users", user.uid), { theme: theme.id }, { merge: true }).catch(() => {});
+                              }
                               triggerSuccess(
                                 `Theme changed to ${theme.label}!`,
                               );

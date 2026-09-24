@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ArrowLeft, Star, Download, Volume2, VolumeX, ShieldCheck, Play, 
@@ -41,6 +41,7 @@ export default function ProductDetailPage({
   onOpenCheckout
 }: ProductDetailPageProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const currentProduct = product;
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeImage, setActiveImage] = useState<string>(product.image);
@@ -108,13 +109,7 @@ export default function ProductDetailPage({
         }
       };
       
-      if (currentUser && currentUser.uid === selectedProfile.userId) {
-          const localBio = localStorage.getItem("profile_bio_text");
-          const localLoc = localStorage.getItem("profile_location");
-          setSelectedProfile(prev => prev ? { ...prev, bio: localBio || "No bio available.", location: localLoc || "Unknown", isLoadingBio: false } : null);
-      } else {
-          fetchBio();
-      }
+      fetchBio();
     }
   }, [selectedProfile?.isOpen, selectedProfile?.userId, selectedProfile?.isLoadingBio, currentUser]);
   const [newRate, setNewRate] = useState(5);
@@ -188,6 +183,25 @@ export default function ProductDetailPage({
     };
   }, [currentProduct.id]);
 
+  // Listen for #reviews or openReview to open review form and scroll smoothly
+  useEffect(() => {
+    const checkAndOpenReview = () => {
+      if (window.location.hash === "#reviews" || window.location.hash === "#reviews-section" || (location.state as any)?.openReview) {
+        setShowReviewForm(true);
+        setTimeout(() => {
+          const el = document.getElementById("reviews");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 150);
+      }
+    };
+
+    checkAndOpenReview();
+    window.addEventListener("hashchange", checkAndOpenReview);
+    return () => window.removeEventListener("hashchange", checkAndOpenReview);
+  }, [location]);
+
   // Compute tier price based on current active license type
   const getTierPrice = () => {
     return currentProduct.price;
@@ -237,19 +251,16 @@ export default function ProductDetailPage({
       return;
     }
 
-        const cleanAuthor = localStorage.getItem("profile_name") || currentUser.displayName || currentUser.email?.split("@")[0] || "Anonymous";
+    let cleanAuthor = currentUser.displayName || currentUser.email?.split("@")[0] || "Anonymous";
     let formattedHandle = "@" + cleanAuthor.toLowerCase().replace(/[^a-z0-9_]/g, "");
     
     try {
       const userDocRef = doc(db, "users", currentUser.uid);
       const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists() && userDocSnap.data().username) {
-        formattedHandle = "@" + userDocSnap.data().username;
-      } else {
-        const localHandle = localStorage.getItem("profile_handle");
-        if (localHandle) {
-          formattedHandle = "@" + localHandle.replace(/[^a-zA-Z0-9_]/g, "");
-        }
+      if (userDocSnap.exists()) {
+        const uData = userDocSnap.data();
+        if (uData.displayName) cleanAuthor = uData.displayName;
+        if (uData.username) formattedHandle = "@" + uData.username;
       }
     } catch (e) {
       console.error("Failed to fetch user handle", e);
@@ -574,7 +585,7 @@ export default function ProductDetailPage({
             )}
 
             {/* Verified Customer Reviews Grid */}
-            <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6">
+            <div id="reviews" className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-2xl shadow-xl shadow-brand-dark/[0.02] text-left space-y-6 scroll-mt-24">
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-dark/10 pb-3">
                 <div className="space-y-0.5">
@@ -637,7 +648,7 @@ export default function ProductDetailPage({
                       <form onSubmit={handleAddReview} className="space-y-4 text-left">
                         <div className="flex items-center space-x-2.5 bg-emerald-500/[0.04] border border-emerald-500/15 p-3 rounded-xl text-[10px] font-mono uppercase tracking-wider font-bold text-emerald-800">
                           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>Posting as {localStorage.getItem("profile_name") || currentUser.displayName || currentUser.email}</span>
+                          <span>Posting as {currentUser.displayName || currentUser.email}</span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -736,12 +747,8 @@ export default function ProductDetailPage({
                 ) : (
                   getActiveReviews().map((rev, idx) => {
                   const isCurrentUserReview = currentUser && rev.userId === currentUser.uid;
-                  const displayAuthor = isCurrentUserReview ? (localStorage.getItem("profile_name") || rev.author) : rev.author;
-                  let displayHandle = rev.handle;
-                  if (isCurrentUserReview) {
-                      const localHandle = localStorage.getItem("profile_handle");
-                      displayHandle = localHandle ? "@" + localHandle.replace(/^@/, '') : rev.handle;
-                  }
+                  const displayAuthor = rev.author || (isCurrentUserReview ? currentUser.displayName || "You" : "Verified Customer");
+                  const displayHandle = rev.handle;
                   const hasGenericAvatar = rev.avatar === "https://res.cloudinary.com/df5rgwdng/image/upload/v1780754431/bd0c7c0d-f709-453d-9227-298947b772d9-modified_f3lhy1.png";
                   
                   const displayAvatar = isCurrentUserReview ? currentUser.photoURL : (hasGenericAvatar ? null : rev.avatar);

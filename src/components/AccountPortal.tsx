@@ -226,18 +226,19 @@ export default function AccountPortal({
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      localStorage.setItem("profile_location", setupLocation);
-      localStorage.setItem("profile_bio_text", setupBio);
-      localStorage.setItem("profile_name", name);
-      localStorage.setItem("profile_handle", username.trim());
-      if (discordUsername) localStorage.setItem("profile_discord", discordUsername);
-      if (telegramUsername) localStorage.setItem("profile_telegram", telegramUsername);
-
       const signupEmail = email.trim();
       
-      // Since they already verified via OTP, we can consider the email verified, 
-      // but Firebase requires verification links. We will just create the user.
-      await emailSignUp(signupEmail, password, name, username.trim(), setupBio);
+      // Pass details directly to authoritative Firestore profile creation
+      await emailSignUp(
+        signupEmail,
+        password,
+        name,
+        username.trim(),
+        setupBio,
+        setupLocation,
+        discordUsername,
+        telegramUsername
+      );
 
       setSuccessMsg("Account created successfully! Redirecting...");
       setTimeout(() => {

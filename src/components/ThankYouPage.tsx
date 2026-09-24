@@ -3,7 +3,30 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Check, Copy, ArrowRight, ArrowLeft, X, Sparkles, CreditCard, ShieldCheck } from "lucide-react";
 import { updateMetaTags } from "../utils/seo";
 
-export default function ThankYouPage() {
+export interface OrderSubmissionData {
+  orderId?: string;
+  email?: string;
+  paymentMethod?: string;
+  paymentMethodKey?: string;
+  total?: string;
+  dateTime?: string;
+  productName?: string;
+  productSlug?: string;
+  productId?: string;
+  isAutoApprove?: boolean;
+}
+
+export interface ThankYouPageProps {
+  orderData?: OrderSubmissionData | null;
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function ThankYouPage({
+  orderData,
+  isOpen = true,
+  onClose
+}: ThankYouPageProps = {}) {
   const location = useLocation();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -16,38 +39,30 @@ export default function ThankYouPage() {
     });
   }, []);
 
-  const state = location.state as {
-    orderId?: string;
-    email?: string;
-    paymentMethod?: string;
-    paymentMethodKey?: string;
-    total?: string;
-    dateTime?: string;
-    productName?: string;
-    isAutoApprove?: boolean;
-  } | null;
+  const routeState = location.state as OrderSubmissionData | null;
+  const activeOrder = orderData || routeState;
 
   // Persist last order so refreshing doesn't cause empty redirect
   useEffect(() => {
-    if (state?.orderId) {
+    if (activeOrder?.orderId) {
       try {
-        sessionStorage.setItem("eh_last_order", JSON.stringify(state));
+        sessionStorage.setItem("eh_last_order", JSON.stringify(activeOrder));
       } catch {
         // ignore storage errors
       }
     }
-  }, [state]);
+  }, [activeOrder]);
 
   const savedOrder = React.useMemo(() => {
-    if (state?.orderId) return state;
+    if (activeOrder?.orderId) return activeOrder;
     try {
       const stored = sessionStorage.getItem("eh_last_order");
-      if (stored) return JSON.parse(stored);
+      if (stored) return JSON.parse(stored) as OrderSubmissionData;
     } catch {
       // ignore
     }
     return null;
-  }, [state]);
+  }, [activeOrder]);
 
   const orderId = savedOrder?.orderId || "EH-" + Math.floor(100000 + Math.random() * 900000);
   const email = savedOrder?.email || "";
@@ -70,6 +85,10 @@ export default function ThankYouPage() {
   };
 
   const handleClose = () => {
+    if (onClose) {
+      onClose();
+      return;
+    }
     if (window.history.length > 2) {
       navigate(-1);
     } else {
@@ -77,8 +96,39 @@ export default function ThankYouPage() {
     }
   };
 
+  const handleGoToReview = () => {
+    if (onClose) {
+      onClose();
+    }
+
+    const productSlug = savedOrder?.productSlug;
+    if (productSlug) {
+      // If we are already on that product's page, simply reveal & scroll
+      if (location.pathname === `/products/${productSlug}`) {
+        window.location.hash = "reviews";
+        setTimeout(() => {
+          const el = document.getElementById("reviews");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 150);
+      } else {
+        navigate(`/products/${productSlug}#reviews`, { state: { openReview: true } });
+      }
+    } else {
+      const el = document.getElementById("reviews");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        navigate("/#reviews");
+      }
+    }
+  };
+
   // Keyboard navigation (Esc to close) and body scroll locking
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         handleClose();
@@ -93,7 +143,9 @@ export default function ThankYouPage() {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   // Payment method icon helper
   const renderPaymentIcon = () => {
@@ -140,7 +192,7 @@ export default function ThankYouPage() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="thankyou-modal-title"
-        className="relative w-full max-w-[420px] bg-white rounded-3xl sm:rounded-[32px] shadow-2xl p-6 sm:p-8 text-center animate-in zoom-in-95 duration-200 border border-black/5"
+        className="relative w-full max-w-[420px] bg-white rounded-3xl sm:rounded-[32px] shadow-2xl p-6 sm:p-8 text-center animate-in zoom-in-95 duration-200 border border-black/5 my-auto"
       >
         {/* Close Button at top-right */}
         <button
@@ -228,18 +280,32 @@ export default function ThankYouPage() {
         {/* Primary Action Button */}
         <button
           type="button"
-          onClick={() => navigate("/account")}
+          onClick={() => {
+            if (onClose) onClose();
+            navigate("/account");
+          }}
           className="w-full bg-[#18181b] hover:bg-black text-white font-semibold text-sm sm:text-base py-3.5 sm:py-4 rounded-2xl transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer group"
         >
           <span>Go to my account</span>
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </button>
 
+        {/* Add Review Action Button */}
+        <button
+          type="button"
+          onClick={handleGoToReview}
+          className="w-full mt-2.5 bg-neutral-100 hover:bg-neutral-200/90 text-neutral-900 border border-neutral-200/90 font-semibold text-sm sm:text-base py-3.5 rounded-2xl transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer group shadow-xs"
+        >
+          <Sparkles className="w-4 h-4 text-brand-primary transition-transform group-hover:rotate-12" />
+          <span>Add review</span>
+          <ArrowRight className="w-4 h-4 text-neutral-500 transition-transform group-hover:translate-x-1" />
+        </button>
+
         {/* Secondary Back Link & Email notice */}
         <div className="mt-4 pt-1 space-y-2">
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={handleClose}
             className="text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer inline-flex items-center gap-1 py-1"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Store

@@ -11,6 +11,7 @@ import {
   Check,
   Download,
   Heart,
+  Package,
 } from "lucide-react";
 import { Product } from "../types";
 import { useProducts } from "../hooks/useProducts";
@@ -282,7 +283,29 @@ export default function Navbar({
                           }}
                           className="w-full text-center border border-black/15 hover:bg-black/[0.02] active:bg-black/[0.04] text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center"
                         >
-                          <span>Manage Profile</span>
+                          <span>Profile</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            navigate("/portal", { state: { tab: "orders" } });
+                          }}
+                          className="w-full text-center bg-brand-primary/10 hover:bg-brand-primary/15 text-brand-primary text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                        >
+                          <Package className="w-3.5 h-3.5" />
+                          <span>My Orders</span>
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <button
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            navigate("/portal", { state: { tab: "wishlist" } });
+                          }}
+                          className="w-full text-center bg-black/5 hover:bg-black/10 text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                        >
+                          <Heart className="w-3.5 h-3.5" />
+                          <span>Wishlist</span>
                         </button>
                         <button
                           onClick={() => {
@@ -294,16 +317,6 @@ export default function Navbar({
                           <span>Settings</span>
                         </button>
                       </div>
-                      <button
-                        onClick={() => {
-                          setIsProfileOpen(false);
-                          navigate("/portal", { state: { tab: "wishlist" } });
-                        }}
-                        className="w-full mt-2 text-center bg-black/5 hover:bg-black/10 text-black text-xs font-bold py-2 px-3 rounded-full transition-all cursor-pointer flex items-center justify-center space-x-2"
-                      >
-                        <Heart className="w-3.5 h-3.5" />
-                        <span>My Wishlist</span>
-                      </button>
                     </div>
                   </motion.div>
                 )}
@@ -633,11 +646,21 @@ export default function Navbar({
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false);
+                        navigate("/portal", { state: { tab: "orders" } });
+                      }}
+                      className="w-full text-center bg-brand-primary text-white py-3 rounded-full text-xs font-semibold hover:bg-brand-accent flex items-center justify-center space-x-2"
+                    >
+                      <Package className="w-4 h-4" />
+                      <span>My Orders</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
                         navigate("/portal");
                       }}
-                      className="w-full text-center bg-brand-primary text-white py-3 rounded-full text-xs font-semibold hover:bg-brand-accent"
+                      className="w-full text-center border border-black/10 py-2.5 rounded-full text-xs font-semibold hover:bg-black/5"
                     >
-                      My Account
+                      Manage Profile
                     </button>
                   </div>
                 ) : (

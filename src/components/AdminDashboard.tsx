@@ -7,7 +7,7 @@ import {
   Search, Filter, CheckCircle, XCircle, 
   ArrowLeft, LogOut, Image as ImageIcon, ShieldAlert,
   Copy, SearchX, Download, ShoppingCart, Package, Plus, Edit, Trash2, Save, Users, BarChart, TrendingUp,
-  Link2, Eye, EyeOff, SlidersHorizontal
+  Link2
 } from "lucide-react";
 import { updateMetaTags } from "../utils/seo";
 import { OrderData } from "../services/orderService";
@@ -18,6 +18,7 @@ import AdminStats from "./AdminStats";
 import StoreAnalytics from "./StoreAnalytics";
 import LinkCloakerAdmin from "./LinkCloakerAdmin";
 import LoadingScreen from "./LoadingScreen";
+import { cleanupAllStaleUsernames } from "../services/authService";
 
 interface Order extends OrderData {
   id: string;
@@ -79,35 +80,22 @@ export default function AdminDashboard() {
   
   // Toasts
   const [toast, setToast] = useState<{ message: string, type: "success" | "error" } | null>(null);
+  const [isCleaningUsernames, setIsCleaningUsernames] = useState(false);
 
-  // Hidden sidebar sections preference (stored in localStorage)
-  const [hiddenSections, setHiddenSections] = useState<string[]>(() => {
+  const handleCleanUsernames = async () => {
+    setIsCleaningUsernames(true);
     try {
-      const saved = localStorage.getItem("admin_hidden_sections");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
+      const res = await cleanupAllStaleUsernames();
+      if (res.deletedCount > 0) {
+        showToast(`Deduplicated successfully! Removed ${res.deletedCount} stale username records.`, "success");
+      } else {
+        showToast("All usernames are clean and 1-to-1! No duplicates found.", "success");
+      }
+    } catch (e: any) {
+      showToast("Error cleaning usernames: " + (e?.message || "Unknown error"), "error");
+    } finally {
+      setIsCleaningUsernames(false);
     }
-  });
-  const [showSidebarConfigModal, setShowSidebarConfigModal] = useState(false);
-
-  const toggleSectionVisibility = (sectionKey: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setHiddenSections((prev) => {
-      const next = prev.includes(sectionKey)
-        ? prev.filter((s) => s !== sectionKey)
-        : [...prev, sectionKey];
-      try {
-        localStorage.setItem("admin_hidden_sections", JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-    const isNowHidden = !hiddenSections.includes(sectionKey);
-    setToast({
-      message: isNowHidden ? "Section hidden from sidebar" : "Section restored to sidebar",
-      type: "success"
-    });
-    setTimeout(() => setToast(null), 3000);
   };
 
   useEffect(() => {
@@ -1742,101 +1730,41 @@ export default function AdminDashboard() {
             <Filter className="w-5 h-5" />
             Categories
           </button>
-
-          {/* OmniTool Users */}
-          {!hiddenSections.includes("omnitool-users") && (
-            <div className="relative group/nav flex items-center">
-              <button 
-                onClick={() => setCurrentPage("omnitool-users")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  currentPage === "omnitool-users" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
-                }`}
-              >
-                <Users className="w-5 h-5" />
-                <span className="flex-1 text-left">OmniTool Users</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => toggleSectionVisibility("omnitool-users", e)}
-                title="Hide OmniTool Users from sidebar"
-                className="absolute right-2 opacity-0 group-hover/nav:opacity-100 p-1.5 rounded-lg hover:bg-black/10 text-brand-dark/50 hover:text-brand-dark transition-all"
-              >
-                <EyeOff className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {/* Link Cloaker */}
-          {!hiddenSections.includes("links") && (
-            <div className="relative group/nav flex items-center">
-              <button 
-                onClick={() => setCurrentPage("links")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  currentPage === "links" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
-                }`}
-              >
-                <Link2 className="w-5 h-5 text-brand-primary" />
-                <span className="flex-1 text-left">Link Cloaker</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => toggleSectionVisibility("links", e)}
-                title="Hide Link Cloaker from sidebar"
-                className="absolute right-2 opacity-0 group-hover/nav:opacity-100 p-1.5 rounded-lg hover:bg-black/10 text-brand-dark/50 hover:text-brand-dark transition-all"
-              >
-                <EyeOff className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {/* Community Stats */}
-          {!hiddenSections.includes("stats") && (
-            <div className="relative group/nav flex items-center">
-              <button 
-                onClick={() => setCurrentPage("stats")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  currentPage === "stats" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
-                }`}
-              >
-                <BarChart className="w-5 h-5" />
-                <span className="flex-1 text-left">Community Stats</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => toggleSectionVisibility("stats", e)}
-                title="Hide Community Stats from sidebar"
-                className="absolute right-2 opacity-0 group-hover/nav:opacity-100 p-1.5 rounded-lg hover:bg-black/10 text-brand-dark/50 hover:text-brand-dark transition-all"
-              >
-                <EyeOff className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar Preferences / Customize Footer */}
-        <div className="p-3 border-t border-brand-dark/5 space-y-1">
           <button 
-            onClick={() => setShowSidebarConfigModal(true)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-brand-dark/70 hover:bg-brand-dark/5 transition-colors"
+            onClick={() => setCurrentPage("omnitool-users")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              currentPage === "omnitool-users" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
+            }`}
           >
-            <span className="flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-brand-primary" />
-              Customize Sidebar
-            </span>
-            {hiddenSections.length > 0 ? (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-primary/10 text-brand-primary">
-                {hiddenSections.length} hidden
-              </span>
-            ) : (
-              <span className="text-[11px] text-brand-dark/40">Manage</span>
-            )}
+            <Users className="w-5 h-5" />
+            OmniTool Users
           </button>
-
           <button 
-            onClick={() => auth.signOut().then(() => navigate("/"))}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+            onClick={() => setCurrentPage("links")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              currentPage === "links" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
+            }`}
           >
-            <LogOut className="w-4 h-4" />
+            <Link2 className="w-5 h-5 text-brand-primary" />
+            Link Cloaker
+          </button>
+          <button 
+            onClick={() => setCurrentPage("stats")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+              currentPage === "stats" ? "bg-brand-dark text-white shadow-md" : "text-brand-dark/60 hover:bg-brand-dark/5"
+            }`}
+          >
+            <BarChart className="w-5 h-5" />
+            Community Stats
+          </button>
+        </div>
+        
+        <div className="p-4 border-t border-brand-dark/5">
+          <button 
+             onClick={() => auth.signOut().then(() => navigate("/"))}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
             Sign Out
           </button>
         </div>
@@ -1846,37 +1774,18 @@ export default function AdminDashboard() {
       <div className="flex-1 ml-64 flex flex-col min-h-screen">
         {/* Header */}
         <header className="bg-white border-b border-brand-dark/5 sticky top-0 z-30 h-16 flex items-center justify-between px-8">
-           <div className="flex items-center gap-3">
-             <h2 className="font-display font-bold text-xl text-brand-dark">
-               {currentPage === "analytics" ? "Store Analytics" : currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : currentPage === "omnitool-users" ? "OmniTool Users" : currentPage === "links" ? "Domain Link Cloaker" : currentPage === "stats" ? "Community Stats" : "Products"}
-             </h2>
-             {hiddenSections.includes(currentPage) && (
-               <button
-                 onClick={() => toggleSectionVisibility(currentPage)}
-                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
-                 title="Click to restore to sidebar"
-               >
-                 <EyeOff className="w-3 h-3" /> Hidden from sidebar (Click to show)
-               </button>
-             )}
-           </div>
-
-           {currentPage === "links" && (
-             <button
-               onClick={() => toggleSectionVisibility("links")}
-               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-brand-dark/70 hover:text-brand-dark bg-brand-dark/5 hover:bg-brand-dark/10 transition-colors"
-             >
-               {hiddenSections.includes("links") ? (
-                 <>
-                   <Eye className="w-3.5 h-3.5 text-green-600" /> Show in Sidebar
-                 </>
-               ) : (
-                 <>
-                   <EyeOff className="w-3.5 h-3.5 text-brand-dark/50" /> Hide from Sidebar
-                 </>
-               )}
-             </button>
-           )}
+           <h2 className="font-display font-bold text-xl text-brand-dark">
+             {currentPage === "analytics" ? "Store Analytics" : currentPage === "orders" ? "Orders" : currentPage === "edit-product" ? "Edit Product" : currentPage === "categories" ? "Categories" : currentPage === "omnitool-users" ? "OmniTool Users" : currentPage === "links" ? "Domain Link Cloaker" : currentPage === "stats" ? "Community Stats" : "Products"}
+           </h2>
+           <button
+             onClick={handleCleanUsernames}
+             disabled={isCleaningUsernames}
+             className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-brand-dark/15 hover:bg-brand-dark/[0.04] text-brand-dark transition-all disabled:opacity-50 shadow-sm"
+             title="Scan and delete any duplicate/orphaned username records in Firestore"
+           >
+             <ShieldAlert className="w-3.5 h-3.5 text-brand-primary" />
+             {isCleaningUsernames ? "Cleaning..." : "Sanitize Usernames DB"}
+           </button>
         </header>
         
         <main className="flex-1 bg-brand-bg">
@@ -1885,117 +1794,12 @@ export default function AdminDashboard() {
            ) : currentPage === "orders" ? renderOrders() : currentPage === "edit-product" ? renderEditProduct() : currentPage === "categories" ? renderCategories() : currentPage === "omnitool-users" ? (
              <div className="p-8"><OmniToolUsers /></div>
            ) : currentPage === "links" ? (
-             <div className="p-8">
-               <LinkCloakerAdmin 
-                 showToast={showToast} 
-                 isHiddenFromSidebar={hiddenSections.includes("links")} 
-                 onToggleSidebarVisibility={() => toggleSectionVisibility("links")} 
-               />
-             </div>
+             <div className="p-8"><LinkCloakerAdmin showToast={showToast} /></div>
            ) : currentPage === "stats" ? (
              <div className="p-8"><AdminStats /></div>
            ) : renderProducts()}
         </main>
       </div>
-
-      {/* Sidebar Customization Modal */}
-      {showSidebarConfigModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-dark/10">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-brand-dark/5">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-5 h-5 text-brand-primary" />
-                <h3 className="font-bold text-brand-dark text-base">Customize Sidebar Sections</h3>
-              </div>
-              <button
-                onClick={() => setShowSidebarConfigModal(false)}
-                className="p-1.5 rounded-lg hover:bg-brand-dark/5 text-brand-dark/50 hover:text-brand-dark transition-colors"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-brand-dark/60 mb-4">
-              Toggle visibility for sections in the admin sidebar. You can hide or restore them anytime.
-            </p>
-
-            <div className="space-y-2 mb-6">
-              {[
-                { id: "links", label: "Link Cloaker", desc: "Shorten and cloak external URLs for emails", icon: Link2 },
-                { id: "omnitool-users", label: "OmniTool Users", desc: "Manage synced OmniTool app accounts", icon: Users },
-                { id: "stats", label: "Community Stats", desc: "Manage live social proof metrics", icon: BarChart },
-              ].map((item) => {
-                const isHidden = hiddenSections.includes(item.id);
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-brand-dark/5 hover:bg-brand-dark/[0.02] transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-brand-dark/5 text-brand-dark">
-                        <Icon className="w-4 h-4 text-brand-primary" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-brand-dark">{item.label}</div>
-                        <div className="text-[11px] text-brand-dark/50">{item.desc}</div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => toggleSectionVisibility(item.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                        isHidden
-                          ? "bg-brand-dark/5 text-brand-dark/50 hover:bg-brand-dark/10"
-                          : "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
-                      }`}
-                    >
-                      {isHidden ? (
-                        <>
-                          <EyeOff className="w-3.5 h-3.5" /> Hidden
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-3.5 h-3.5" /> Visible
-                        </>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-between items-center pt-3 border-t border-brand-dark/5">
-              {hiddenSections.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHiddenSections([]);
-                    try {
-                      localStorage.removeItem("admin_hidden_sections");
-                    } catch {}
-                    showToast("All sections restored to sidebar", "success");
-                  }}
-                  className="text-xs text-brand-primary hover:underline font-medium"
-                >
-                  Unhide All Sections
-                </button>
-              ) : (
-                <span className="text-xs text-brand-dark/40">All sections visible</span>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setShowSidebarConfigModal(false)}
-                className="px-4 py-2 rounded-xl bg-brand-dark text-white text-xs font-semibold hover:bg-brand-dark/90 transition-colors"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

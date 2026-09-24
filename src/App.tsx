@@ -14,6 +14,7 @@ const CheckoutPage = lazy(() => import("./components/CheckoutPage"));
 const ThankYouPage = lazy(() => import("./components/ThankYouPage"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 const PrivacyPolicy = lazy(() => import("./components/PrivacyPolicy"));
+const AuthRequiredModal = lazy(() => import("./components/AuthRequiredModal"));
 const TermsConditions = lazy(() => import("./components/TermsConditions"));
 const RefundPolicy = lazy(() => import("./components/RefundPolicy"));
 const AboutPage = lazy(() => import("./components/AboutPage"));
@@ -24,6 +25,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { updateMetaTags } from "./utils/seo";
+import { cleanupAllStaleUsernames, ensureUserProfile } from "./services/authService";
 
 
 // Cookie Notice Component
@@ -37,10 +39,17 @@ export default function App() {
   const [userEmail, setUserEmail] = useState("");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingProductForCheckout, setPendingProductForCheckout] = useState<Product | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   const openCheckout = (product?: Product) => {
+    if (!auth.currentUser) {
+      if (product) setPendingProductForCheckout(product);
+      setIsAuthModalOpen(true);
+      return;
+    }
     if (product) {
       addToCart(product);
     }
@@ -62,13 +71,21 @@ export default function App() {
         setIsLoggedIn(true);
         setUserEmail(user.email || "");
         
-        // Auto-bootstrap original admin
+        // Auto-bootstrap original admin & run global username sanitation
         if (user.email === 'aniketrajcargal123@gmail.com') {
           try {
             await setDoc(doc(db, "admins", user.uid), { email: user.email, role: 'admin' }, { merge: true });
+            await cleanupAllStaleUsernames();
           } catch (e) {
-            console.error("Failed to bootstrap admin:", e);
+            console.error("Failed to bootstrap admin or clean usernames:", e);
           }
+        }
+
+        // Authoritatively bootstrap/deduplicate the current user's profile
+        try {
+          await ensureUserProfile(user);
+        } catch (e) {
+          console.error("Failed to ensure user profile:", e);
         }
         
         try {
@@ -317,6 +334,28 @@ export default function App() {
             isOpen={!!completedOrder}
             orderData={completedOrder}
             onClose={() => setCompletedOrder(null)}
+          />
+        </Suspense>
+      )}
+
+      {/* Global Auth Required Modal Before Checkout */}
+      {isAuthModalOpen && (
+        <Suspense fallback={null}>
+          <AuthRequiredModal
+            isOpen={isAuthModalOpen}
+            onClose={() => {
+              setIsAuthModalOpen(false);
+              setPendingProductForCheckout(null);
+            }}
+            product={pendingProductForCheckout || cart[0] || null}
+            onSuccess={() => {
+              setIsAuthModalOpen(false);
+              if (pendingProductForCheckout) {
+                addToCart(pendingProductForCheckout);
+                setPendingProductForCheckout(null);
+              }
+              setIsCheckoutOpen(true);
+            }}
           />
         </Suspense>
       )}

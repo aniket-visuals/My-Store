@@ -13,6 +13,7 @@ import { collection, query, where, getDocs, getDoc, addDoc, serverTimestamp, del
 import { db, auth, OperationType, handleFirestoreError } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { formatDescription } from "../utils";
+import AuthRequiredModal from "./AuthRequiredModal";
 
 interface ProductDetailPageProps {
   product: Product;
@@ -115,6 +116,20 @@ export default function ProductDetailPage({
   const [newRate, setNewRate] = useState(5);
   const [newReview, setNewReview] = useState("");
   const [reviewError, setReviewError] = useState("");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleBuyNow = () => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    addToCart(currentProduct);
+    if (onOpenCheckout) {
+      onOpenCheckout(currentProduct);
+    } else {
+      navigate('/checkout');
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -859,19 +874,26 @@ export default function ProductDetailPage({
 
                 {/* Checkout Gateway Trigger */}
                 <div className="pt-4 border-t border-brand-dark/5">
+                  {!currentUser && (
+                    <div className="mb-3 px-3.5 py-2.5 rounded-xl bg-amber-500/[0.08] border border-amber-500/20 flex items-center gap-2 text-[11px] font-mono font-medium text-amber-900 leading-snug">
+                      <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Sign up or log in required to buy and access instant delivery</span>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <button
-                      onClick={() => {
-                        addToCart(currentProduct);
-                        if (onOpenCheckout) {
-                          onOpenCheckout(currentProduct);
-                        } else {
-                          navigate('/checkout');
-                        }
-                      }}
+                      onClick={handleBuyNow}
                       className="flex-1 bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
                     >
-                      <span>Buy Now — ${getTierPrice()} USD</span>
+                      {!currentUser ? (
+                        <>
+                          <Lock className="w-4 h-4 mr-1 shrink-0" />
+                          <span>Sign In to Buy — ${getTierPrice()} USD</span>
+                        </>
+                      ) : (
+                        <span>Buy Now — ${getTierPrice()} USD</span>
+                      )}
                     </button>
                     <button
                       onClick={() => toggleWishlist?.(currentProduct)}
@@ -986,6 +1008,21 @@ export default function ProductDetailPage({
           </div>
         )}
       </AnimatePresence>
+      {/* Auth Required Modal */}
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        product={currentProduct}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          addToCart(currentProduct);
+          if (onOpenCheckout) {
+            onOpenCheckout(currentProduct);
+          } else {
+            navigate('/checkout');
+          }
+        }}
+      />
     </div>
   );
 }

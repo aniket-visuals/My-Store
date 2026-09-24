@@ -22,7 +22,8 @@ import { Product } from "../types";
 import { uploadScreenshot, createOrder } from "../services/orderService";
 import { sendApprovalEmail } from "../services/emailService";
 import { auth } from "../firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
+import AuthRequiredModal from "./AuthRequiredModal";
 
 type PaymentMethod = "upi" | "wise" | "paypal";
 
@@ -80,6 +81,8 @@ export default function CheckoutPage({
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
 
+  const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -116,14 +119,17 @@ export default function CheckoutPage({
 
   // Auto-fill logged in user info once on load without overriding user edits
   useEffect(() => {
-    if (auth.currentUser && !hasAutoFilledRef.current) {
-      if (auth.currentUser.email) setEmail(auth.currentUser.email);
-      if (auth.currentUser.displayName) setFullName(auth.currentUser.displayName);
-      hasAutoFilledRef.current = true;
-      return;
+    if (auth.currentUser) {
+      setCurrentUser(auth.currentUser);
+      if (!hasAutoFilledRef.current) {
+        if (auth.currentUser.email) setEmail(auth.currentUser.email);
+        if (auth.currentUser.displayName) setFullName(auth.currentUser.displayName);
+        hasAutoFilledRef.current = true;
+      }
     }
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
       if (user && !hasAutoFilledRef.current) {
         if (user.email) setEmail(user.email);
         if (user.displayName) setFullName(user.displayName);
@@ -222,11 +228,15 @@ export default function CheckoutPage({
 
   // Validation
   const isFormValid = 
-    fullName.trim() !== "" && 
+    Boolean(currentUser) &&
     email.trim() !== "" && 
     (product?.autoApprove || screenshot !== null);
 
   const handleOrderSubmit = async () => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
     if (!isFormValid || !product || isSubmitting) return;
     
     setIsSubmitting(true);
@@ -243,19 +253,26 @@ export default function CheckoutPage({
 
       setProcessingStage(1);
 
-      // 2. Create order in Firestore
+      // 2. Create order in Firestore (customer details taken from user account/ID)
       const currency = paymentMethod === "upi" ? "INR" : "USD";
       const amount = paymentMethod === "upi" ? priceINR : totalPrice;
+      const resolvedCustomerName =
+        currentUser?.displayName ||
+        fullName ||
+        currentUser?.email?.split("@")[0] ||
+        "Customer";
 
       const orderData = {
-        customerName: fullName,
-        email,
+        customerName: resolvedCustomerName,
+        email: email.trim(),
+        userId: currentUser?.uid || auth.currentUser?.uid || "",
         paymentMethod: paymentMethod.toUpperCase(),
         currency,
         amount,
         paymentScreenshotUrl: screenshotUrl,
         productId: product.id,
         productName: product.name,
+        productImage: product.image || (product as any).thumbnail || "",
         autoApprove: product.autoApprove,
       };
 
@@ -273,7 +290,7 @@ export default function CheckoutPage({
           body: JSON.stringify({
             to_email: 'admin@editorshubstore.in',
             subject: `New Order Received: ${orderId} for ${product.name}`,
-            body: `You have received a new order.\n\nOrder ID: ${orderId}\nCustomer Name: ${fullName}\nEmail: ${email}\nProduct: ${product.name}\nAmount: ${currency} ${amount}\nPayment Method: ${paymentMethod.toUpperCase()}\n\nPlease check the admin dashboard for more details.`,
+            body: `You have received a new order.\n\nOrder ID: ${orderId}\nCustomer Name: ${resolvedCustomerName}\nUser ID: ${currentUser?.uid || 'N/A'}\nDelivery Email: ${email.trim()}\nProduct: ${product.name}\nAmount: ${currency} ${amount}\nPayment Method: ${paymentMethod.toUpperCase()}\n\nPlease check the admin dashboard for more details.`,
           }),
         });
       } catch (emailErr) {
@@ -286,8 +303,8 @@ export default function CheckoutPage({
           const replaceVariables = (text: string) => {
             if (!text) return "";
             return text
-              .replace(/\{\{customer_name\}\}/g, fullName || "")
-              .replace(/\{\{customer_email\}\}/g, email || "")
+              .replace(/\{\{customer_name\}\}/g, resolvedCustomerName)
+              .replace(/\{\{customer_email\}\}/g, email.trim())
               .replace(/\{\{product_name\}\}/g, product.name || "")
               .replace(/\{\{order_id\}\}/g, orderId || "")
               .replace(/\{\{payment_method\}\}/g, paymentMethod.toUpperCase() || "")
@@ -299,8 +316,8 @@ export default function CheckoutPage({
           const rawBody = `Hi {{customer_name}},\n\n${productBody}\n\nThank you,\nEditors Hub Store`;
           
           await sendApprovalEmail({
-            to_email: email,
-            to_name: fullName,
+            to_email: email.trim(),
+            to_name: resolvedCustomerName,
             order_id: orderId,
             product_name: product.name,
             download_link: product.downloadLink || "No link provided",
@@ -549,38 +566,62 @@ export default function CheckoutPage({
                 
                 {/* 1. Customer Details */}
                 <section className="bg-white border border-brand-dark/10 rounded-2xl p-5 sm:p-6 space-y-5 shadow-sm">
-                  <h3 className="font-display font-bold text-lg flex items-center gap-2.5 text-brand-dark">
-                    <span className="w-6 h-6 rounded-full bg-brand-primary/15 text-brand-primary font-mono font-bold flex items-center justify-center text-xs">
-                      1
-                    </span>
-                    Customer Details
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display font-bold text-lg flex items-center gap-2.5 text-brand-dark">
+                      <span className="w-6 h-6 rounded-full bg-brand-primary/15 text-brand-primary font-mono font-bold flex items-center justify-center text-xs">
+                        1
+                      </span>
+                      Customer Details
+                    </h3>
+                    {currentUser && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        Verified Account
+                      </span>
+                    )}
+                  </div>
+
+                  {!currentUser && (
+                    <div className="p-4 rounded-xl bg-amber-500/[0.08] border border-amber-500/20 text-amber-900 space-y-2">
+                      <div className="flex items-center gap-2 font-bold text-xs">
+                        <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                        <span>Sign In or Sign Up Required</span>
+                      </div>
+                      <p className="text-xs text-amber-800/90 leading-relaxed">
+                        You must be signed in to purchase this asset so your digital files and license key are permanently saved to your account.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowAuthModal(true)}
+                        className="w-full mt-1 bg-brand-primary hover:bg-brand-accent text-white text-xs font-bold font-mono uppercase tracking-wider py-2.5 rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Sign In or Sign Up to Continue</span>
+                      </button>
+                    </div>
+                  )}
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-brand-dark/65 uppercase tracking-wider">
-                        Full Name *
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-mono font-bold text-brand-dark/70 uppercase tracking-wider">
+                        Enter the email where you want to send *
                       </label>
-                      <input 
-                        type="text" 
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="John Doe" 
-                        className="w-full bg-brand-dark/[0.02] border border-brand-dark/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-brand-primary focus:bg-white transition-colors" 
-                      />
+                      {currentUser && (
+                        <span className="text-[10px] font-mono text-brand-muted">
+                          User ID: <span className="font-semibold text-brand-dark">{currentUser.uid.slice(0, 10)}...</span>
+                        </span>
+                      )}
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-mono font-bold text-brand-dark/65 uppercase tracking-wider">
-                        Email Address *
-                      </label>
-                      <input 
-                        type="email" 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="john@example.com" 
-                        className="w-full bg-brand-dark/[0.02] border border-brand-dark/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-brand-primary focus:bg-white transition-colors" 
-                      />
-                    </div>
+                    <input 
+                      type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter the email where you want to receive your files..." 
+                      className="w-full bg-brand-dark/[0.02] border border-brand-dark/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-brand-primary focus:bg-white transition-colors" 
+                    />
+                    <p className="text-[11px] text-brand-muted leading-relaxed">
+                      All download links, receipts, and order updates will be sent to this email address. Your customer identity and license ownership are automatically linked from your User ID.
+                    </p>
                   </div>
                 </section>
 
@@ -743,14 +784,16 @@ export default function CheckoutPage({
 
                   <button 
                     type="button"
-                    onClick={handleOrderSubmit}
-                    disabled={!isFormValid || isSubmitting} 
+                    onClick={!currentUser ? () => setShowAuthModal(true) : handleOrderSubmit}
+                    disabled={(!isFormValid && Boolean(currentUser)) || isSubmitting} 
                     className={`relative overflow-hidden w-full font-bold font-mono text-xs sm:text-sm uppercase tracking-widest py-4 rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition-all ${
-                      (isFormValid && !isSubmitting)
-                        ? "bg-brand-primary hover:bg-brand-accent text-white hover:shadow-xl hover:-translate-y-0.5 cursor-pointer active:scale-[0.99]" 
-                        : isSubmitting
-                          ? "bg-gradient-to-r from-brand-primary to-brand-accent text-white cursor-wait shadow-md"
-                          : "bg-brand-primary opacity-50 cursor-not-allowed text-white"
+                      (!currentUser)
+                        ? "bg-brand-primary hover:bg-brand-accent text-white hover:shadow-xl hover:-translate-y-0.5 cursor-pointer active:scale-[0.99]"
+                        : (isFormValid && !isSubmitting)
+                          ? "bg-brand-primary hover:bg-brand-accent text-white hover:shadow-xl hover:-translate-y-0.5 cursor-pointer active:scale-[0.99]" 
+                          : isSubmitting
+                            ? "bg-gradient-to-r from-brand-primary to-brand-accent text-white cursor-wait shadow-md"
+                            : "bg-brand-primary opacity-50 cursor-not-allowed text-white"
                     }`}
                   >
                     {isSubmitting && (
@@ -767,6 +810,11 @@ export default function CheckoutPage({
                             <span className="animate-bounce [animation-delay:300ms]">.</span>
                           </span>
                         </span>
+                      </>
+                    ) : !currentUser ? (
+                      <>
+                        <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span>Sign In to Submit Order</span>
                       </>
                     ) : (
                       <>
@@ -897,6 +945,20 @@ export default function CheckoutPage({
           )}
         </div>
       </div>
+      {/* Auth Required Modal */}
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        product={product}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          if (auth.currentUser) {
+            setCurrentUser(auth.currentUser);
+            if (auth.currentUser.email) setEmail(auth.currentUser.email);
+            if (auth.currentUser.displayName) setFullName(auth.currentUser.displayName);
+          }
+        }}
+      />
     </div>
   );
 }

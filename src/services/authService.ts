@@ -418,3 +418,56 @@ export const checkEmailExists = async (email: string): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Global database sanitation: finds any UID or email that owns more than one username document,
+ * checks their authoritative user document in `users/{uid}`, and deletes all orphaned username documents.
+ */
+export const cleanupAllStaleUsernames = async (): Promise<{ deletedCount: number; report: string[] }> => {
+  const report: string[] = [];
+  let deletedCount = 0;
+  try {
+    const unamesSnap = await getDocs(collection(db, "usernames"));
+    const byUid: Record<string, { id: string; ref: any; email?: string }[]> = {};
+
+    unamesSnap.forEach((docSnap) => {
+      const data = docSnap.data();
+      const uid = data.uid || "";
+      if (uid) {
+        if (!byUid[uid]) byUid[uid] = [];
+        byUid[uid].push({ id: docSnap.id, ref: docSnap.ref, email: data.email });
+      }
+    });
+
+    for (const [uid, list] of Object.entries(byUid)) {
+      if (list.length > 1) {
+        // Query users/{uid} for the active username
+        const uDoc = await getDoc(doc(db, "users", uid));
+        let activeUsername = "";
+        if (uDoc.exists()) {
+          activeUsername = (uDoc.data().username || "").trim().toLowerCase();
+        }
+        if (!activeUsername) {
+          activeUsername = list[list.length - 1].id.toLowerCase();
+        }
+
+        for (const item of list) {
+          if (item.id.toLowerCase() !== activeUsername) {
+            try {
+              await deleteDoc(item.ref);
+              deletedCount++;
+              report.push(`Deleted duplicate username "${item.id}" for UID ${uid} (${item.email})`);
+              console.log(`[Deduplicate] Removed orphan username "${item.id}" for UID ${uid}`);
+            } catch (err) {
+              console.warn(`Failed to delete "${item.id}":`, err);
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error in cleanupAllStaleUsernames:", err);
+  }
+  return { deletedCount, report };
+};
+

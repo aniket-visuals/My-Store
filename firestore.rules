@@ -9,15 +9,13 @@ service cloud.firestore {
 
     // Orders Collection
     match /orders/{orderId} {
-      // 1. Do not allow anonymous users to create fake orders.
-      // 5. Ensure valid data is provided to prevent spam.
+      // Allow authenticated users to create orders for their own account
       allow create: if request.auth != null 
-                    && request.resource.data.keys().hasAll(['customerName', 'email', 'productId', 'amount', 'paymentScreenshotUrl', 'userId'])
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.paymentScreenshotUrl.matches('^https://res\\.cloudinary\\.com/.*');
+                    && request.resource.data.userId == request.auth.uid;
       
-      // Only authenticated admins can read, update, or delete orders
-      allow read, update, delete: if isAdmin();
+      // Admins can read, update, or delete all orders. Authenticated users can read their own orders.
+      allow read: if isAdmin() || (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.email == request.auth.token.email));
+      allow update, delete: if isAdmin();
     }
     
     // Counters Collection (needed for order ID generation transaction)
@@ -60,8 +58,9 @@ service cloud.firestore {
     // User Profiles
     match /usernames/{username} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow update: if request.auth != null && (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
     }
     
     match /users/{userId} {

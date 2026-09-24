@@ -45,6 +45,7 @@ export interface OrderData {
   paymentScreenshotUrl: string;
   productId: string;
   productName: string;
+  productImage?: string;
   autoApprove?: boolean;
 }
 

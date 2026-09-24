@@ -33,8 +33,10 @@ import {
   LifeBuoy,
   Sun,
   Moon,
-  Heart
+  Heart,
+  Package
 } from "lucide-react";
+import UserOrdersSection from "./UserOrdersSection";
 
 const ALL_COUNTRIES = [
   { name: "United States", flag: "🇺🇸", code: "US" },
@@ -267,6 +269,12 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
       id: "edit-profile",
       label: "Manage Profile",
       icon: User,
+      category: "Profile",
+    },
+    {
+      id: "orders",
+      label: "My Orders",
+      icon: Package,
       category: "Profile",
     },
     {
@@ -543,6 +551,7 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
             <div className="text-left mb-6">
               <h1 className="text-2xl sm:text-3xl font-black text-brand-dark tracking-tight">
                 {activeSidebarTab === "edit-profile" && "Manage Profile"}
+                {activeSidebarTab === "orders" && "My Orders"}
                 {activeSidebarTab === "settings" && "Settings"}
                 {activeSidebarTab === "support" && "Support"}
                 {activeSidebarTab === "wishlist" && "Wishlist"}
@@ -550,6 +559,8 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
               <p className="text-xs text-brand-muted mt-1">
                 {activeSidebarTab === "edit-profile" &&
                   "Manage your professional creator identity, contact, bio and location parameters."}
+                {activeSidebarTab === "orders" &&
+                  "View and track your purchases, licenses, instant downloads, and approval statuses."}
                 {activeSidebarTab === "settings" &&
                   "Configure your general preferences and system settings."}
                 {activeSidebarTab === "support" &&
@@ -996,6 +1007,15 @@ export const AuthenticatedDashboard: React.FC<AuthenticatedDashboardProps> = ({
                   )}
                 </div>
               </div>
+            )}
+
+            {/* MY ORDERS TAB CONTENT */}
+            {activeSidebarTab === "orders" && (
+              <UserOrdersSection
+                user={user}
+                onClose={onClose}
+                onNavigateToSupport={() => setActiveSidebarTab("support")}
+              />
             )}
           </div>
         </div>

@@ -22,6 +22,19 @@ export interface ThankYouPageProps {
   onClose?: () => void;
 }
 
+function GmailIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      {/* Google Gmail Multi-color Logo */}
+      <path fill="#4285F4" d="M2.5 19.5h3.5v-9.6L2.5 7.2v12.3z" />
+      <path fill="#34A853" d="M21.5 19.5h-3.5v-9.6l3.5-2.7v12.3z" />
+      <path fill="#EA4335" d="M18 7.2l-6 4.6-6-4.6V5c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2v2.2z" />
+      <path fill="#FBBC04" d="M2.5 7.2L6 9.9V5c0-.6.3-1.2.8-1.5L2.5 7.2z" />
+      <path fill="#C5221F" d="M21.5 7.2L18 9.9V5c0-.6-.3-1.2-.8-1.5l4.3 3.7z" />
+    </svg>
+  );
+}
+
 export default function ThankYouPage({
   orderData,
   isOpen = true,
@@ -82,6 +95,41 @@ export default function ThankYouPage({
     navigator.clipboard.writeText(orderId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenGmail = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || "";
+    const isAndroid = /Android/i.test(userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+    const isMobile = isAndroid || isIOS || /webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+    if (isAndroid) {
+      e.preventDefault();
+      // On Android mobile: launch the official Gmail app intent with automatic web fallback
+      window.location.href =
+        "intent://#Intent;package=com.google.android.gm;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;S.browser_fallback_url=https%3A%2F%2Fmail.google.com;end";
+    } else if (isIOS) {
+      e.preventDefault();
+      // On iOS mobile: attempt deep-link to the Gmail app with fallback to web mail
+      let appOpened = false;
+      const onVisibilityChange = () => {
+        if (document.hidden) appOpened = true;
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange, { once: true });
+
+      window.location.href = "googlegmail://";
+
+      setTimeout(() => {
+        if (!appOpened && !document.hidden) {
+          window.location.href = "https://mail.google.com";
+        }
+      }, 1200);
+    } else if (isMobile) {
+      e.preventDefault();
+      window.location.href = "https://mail.google.com";
+    } else {
+      // Desktop / PC Browser: standard link action opens gmail.com in a new tab via target="_blank"
+    }
   };
 
   const handleClose = () => {
@@ -277,18 +325,18 @@ export default function ThankYouPage({
 
         </div>
 
-        {/* Primary Action Button */}
-        <button
-          type="button"
-          onClick={() => {
-            if (onClose) onClose();
-            navigate("/account");
-          }}
-          className="w-full bg-[#18181b] hover:bg-black text-white font-semibold text-sm sm:text-base py-3.5 sm:py-4 rounded-2xl transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer group"
+        {/* Primary Action Button - Open Gmail */}
+        <a
+          href="https://mail.google.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleOpenGmail}
+          className="w-full bg-[#18181b] hover:bg-black text-white font-semibold text-sm sm:text-base py-3.5 sm:py-4 rounded-2xl transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer group no-underline"
         >
-          <span>Go to my account</span>
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-        </button>
+          <GmailIcon className="w-5 h-5 flex-shrink-0" />
+          <span>Open Gmail</span>
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1 text-white/70" />
+        </a>
 
         {/* Add Review Action Button */}
         <button
@@ -301,15 +349,28 @@ export default function ThankYouPage({
           <ArrowRight className="w-4 h-4 text-neutral-500 transition-transform group-hover:translate-x-1" />
         </button>
 
-        {/* Secondary Back Link & Email notice */}
+        {/* Secondary Back Link, My Account, & Email notice */}
         <div className="mt-4 pt-1 space-y-2">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer inline-flex items-center gap-1 py-1"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Store
-          </button>
+          <div className="flex items-center justify-center gap-3 text-xs font-semibold text-neutral-500">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="hover:text-neutral-900 transition-colors cursor-pointer inline-flex items-center gap-1 py-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Store
+            </button>
+            <span className="text-neutral-300">•</span>
+            <button
+              type="button"
+              onClick={() => {
+                if (onClose) onClose();
+                navigate("/portal");
+              }}
+              className="hover:text-neutral-900 transition-colors cursor-pointer inline-flex items-center gap-1 py-1"
+            >
+              Go to My Account
+            </button>
+          </div>
           
           {email && (
             <p className="text-[11px] text-neutral-400 font-normal leading-relaxed px-2">

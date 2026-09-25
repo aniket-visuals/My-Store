@@ -347,6 +347,89 @@ export default function ProductDetailPage({
     }
   };
 
+  const renderCheckoutCard = () => (
+    <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-3xl shadow-2xl shadow-brand-dark/[0.03] text-left relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-primary/5 rounded-full blur-2xl pointer-events-none" />
+      
+      <div className="space-y-4">
+        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand-primary bg-brand-primary/15 px-2.5 py-1 rounded-full">
+          Lifetime Instant Delivery
+        </span>
+        
+        <h3 className="font-display font-bold text-base text-brand-dark uppercase tracking-wide">
+          checkout buy option
+        </h3>
+
+        {/* Dynamic Price Tracker Info */}
+        <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-4.5 rounded-xl flex flex-col gap-2 shadow-sm">
+          <div className="flex items-center justify-between w-full">
+            <div>
+              <p className="text-[9px] font-mono text-brand-dark/40 uppercase tracking-widest">Pricing Structure</p>
+              <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider font-mono mt-0.5">
+                Full Creator Clearance
+              </p>
+            </div>
+            
+            <div className="text-right leading-none">
+              <span className="text-[10px] font-mono text-brand-dark/30 line-through block mb-1">
+                ${getTierOriginalPrice()} USD
+              </span>
+              <span className="font-display font-bold text-2xl tracking-tight text-brand-dark">
+                ${getTierPrice()} USD
+              </span>
+            </div>
+          </div>
+          <div className="border-t border-brand-dark/5 pt-1.5 text-left text-[9px] font-mono text-brand-dark/40 italic">
+            * Note: Price may be different in future
+          </div>
+        </div>
+
+        {/* Checkout Gateway Trigger */}
+        <div className="pt-4 border-t border-brand-dark/5">
+          {!currentUser && (
+            <div className="mb-3 px-3.5 py-2.5 rounded-xl bg-amber-500/[0.08] border border-amber-500/20 flex items-center gap-2 text-[11px] font-mono font-medium text-amber-900 leading-snug">
+              <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Sign up or log in required to buy and access instant delivery</span>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleBuyNow}
+              className="flex-1 bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
+            >
+              {!currentUser ? (
+                <>
+                  <Lock className="w-4 h-4 mr-1 shrink-0" />
+                  <span>Sign In to Buy — ${getTierPrice()} USD</span>
+                </>
+              ) : (
+                <span>Buy Now — ${getTierPrice()} USD</span>
+              )}
+            </button>
+            <button
+              onClick={() => toggleWishlist?.(currentProduct)}
+              className={`w-14 shrink-0 border border-brand-dark/10 bg-brand-dark/[0.02] hover:bg-brand-dark/[0.05] rounded-xl flex items-center justify-center transition-all cursor-pointer hover:-translate-y-0.5 ${
+                wishlist.some((p) => p.id === currentProduct.id) ? "text-red-500" : "text-brand-dark/40"
+              }`}
+              title={wishlist.some((p) => p.id === currentProduct.id) ? "Remove from wishlist" : "Add to wishlist"}
+            >
+              <Heart className={`w-5 h-5 ${wishlist.some((p) => p.id === currentProduct.id) ? 'fill-current' : ''}`} />
+            </button>
+          </div>
+          <p className="text-[10px] text-brand-dark/45 font-mono text-center mt-2.5 leading-relaxed font-semibold">
+            Clicking opens our secure Google Form order and delivery gateway
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center space-x-2 text-[9px] font-mono font-semibold text-brand-dark/30 pt-4 border-t border-brand-dark/5">
+          <Lock className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="uppercase tracking-wider">Secure SSL Encryption Authorized</span>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div id="gumroad-detail-root" className="min-h-screen bg-brand-bg text-brand-dark pt-24 pb-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -475,6 +558,13 @@ export default function ProductDetailPage({
               ))}
             </div>
           </div>
+        </div>
+
+        {/* ========================================================
+            Mobile Phone View: Checkout Buy Option below Thumbnail
+           ======================================================== */}
+        <div className="block lg:hidden mb-8">
+          {renderCheckoutCard()}
         </div>
 
         {/* =====================================
@@ -835,86 +925,9 @@ export default function ProductDetailPage({
           {/* ================= RIGHT STICKY BILLING SIDEBAR ================= */}
           <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             
-            {/* Authentic Premium Checkout Card */}
-            <div className="bg-white border border-brand-dark/5 p-6 sm:p-8 rounded-3xl shadow-2xl shadow-brand-dark/[0.03] text-left relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-brand-primary/5 rounded-full blur-2xl pointer-events-none" />
-              
-              <div className="space-y-4">
-                <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-brand-primary bg-brand-primary/15 px-2.5 py-1 rounded-full">
-                  Lifetime Instant Delivery
-                </span>
-                
-                <h3 className="font-display font-bold text-base text-brand-dark uppercase tracking-wide">
-                  checkout buy option
-                </h3>
-
-                {/* Dynamic Price Tracker Info */}
-                <div className="bg-brand-dark/[0.015] border border-brand-dark/5 p-4.5 rounded-xl flex flex-col gap-2 shadow-sm">
-                  <div className="flex items-center justify-between w-full">
-                    <div>
-                      <p className="text-[9px] font-mono text-brand-dark/40 uppercase tracking-widest">Pricing Structure</p>
-                      <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider font-mono mt-0.5">
-                        Full Creator Clearance
-                      </p>
-                    </div>
-                    
-                    <div className="text-right leading-none">
-                      <span className="text-[10px] font-mono text-brand-dark/30 line-through block mb-1">
-                        ${getTierOriginalPrice()} USD
-                      </span>
-                      <span className="font-display font-bold text-2xl tracking-tight text-brand-dark">
-                        ${getTierPrice()} USD
-                      </span>
-                    </div>
-                  </div>
-                  <div className="border-t border-brand-dark/5 pt-1.5 text-left text-[9px] font-mono text-brand-dark/40 italic">
-                    * Note: Price may be different in future
-                  </div>
-                </div>
-
-                {/* Checkout Gateway Trigger */}
-                <div className="pt-4 border-t border-brand-dark/5">
-                  {!currentUser && (
-                    <div className="mb-3 px-3.5 py-2.5 rounded-xl bg-amber-500/[0.08] border border-amber-500/20 flex items-center gap-2 text-[11px] font-mono font-medium text-amber-900 leading-snug">
-                      <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>Sign up or log in required to buy and access instant delivery</span>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleBuyNow}
-                      className="flex-1 bg-brand-primary hover:bg-brand-accent text-white py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-brand-primary/10 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98] select-none text-center"
-                    >
-                      {!currentUser ? (
-                        <>
-                          <Lock className="w-4 h-4 mr-1 shrink-0" />
-                          <span>Sign In to Buy — ${getTierPrice()} USD</span>
-                        </>
-                      ) : (
-                        <span>Buy Now — ${getTierPrice()} USD</span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => toggleWishlist?.(currentProduct)}
-                      className={`w-14 shrink-0 border border-brand-dark/10 bg-brand-dark/[0.02] hover:bg-brand-dark/[0.05] rounded-xl flex items-center justify-center transition-all cursor-pointer hover:-translate-y-0.5 ${
-                        wishlist.some((p) => p.id === currentProduct.id) ? "text-red-500" : "text-brand-dark/40"
-                      }`}
-                      title={wishlist.some((p) => p.id === currentProduct.id) ? "Remove from wishlist" : "Add to wishlist"}
-                    >
-                      <Heart className={`w-5 h-5 ${wishlist.some((p) => p.id === currentProduct.id) ? 'fill-current' : ''}`} />
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-brand-dark/45 font-mono text-center mt-2.5 leading-relaxed font-semibold">
-                    Clicking opens our secure Google Form order and delivery gateway
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-center space-x-2 text-[9px] font-mono font-semibold text-brand-dark/30 pt-4 border-t border-brand-dark/5">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="uppercase tracking-wider">Secure SSL Encryption Authorized</span>
-                </div>
-              </div>
+            {/* Desktop Checkout Card (Hidden on phone view) */}
+            <div className="hidden lg:block">
+              {renderCheckoutCard()}
             </div>
 
             {/* General Metadata Info block */}

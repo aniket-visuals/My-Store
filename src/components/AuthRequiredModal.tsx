@@ -182,7 +182,7 @@ export default function AuthRequiredModal({
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-neutral-900 truncate">{product.name}</p>
                 <p className="text-[11px] text-brand-primary font-mono font-semibold">
-                  ${product.price} USD • Instant Delivery
+                  {product.price === 0 ? "FREE" : `$${product.price} USD`} • Instant Delivery
                 </p>
               </div>
               <div className="shrink-0 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">

@@ -664,7 +664,7 @@ export const UserOrdersSection: React.FC<UserOrdersSectionProps> = ({
                           Payment Details
                         </span>
                         <p className="font-semibold text-brand-dark capitalize">
-                          {order.paymentMethod || "Standard"} • {order.currency} {order.amount}
+                          {order.paymentMethod || "Standard"} • {order.amount === 0 ? "FREE" : `${order.currency} ${order.amount}`}
                         </p>
                         <p className="text-brand-muted">
                           {order.country ? `Country: ${order.country}` : "Global Order"}

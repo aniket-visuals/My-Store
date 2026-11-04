@@ -874,7 +874,7 @@ export default function CheckoutPage({
                         <div className="inline-block px-2 py-0.5 bg-brand-dark/[0.05] rounded text-[10px] font-mono font-bold text-brand-dark/60 uppercase tracking-widest">
                           V 1.0
                         </div>
-                        {product.autoApprove ? (
+                        {product.price === 0 || product.autoApprove ? (
                           <p className="font-bold text-emerald-600 text-sm pt-0.5">FREE</p>
                         ) : (
                           <p className="font-bold text-brand-primary text-sm pt-0.5">${product.price.toFixed(2)}</p>
@@ -923,13 +923,13 @@ export default function CheckoutPage({
                     <div className="pt-4 border-t border-brand-dark/10 space-y-2">
                       <div className="flex items-center justify-between text-xs sm:text-sm font-medium text-brand-dark/60">
                         <span>Subtotal</span>
-                        <span className={product.autoApprove ? "line-through" : ""}>
-                          ${totalPrice > 0 ? totalPrice.toFixed(2) : "0.00"}
+                        <span className={product.price === 0 || product.autoApprove ? "line-through" : ""}>
+                          {totalPrice === 0 || product.price === 0 ? "FREE" : `$${totalPrice.toFixed(2)}`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between font-display font-bold text-lg sm:text-xl text-brand-dark">
                         <span>Total</span>
-                        {product.autoApprove ? (
+                        {product.price === 0 || product.autoApprove || totalPrice === 0 ? (
                           <span className="text-emerald-600 font-extrabold">FREE</span>
                         ) : (
                           <span>${totalPrice > 0 ? totalPrice.toFixed(2) : "0.00"}</span>

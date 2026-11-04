@@ -81,7 +81,17 @@ export default function ThankYouPage({
   const email = savedOrder?.email || "";
   const paymentMethod = savedOrder?.paymentMethod || "UPI (India)";
   const paymentMethodKey = savedOrder?.paymentMethodKey || "upi";
-  const total = savedOrder?.total || "₹ 999";
+  const rawTotal = savedOrder?.total || "₹ 999";
+  const total =
+    rawTotal === "$0" ||
+    rawTotal === "$0.00" ||
+    rawTotal === "0" ||
+    rawTotal === "₹ 0" ||
+    rawTotal === "₹0" ||
+    savedOrder?.totalPrice === 0 ||
+    savedOrder?.amount === 0
+      ? "FREE"
+      : rawTotal;
 
   const dateTime = React.useMemo(() => {
     if (savedOrder?.dateTime) return savedOrder.dateTime;
@@ -318,7 +328,7 @@ export default function ThankYouPage({
           {/* Total Row */}
           <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-200/70">
             <span className="text-neutral-500 font-medium text-xs sm:text-sm">Total</span>
-            <span className="font-bold text-neutral-900 text-base sm:text-lg">
+            <span className={`font-bold text-base sm:text-lg ${total === "FREE" ? "text-emerald-600 font-extrabold" : "text-neutral-900"}`}>
               {total}
             </span>
           </div>

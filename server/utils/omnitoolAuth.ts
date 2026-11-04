@@ -22,14 +22,25 @@ export function createCanonicalPayload(payload: {
   });
 }
 
+let fallbackPrivateKey: string | null = null;
+
 /**
  * Signs the given string payload using the OMNITOOL_PRIVATE_KEY.
  * Returns the base64 encoded signature.
  */
 export function signPayload(payloadString: string): string {
-  const privateKey = process.env.OMNITOOL_PRIVATE_KEY;
+  let privateKey = process.env.OMNITOOL_PRIVATE_KEY;
   if (!privateKey) {
-    throw new Error('OMNITOOL_PRIVATE_KEY environment variable is missing.');
+    if (!fallbackPrivateKey) {
+      console.warn("OMNITOOL_PRIVATE_KEY environment variable is missing. Generating in-memory 2048-bit RSA key for local dev/testing.");
+      const { privateKey: genKey } = crypto.generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+        publicKeyEncoding: { type: 'spki', format: 'pem' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+      });
+      fallbackPrivateKey = genKey;
+    }
+    privateKey = fallbackPrivateKey;
   }
 
   // Replace escaped newlines if they are passed in via env var

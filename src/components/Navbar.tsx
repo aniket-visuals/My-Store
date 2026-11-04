@@ -445,8 +445,8 @@ export default function Navbar({
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-brand-bg border border-black/5">
-                        ${product.price}
+                      <span className={`text-xs font-semibold px-3 py-1 rounded-full bg-brand-bg border border-black/5 ${product.price === 0 ? "text-emerald-600 font-bold" : ""}`}>
+                        {product.price === 0 ? "FREE" : `$${product.price}`}
                       </span>
                     </div>
                   ))}
@@ -557,8 +557,8 @@ export default function Navbar({
                           {item.fileType} • {item.fileSize}
                         </p>
                         <div className="flex items-center justify-between mt-2">
-                          <span className="text-sm font-semibold">
-                            ${item.price}
+                          <span className={`text-sm font-semibold ${item.price === 0 ? "text-emerald-600 font-bold" : ""}`}>
+                            {item.price === 0 ? "FREE" : `$${item.price}`}
                           </span>
                           <button
                             onClick={() => removeFromCart(item.id)}
@@ -578,7 +578,9 @@ export default function Navbar({
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-black/60">Subtotal</span>
                     <span className="font-bold text-black text-lg">
-                      ${cart.reduce((total, p) => total + p.price, 0)}
+                      {cart.reduce((total, p) => total + p.price, 0) === 0
+                        ? "FREE"
+                        : `$${cart.reduce((total, p) => total + p.price, 0)}`}
                     </span>
                   </div>
                   <div className="text-[11px] text-black/50 text-center flex items-center justify-center gap-1.5 font-mono">

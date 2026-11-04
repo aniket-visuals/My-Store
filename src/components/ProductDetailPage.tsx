@@ -371,12 +371,20 @@ export default function ProductDetailPage({
             </div>
             
             <div className="text-right leading-none">
-              <span className="text-[10px] font-mono text-brand-dark/30 line-through block mb-1">
-                ${getTierOriginalPrice()} USD
-              </span>
-              <span className="font-display font-bold text-2xl tracking-tight text-brand-dark">
-                ${getTierPrice()} USD
-              </span>
+              {getTierOriginalPrice() > 0 && Number(getTierPrice()) !== Number(getTierOriginalPrice()) ? (
+                <span className="text-[10px] font-mono text-brand-dark/30 line-through block mb-1">
+                  ${getTierOriginalPrice()} USD
+                </span>
+              ) : null}
+              {Number(getTierPrice()) === 0 ? (
+                <span className="font-display font-bold text-2xl tracking-tight text-emerald-600">
+                  FREE
+                </span>
+              ) : (
+                <span className="font-display font-bold text-2xl tracking-tight text-brand-dark">
+                  ${getTierPrice()} USD
+                </span>
+              )}
             </div>
           </div>
           <div className="border-t border-brand-dark/5 pt-1.5 text-left text-[9px] font-mono text-brand-dark/40 italic">
@@ -401,10 +409,14 @@ export default function ProductDetailPage({
               {!currentUser ? (
                 <>
                   <Lock className="w-4 h-4 mr-1 shrink-0" />
-                  <span>Sign In to Buy — ${getTierPrice()} USD</span>
+                  <span>
+                    Sign In to Buy — {Number(getTierPrice()) === 0 ? "FREE" : `$${getTierPrice()} USD`}
+                  </span>
                 </>
               ) : (
-                <span>Buy Now — ${getTierPrice()} USD</span>
+                <span>
+                  Buy Now — {Number(getTierPrice()) === 0 ? "FREE" : `$${getTierPrice()} USD`}
+                </span>
               )}
             </button>
             <button

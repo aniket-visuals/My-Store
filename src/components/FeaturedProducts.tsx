@@ -153,13 +153,13 @@ export default function FeaturedProducts({
 
                         {/* Price label */}
                         <div className="flex items-center space-x-2">
-                          {product.originalPrice && (
+                          {Boolean(product.originalPrice && product.originalPrice > product.price) ? (
                             <span className="text-xs text-black/30 line-through font-mono font-bold">
                               ${product.originalPrice}
                             </span>
-                          )}
-                          <span className="font-display font-bold text-lg text-black">
-                            ${product.price}
+                          ) : null}
+                          <span className={`font-display font-bold text-lg ${product.price === 0 ? "text-emerald-600" : "text-black"}`}>
+                            {product.price === 0 ? "FREE" : `$${product.price}`}
                           </span>
                         </div>
 

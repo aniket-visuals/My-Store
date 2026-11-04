@@ -139,6 +139,39 @@ export default function OmniToolUsers() {
     fetchDemoData();
   }, []);
 
+  // Helper to update Demo config with automatic endpoint fallback
+  const updateDemoConfigApi = async (body: any) => {
+    const token = await getAdminToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    let res = await fetch("/api/omnitool/demo/config", {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(body)
+    });
+
+    if (res.status === 404) {
+      // Fallback to /api/omnitool/demo
+      res = await fetch("/api/omnitool/demo", {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(body)
+      });
+    }
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
+    }
+
+    return res.json().catch(() => ({}));
+  };
+
   // Toggle Demo Account Activation / Deactivation
   const handleToggleDemoStatus = async () => {
     const nextStatus = demoData.status === "active" ? "disabled" : "active";
@@ -152,20 +185,7 @@ export default function OmniToolUsers() {
 
     try {
       setIsUpdatingDemo(true);
-      const token = await getAdminToken();
-      const res = await fetch("/api/omnitool/demo/config", {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ status: nextStatus })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
-      }
+      await updateDemoConfigApi({ status: nextStatus });
 
       setDemoData(prev => ({
         ...prev,
@@ -194,25 +214,12 @@ export default function OmniToolUsers() {
   const handleSetDemoLimitMode = async (mode: "limited" | "unlimited") => {
     try {
       setIsUpdatingDemo(true);
-      const token = await getAdminToken();
       const limitVal = mode === "limited" ? (demoLimitInput || 10) : demoData.maxDeviceLimit;
 
-      const res = await fetch("/api/omnitool/demo/config", {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ 
-          deviceLimitMode: mode,
-          maxDeviceLimit: limitVal
-        })
+      await updateDemoConfigApi({ 
+        deviceLimitMode: mode,
+        maxDeviceLimit: limitVal
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
-      }
 
       setDemoData(prev => ({
         ...prev,
@@ -244,23 +251,10 @@ export default function OmniToolUsers() {
 
     try {
       setIsUpdatingDemo(true);
-      const token = await getAdminToken();
-      const res = await fetch("/api/omnitool/demo/config", {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ 
-          deviceLimitMode: "limited",
-          maxDeviceLimit: limitToSave 
-        })
+      await updateDemoConfigApi({ 
+        deviceLimitMode: "limited",
+        maxDeviceLimit: limitToSave 
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
-      }
 
       setDemoLimitInput(limitToSave);
       setDemoData(prev => ({
@@ -282,18 +276,26 @@ export default function OmniToolUsers() {
   const handleTerminateSession = async (deviceId: string) => {
     try {
       const token = await getAdminToken();
-      const res = await fetch("/api/omnitool/demo/terminate-session", {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      let res = await fetch("/api/omnitool/demo/terminate-session", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
+        headers,
         body: JSON.stringify({ deviceId })
       });
 
+      if (res.status === 404) {
+        res = await fetch("/api/omnitool/demo/terminate", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ deviceId })
+        });
+      }
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || "Failed to terminate device session");
+        throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
       }
 
       showToast(`Session for device ${deviceId.slice(0, 10)}... terminated.`, "success");
@@ -313,14 +315,24 @@ export default function OmniToolUsers() {
     try {
       setIsUpdatingDemo(true);
       const token = await getAdminToken();
-      const res = await fetch("/api/omnitool/demo/terminate-all", {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      let res = await fetch("/api/omnitool/demo/terminate-all", {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
+        headers
       });
+
+      if (res.status === 404) {
+        res = await fetch("/api/omnitool/demo/terminate-all-sessions", {
+          method: "POST",
+          headers
+        });
+      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || "Failed to terminate all sessions");
+        throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
       }
 
       showToast("All active Demo sessions have been terminated.", "success");
@@ -388,17 +400,21 @@ export default function OmniToolUsers() {
           payload.password = newPassword;
         }
 
-        const res = await fetch(`/api/omnitool/users/${currentUser.id}`, {
-          method: "PUT",
-          headers: { 
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
+        if (currentUser.id?.toLowerCase() === "demo") {
+          await updateDemoConfigApi(payload);
+        } else {
+          const res = await fetch(`/api/omnitool/users/${currentUser.id}`, {
+            method: "PUT",
+            headers: { 
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to update user");
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.message || data.error || `Server returned ${res.status}`);
+        }
 
         showToast("User updated successfully", "success");
       }

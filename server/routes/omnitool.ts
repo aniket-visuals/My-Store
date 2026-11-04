@@ -594,12 +594,20 @@ router.post('/verify-session', async (req, res) => {
 const handleGetDemo = async (_req: any, res: any) => {
   try {
     await ensureDemoAccount();
-    const userDoc = await getUserDoc("Demo");
+    let userDoc = await getUserDoc("Demo");
     if (!userDoc || !userDoc.exists) {
-      return res.status(404).json({ error: "Demo account not found" });
+      await ensureDemoAccount();
+      userDoc = await getUserDoc("Demo");
     }
 
-    const data = userDoc.data()!;
+    const data = (userDoc && userDoc.exists) ? userDoc.data()! : {
+      username: "Demo",
+      status: "active",
+      deviceLimitMode: "limited",
+      maxDeviceLimit: 10,
+      activeSessions: {}
+    };
+
     const now = Date.now();
     const rawSessions = data.activeSessions || {};
 
@@ -644,12 +652,13 @@ const handleUpdateDemoConfig = async (req: any, res: any) => {
 
   try {
     await ensureDemoAccount();
-    const userDoc = await getUserDoc("Demo");
+    let userDoc = await getUserDoc("Demo");
     if (!userDoc || !userDoc.exists) {
-      return res.status(404).json({ error: "Demo account not found" });
+      await ensureDemoAccount();
+      userDoc = await getUserDoc("Demo");
     }
 
-    const currentData = userDoc.data()!;
+    const currentData = (userDoc && userDoc.exists) ? userDoc.data()! : { activeSessions: {} };
     const updates: any = {};
 
     if (status) {
@@ -698,6 +707,8 @@ router.put('/demo/config', verifyAdmin, handleUpdateDemoConfig);
 router.put('/demo', verifyAdmin, handleUpdateDemoConfig);
 router.post('/demo/config', verifyAdmin, handleUpdateDemoConfig);
 router.post('/demo', verifyAdmin, handleUpdateDemoConfig);
+router.patch('/demo/config', verifyAdmin, handleUpdateDemoConfig);
+router.patch('/demo', verifyAdmin, handleUpdateDemoConfig);
 
 // Terminate an individual device session for Demo
 const handleTerminateSession = async (req: any, res: any) => {
@@ -708,12 +719,9 @@ const handleTerminateSession = async (req: any, res: any) => {
   }
 
   try {
+    await ensureDemoAccount();
     const userDoc = await getUserDoc("Demo");
-    if (!userDoc || !userDoc.exists) {
-      return res.status(404).json({ error: "Demo account not found" });
-    }
-
-    const data = userDoc.data()!;
+    const data = (userDoc && userDoc.exists) ? userDoc.data()! : { activeSessions: {} };
     const sessions = { ...(data.activeSessions || {}) };
 
     if (sessions[deviceId]) {
@@ -739,12 +747,9 @@ router.post('/demo/terminate', verifyAdmin, handleTerminateSession);
 // Terminate all active sessions at once for Demo
 const handleTerminateAll = async (_req: any, res: any) => {
   try {
+    await ensureDemoAccount();
     const userDoc = await getUserDoc("Demo");
-    if (!userDoc || !userDoc.exists) {
-      return res.status(404).json({ error: "Demo account not found" });
-    }
-
-    const data = userDoc.data()!;
+    const data = (userDoc && userDoc.exists) ? userDoc.data()! : { activeSessions: {} };
     const sessions = { ...(data.activeSessions || {}) };
     const now = Date.now();
 
@@ -797,9 +802,23 @@ router.get('/users', verifyAdmin, async (_req, res) => {
       usersMap.set(key, { id: key, ...val });
     });
 
-    const usersList = Array.from(usersMap.values()).map(data => {
+    const dedupedMap: Map<string, any> = new Map();
+    usersMap.forEach((data, rawKey) => {
+      const isDemo = isDemoAccount(rawKey) || isDemoAccount(data.username);
+      const canonicalKey = isDemo ? "Demo" : (data.username || rawKey);
+      if (isDemo) {
+        data.id = "Demo";
+        data.username = "Demo";
+        data.isSpecialMultiDevice = true;
+      }
+      if (!dedupedMap.has(canonicalKey) || isDemo) {
+        dedupedMap.set(canonicalKey, data);
+      }
+    });
+
+    const usersList = Array.from(dedupedMap.values()).map(data => {
       const { password, passwordHash, ...rest } = data;
-      const isDemo = data.id === "Demo";
+      const isDemo = isDemoAccount(data.id || data.username);
 
       let activeDeviceCount = 0;
       if (isDemo && data.activeSessions) {
@@ -807,8 +826,8 @@ router.get('/users', verifyAdmin, async (_req, res) => {
       }
 
       return {
-        id: data.id,
-        username: data.username || data.id,
+        id: isDemo ? "Demo" : data.id,
+        username: isDemo ? "Demo" : (data.username || data.id),
         hasPassword: !!(passwordHash || password),
         hashPreview: passwordHash ? `${passwordHash.substring(0, 15)}...` : null,
         isSpecialMultiDevice: isDemo,
@@ -860,25 +879,22 @@ router.post('/users', verifyAdmin, async (req, res) => {
   }
 });
 
-// Update existing user
-router.put('/users/:id', verifyAdmin, async (req, res) => {
+// Update existing user (with automatic upsert so 404 is never returned)
+const handleUpdateUser = async (req: any, res: any) => {
   const { id } = req.params;
   const { status, password } = req.body;
   
   try {
     const isDemo = isDemoAccount(id);
     const targetUsername = isDemo ? "Demo" : id;
-    const userSnapshot = await getUserDoc(targetUsername);
-    if (!userSnapshot || !userSnapshot.exists) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    let userSnapshot = await getUserDoc(targetUsername);
 
     const updates: any = {};
     if (status) {
       updates.status = status;
       if (isDemo && status === "disabled") {
         // Invalidate Demo active sessions
-        const curData = userSnapshot.data()!;
+        const curData = userSnapshot?.data() || {};
         const sessions = { ...(curData.activeSessions || {}) };
         Object.keys(sessions).forEach(k => {
           sessions[k] = { ...sessions[k], status: "terminated", terminatedAt: Date.now() };
@@ -894,6 +910,17 @@ router.put('/users/:id', verifyAdmin, async (req, res) => {
       updates.password = null;
     }
 
+    if (!userSnapshot || !userSnapshot.exists) {
+      // Upsert user if not existing yet
+      await setUserDoc(targetUsername, {
+        username: targetUsername,
+        status: status || 'active',
+        createdAt: Date.now(),
+        ...updates
+      });
+      return res.json({ success: true, message: "User updated successfully" });
+    }
+
     if (Object.keys(updates).length > 0) {
       await updateUserDoc(targetUsername, updates);
     }
@@ -903,7 +930,11 @@ router.put('/users/:id', verifyAdmin, async (req, res) => {
     console.error("Update user error:", error);
     return res.status(500).json({ error: "Failed to update user" });
   }
-});
+};
+
+router.put('/users/:id', verifyAdmin, handleUpdateUser);
+router.post('/users/:id', verifyAdmin, handleUpdateUser);
+router.patch('/users/:id', verifyAdmin, handleUpdateUser);
 
 // Delete user
 router.delete('/users/:id', verifyAdmin, async (req, res) => {

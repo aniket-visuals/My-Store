@@ -149,27 +149,57 @@ export default function OmniToolUsers() {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    let res = await fetch("/api/omnitool/demo/config", {
-      method: "PUT",
-      headers,
-      body: JSON.stringify(body)
-    });
+    const endpoints = [
+      { url: "/api/omnitool/demo/config", method: "PUT" },
+      { url: "/api/omnitool/demo/config", method: "POST" },
+      { url: "/api/omnitool/demo", method: "PUT" },
+      { url: "/api/omnitool/demo", method: "POST" },
+      { url: "/api/omnitool/users/Demo", method: "PUT" },
+      { url: "/api/omnitool/users/Demo", method: "POST" },
+      { url: "/api/demo/config", method: "PUT" },
+      { url: "/api/demo/config", method: "POST" },
+      { url: "/api/demo", method: "PUT" },
+      { url: "/demo/config", method: "PUT" },
+      { url: "/demo", method: "PUT" }
+    ];
 
-    if (res.status === 404) {
-      // Fallback to /api/omnitool/demo
-      res = await fetch("/api/omnitool/demo", {
-        method: "PUT",
-        headers,
-        body: JSON.stringify(body)
-      });
+    let lastError: any = null;
+    let lastStatus = 0;
+
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep.url, {
+          method: ep.method,
+          headers,
+          body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+          return await res.json().catch(() => ({}));
+        }
+
+        lastStatus = res.status;
+        const text = await res.text().catch(() => "");
+        try {
+          lastError = JSON.parse(text);
+        } catch {
+          lastError = { error: text && !text.includes("<!DOCTYPE") ? text : `HTTP ${res.status}` };
+        }
+
+        // If not a 404/405 route error, don't keep retrying other paths
+        if (res.status !== 404 && res.status !== 405) {
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+      }
     }
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
-    }
+    const errorMsg = lastError?.message || 
+      (typeof lastError?.error === "string" ? lastError.error : null) || 
+      (lastStatus ? `Server error (Status ${lastStatus})` : "Failed to update Demo account");
 
-    return res.json().catch(() => ({}));
+    throw new Error(errorMsg);
   };
 
   // Toggle Demo Account Activation / Deactivation
@@ -294,8 +324,10 @@ export default function OmniToolUsers() {
       }
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
+        const text = await res.text().catch(() => "");
+        let errorData: any = {};
+        try { errorData = JSON.parse(text); } catch {}
+        throw new Error(errorData.message || errorData.error || (text && !text.includes("<!DOCTYPE") ? text : `Server error (Status ${res.status})`));
       }
 
       showToast(`Session for device ${deviceId.slice(0, 10)}... terminated.`, "success");
@@ -331,8 +363,10 @@ export default function OmniToolUsers() {
       }
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Server returned ${res.status}`);
+        const text = await res.text().catch(() => "");
+        let errorData: any = {};
+        try { errorData = JSON.parse(text); } catch {}
+        throw new Error(errorData.message || errorData.error || (text && !text.includes("<!DOCTYPE") ? text : `Server error (Status ${res.status})`));
       }
 
       showToast("All active Demo sessions have been terminated.", "success");
@@ -403,17 +437,44 @@ export default function OmniToolUsers() {
         if (currentUser.id?.toLowerCase() === "demo") {
           await updateDemoConfigApi(payload);
         } else {
-          const res = await fetch(`/api/omnitool/users/${currentUser.id}`, {
-            method: "PUT",
-            headers: { 
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-          });
+          const encodedId = encodeURIComponent(currentUser.id);
+          const endpoints = [
+            { url: `/api/omnitool/users/${encodedId}`, method: "PUT" },
+            { url: `/api/omnitool/users/${encodedId}`, method: "POST" },
+            { url: `/api/users/${encodedId}`, method: "PUT" },
+            { url: `/api/users/${encodedId}`, method: "POST" }
+          ];
 
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data.message || data.error || `Server returned ${res.status}`);
+          let lastErr: any = null;
+          let success = false;
+
+          for (const ep of endpoints) {
+            try {
+              const res = await fetch(ep.url, {
+                method: ep.method,
+                headers: { 
+                  "Authorization": `Bearer ${token}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+              });
+
+              if (res.ok) {
+                success = true;
+                break;
+              }
+
+              const text = await res.text().catch(() => "");
+              try { lastErr = JSON.parse(text); } catch { lastErr = { error: text || `HTTP ${res.status}` }; }
+              if (res.status !== 404 && res.status !== 405) break;
+            } catch (err) {
+              lastErr = err;
+            }
+          }
+
+          if (!success) {
+            throw new Error(lastErr?.message || lastErr?.error || "Failed to update user");
+          }
         }
 
         showToast("User updated successfully", "success");

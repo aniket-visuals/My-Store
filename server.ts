@@ -12,10 +12,33 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  // CORS middleware for iframe and proxy support
+  app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-admin-test-auth");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+    next();
+  });
 
-  // Mount OmniTool API routes
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  // Mount OmniTool API routes on all path variations
   app.use("/api/omnitool", omnitoolRouter);
+  app.use("/omnitool", omnitoolRouter);
+  app.use("/api", omnitoolRouter);
+  app.use("/", omnitoolRouter);
+
+  // Direct fast-path route aliases for OmniTool Demo and Users
+  app.all(["/api/omnitool/demo/config", "/api/omnitool/demo", "/api/demo/config", "/api/demo", "/demo/config", "/demo"], (req, res, next) => {
+    omnitoolRouter(req, res, next);
+  });
+  app.all(["/api/omnitool/users*", "/api/users*", "/users*"], (req, res, next) => {
+    omnitoolRouter(req, res, next);
+  });
 
   // API route for sending email
   app.post("/api/send-email", async (req, res) => {

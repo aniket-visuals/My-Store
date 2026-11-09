@@ -200,11 +200,11 @@ async function updateUserDoc(username: string, updates: any): Promise<void> {
       const db = getFirestore(websiteAdminApp);
       if (isDemo) {
         await Promise.all([
-          db.collection('omnitool_users').doc('Demo').update(updates).catch(() => {}),
-          db.collection('omnitool_users').doc('demo').update(updates).catch(() => {})
+          db.collection('omnitool_users').doc('Demo').set(updates, { merge: true }).catch(() => {}),
+          db.collection('omnitool_users').doc('demo').set(updates, { merge: true }).catch(() => {})
         ]);
       } else {
-        await db.collection('omnitool_users').doc(cleanUsername).update(updates);
+        await db.collection('omnitool_users').doc(cleanUsername).set(updates, { merge: true });
       }
     } catch (err: any) {
       // Non-fatal
@@ -294,7 +294,7 @@ function detectPlatform(req: any): string {
 // ==========================================
 
 // Login endpoint for OmniTool Extension
-router.post('/login', async (req, res) => {
+router.post(['/login', '/auth/login', '/session/login'], async (req, res) => {
   const { username, password, deviceId } = req.body;
   
   if (!username || !password || !deviceId) {
@@ -380,18 +380,19 @@ router.post('/login', async (req, res) => {
 
       await updateUserDoc("Demo", {
         activeSessions: sessions,
-        lastLoginAt: now
+        lastLoginAt: now,
+        activeSession: null
       });
 
       // Sync to Firebase Realtime Database
       syncSessionsToRealtimeDb("Demo", sessions);
 
-      // Generate RSA Authorization Payload
+      // Generate RSA Authorization Payload (preserve client's username casing for strict signature checks)
       const issuedAt = now;
       const expiresAt = issuedAt + 30 * 24 * 60 * 60 * 1000; // 30 days
       const authorizationPayload = {
         version: 1,
-        username: "Demo",
+        username: rawUsername,
         deviceId,
         token,
         issuedAt,
@@ -409,8 +410,8 @@ router.post('/login', async (req, res) => {
       return res.json({
         success: true,
         token,
-        userId: "Demo",
-        username: "Demo",
+        userId: rawUsername,
+        username: rawUsername,
         status: userData.status,
         authorizationPayload,
         signature
@@ -468,7 +469,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Verify session endpoint for OmniTool Extension
-router.post('/verify-session', async (req, res) => {
+router.post(['/verify-session', '/verify', '/validate-session', '/session/verify'], async (req, res) => {
   const { username, token, deviceId } = req.body;
   
   if (!username || !token || !deviceId) {
@@ -512,17 +513,23 @@ router.post('/verify-session', async (req, res) => {
       }
 
       // Refresh lastActiveAt
-      sessions[deviceId].lastActiveAt = now;
+      const updatedSessions = {
+        ...sessions,
+        [deviceId]: {
+          ...session,
+          lastActiveAt: now
+        }
+      };
       updateUserDoc("Demo", {
-        [`activeSessions.${deviceId}.lastActiveAt`]: now
+        activeSessions: updatedSessions
       }).catch(() => {});
 
-      // Generate renewed RSA Authorization Payload
+      // Generate renewed RSA Authorization Payload (preserve client's username casing for strict signature checks)
       const issuedAt = Date.now();
       const expiresAt = issuedAt + 30 * 24 * 60 * 60 * 1000;
       const authorizationPayload = {
         version: 1,
-        username: "Demo",
+        username: rawUsername,
         deviceId,
         token,
         issuedAt,

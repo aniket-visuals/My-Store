@@ -24,6 +24,7 @@ export function updateMetaTags({
     el.setAttribute('content', content);
   };
   
+  setMeta('title', title);
   setMeta('description', description);
   
   // Canonical URL
@@ -40,6 +41,8 @@ export function updateMetaTags({
   setMeta('og:description', description, true);
   setMeta('og:url', url, true);
   setMeta('og:image', image, true);
+  setMeta('og:image:secure_url', image, true);
+  setMeta('og:image:alt', title, true);
   setMeta('og:type', type, true);
   
   // Twitter

@@ -1,10 +1,12 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import omnitoolRouter from "./server/routes/omnitool.js";
 import { generateHtmlEmail } from "./server/emailTemplate.js";
+import { getProductSeoBySlug, injectProductMetaIntoHtml, buildFallbackProductHtml } from "./server/productSeo.js";
 
 dotenv.config();
 
@@ -30,7 +32,6 @@ async function startServer() {
   app.use("/api/omnitool", omnitoolRouter);
   app.use("/omnitool", omnitoolRouter);
   app.use("/api", omnitoolRouter);
-  app.use("/", omnitoolRouter);
 
   // Direct fast-path route aliases for OmniTool Demo and Users
   app.all(["/api/omnitool/demo/config", "/api/omnitool/demo", "/api/demo/config", "/api/demo", "/demo/config", "/demo"], (req, res, next) => {
@@ -104,9 +105,45 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: "spa",
     });
+
+    // Dynamic OpenGraph & Twitter card injection for product links in dev
+    app.get("/products/:slug", async (req, res, next) => {
+      try {
+        const meta = await getProductSeoBySlug(req.params.slug);
+        if (!meta) return next();
+
+        let template = fs.readFileSync(path.resolve(process.cwd(), "index.html"), "utf-8");
+        template = await vite.transformIndexHtml(req.originalUrl, template);
+        const html = injectProductMetaIntoHtml(template, meta);
+        res.status(200).set({ "Content-Type": "text/html" }).end(html);
+      } catch (err) {
+        next();
+      }
+    });
+
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
+
+    // Dynamic OpenGraph & Twitter card injection for product links in production
+    app.get("/products/:slug", async (req, res) => {
+      const indexPath = path.join(distPath, "index.html");
+      try {
+        const meta = await getProductSeoBySlug(req.params.slug);
+        if (fs.existsSync(indexPath)) {
+          const template = fs.readFileSync(indexPath, "utf-8");
+          const html = meta ? injectProductMetaIntoHtml(template, meta) : template;
+          return res.status(200).set({ "Content-Type": "text/html" }).send(html);
+        }
+        return res.status(200).set({ "Content-Type": "text/html" }).send(buildFallbackProductHtml(meta));
+      } catch (err) {
+        if (fs.existsSync(indexPath)) {
+          return res.sendFile(indexPath);
+        }
+        return res.status(200).set({ "Content-Type": "text/html" }).send(buildFallbackProductHtml(null));
+      }
+    });
+
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
